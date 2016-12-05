@@ -4,13 +4,13 @@
 #   user needs to set partitions mounting points and fs type
 #   user needs to select usual items for the install (like language,...)
 #
-Y_VER="0.9"
+Y_VER="0.94"
 
 # configuration
 Y_DEV="/dev/sda"
 
 Y_BOOT_SIZE="200"
-Y_SWAP_SIZE="4000"
+Y_SWAP_SIZE="8200"
 
 Y_ROOT_NAME="root"
 Y_ROOT_PASSWD="csolnok"
@@ -33,7 +33,7 @@ echo VER=$Y_VER, DEBUG=$Y_DEBUG, LOG=$Y_LOG, DRY_RUN=$Y_DRY_RUN | tee -a $Y_LOG
 # run function that checks sucessful command exit status and breaks if not
 yrun () {
     if [ "$Y_DEBUG" = "true" ] ; then {
-        echo DEBUG: "$*"
+        echo DEBUG: "$*" | tee -a $Y_LOG
         OUT=${Y_LOG}
     }
     else
@@ -48,9 +48,13 @@ yrun () {
 }
 
 # setup partitions
-yrun sudo parted --script $Y_DEV mklabel gpt
+#Y_LABEL="gpt"
+Y_LABEL="msdos"
 
-Y_START=0; Y_END=$Y_BOOT_SIZE
+yrun sudo parted --script $Y_DEV mklabel $Y_LABEL
+
+# Make sure Y_START>0 to leave space for the boot code
+Y_START=1; Y_END=$Y_BOOT_SIZE
 yrun sudo parted --script $Y_DEV mkpart primary ext2 $Y_START $Y_END
 
 Y_START=$Y_END; Y_END=$(($Y_START+$Y_SWAP_SIZE))
@@ -74,7 +78,7 @@ yrun sudo cryptsetup -v status $Y_ROOT_NAME
 yrun sudo mkfs.ext4 -F /dev/mapper/$Y_ROOT_NAME
 
 # run GUI based installation
-echo "NOTE: Select 'Continue Testin' after installation finished!"
+echo "NOTE: Select 'Continue Testing' after installation finished!"
 yrun ubiquity
 
 # fix up installed image
@@ -82,19 +86,22 @@ yrun sudo mount /dev/mapper/$Y_ROOT_NAME /mnt
 yrun cd /mnt
 yrun sudo mount ${Y_DEV}$Y_BOOT boot
 yrun sudo mount --bind /dev dev
+yrun sudo mount --bind /sys sys
 yrun sudo mount -t proc proc proc
 
-FOUT="/tmp/ydev"
+TMP="/tmp/ydev"
+FOUT=$TMP
 yrun blkid -o export ${Y_DEV}$Y_ROOT
 FOUT=""
 
-yrun source /tmp/ydev
+test -e $TMP || sleep 1
+yrun source $TMP
 
-FOUT="/tmp/crypttab"
+FOUT=$TMP
 yrun echo root UUID=$UUID none luks
 FOUT=""
 
-yrun sudo cp /tmp/crypttab /mnt/etc
+yrun sudo cp $TMP /mnt/etc/crypttab
 
 yrun sudo chroot /mnt update-initramfs -u -k all
 
