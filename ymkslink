@@ -1,0 +1,9 @@
+#!/bin/bash
+
+echo params: $*
+IFS=$'\n'
+for i in `find $1 -name *.pdf -type f` ; do
+    echo -n $i ' '
+    basename $i
+    ln -s $i $2/`basename $i`
+done

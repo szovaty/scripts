@@ -1,0 +1,71 @@
+#!/bin/bash
+# local fileserver cron script
+
+DEBUG="1"
+V=1
+PECHO="-->"
+
+RSYNC="rsync"
+YARCHIVE="/usr/local/bin/yarchive"
+
+LFS="/xfs"
+CFS="cfs:"
+CFS_USER="jenov"
+
+OPTION="-ax --partial --delete --specials"
+
+if [ -z $DEBUG ] ; then 
+
+	OPTIONS="$OPTION -q"
+	LOG="/var/log/ycron.log"
+
+else 
+
+	OPTIONS="$OPTION -v"
+	LOG="/tmp/ycron.log"
+
+fi
+
+
+echo "*** Start $0 `date` ***" >> $LOG
+test $V -ge 2 && echo "OPTIONS: $OPTIONS" >> $LOG
+
+#--------------------------------------------------------------
+# rsync $CFS/backup to /backup/systems/ddrli01
+# moved to monthly cron !
+EXCLUDES="--exclude=tmp/ --exclude=.~lock.*#"
+test -n "" && {
+
+	test $V -ge 1 && echo "$PECHO rsync $CFS/backup/ to /backup/systems/CFS" >> $LOG 2>&1
+	test $V -ge 2 && echo "EXCLUDES: $EXCLUDE" >> $LOG
+	su $CFS_USER -c "$RSYNC $OPTIONS --bwlimit=15 $EXCLUDES $CFS/backup/ /backup/systems/CFS" >> $LOG 2>&1
+
+}
+#--------------------------------------------------------------
+
+#--------------------------------------------------------------
+# rsync /ymmlib/ /backup/ymmlib/
+EXCLUDES="--exclude=tmp/ --exclude=.Trash-*"
+test -n "x" && {
+
+	test $V -ge 1 && echo "$PECHO rsync /ymmlib/ to /backup/ymmlib/" >> $LOG 2>&1
+	test $V -ge 2 && echo "EXCLUDES: $EXCLUDE" >> $LOG
+	$RSYNC $OPTIONS $EXCLUDES /ymmlib/ /backup/ymmlib/ >> $LOG 2>&1
+
+}
+#--------------------------------------------------------------
+
+#--------------------------------------------------------------
+# archive LFS
+ 
+test -n "x" && {
+    LIST="proj home sys ymmlib"
+    for i in $LIST ; do
+        test $V -ge 1 && echo "$PECHO yarchive -s $i" >> $LOG 2>&1
+        $YARCHIVE -s $i >> $LOG 2>&1
+    done
+       
+}     
+#--------------------------------------------------------------
+
+echo "***   End $0 `date` ***" >> $LOG

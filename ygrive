@@ -1,0 +1,12 @@
+#!/bin/bash
+PATH="/proj/exosite/grive"
+LOG="/var/log/ygrive.log"
+EXE="/usr/bin/grive"
+
+echo "*** Starting $0 at $PATH on: `/bin/date` ***" >> $LOG
+
+cd $PATH
+test $? -eq 0 && 
+   $EXE 2>&1 | /usr/bin/tee -a $LOG
+
+sleep 2

@@ -1,0 +1,16 @@
+<dvdauthor>
+    <vmgm />
+    <titleset>
+	<titles>
+	    <pgc>
+		<vob file="/net/bagyog/dvdlib_00/Harry_Potter_2/VTS_01_1.VOB" />
+		<vob file="/net/bagyog/dvdlib_00/Harry_Potter_2/VTS_01_2.VOB" />
+		<vob file="/net/bagyog/dvdlib_00/Harry_Potter_2/VTS_01_3.VOB" />
+		<vob file="/net/bagyog/dvdlib_00/Harry_Potter_2/VTS_01_4.VOB" />
+		<vob file="/net/bagyog/dvdlib_00/Harry_Potter_2/VTS_01_5.VOB" />
+		<vob file="/net/bagyog/dvdlib_00/Harry_Potter_2/VTS_01_6.VOB" />
+		<vob file="/net/bagyog/dvdlib_00/Harry_Potter_2/VTS_01_7.VOB" />
+	    </pgc>
+	</titles>
+    </titleset>
+</dvdauthor>

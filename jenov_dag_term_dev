@@ -1,0 +1,10 @@
+#!/bin/bash
+CMD="xfce4-terminal"
+DIR=`pwd`
+H=`hostname`
+
+$CMD --geometry=107x46+1280+25 --tab --working-directory=$DIR
+$CMD --geometry=107x9+1280+678 --tab --working-directory=$DIR
+$CMD --geometry=107x21+1280-25 --tab --working-directory=$DIR
+$CMD --geometry=164x59-0+25 --tab --working-directory=$DIR
+$CMD --geometry=164x21-0-25 --tab --working-directory=$DIR

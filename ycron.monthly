@@ -1,0 +1,44 @@
+#!/bin/bash
+# generic desktop cron script, mainly for backup and sync jobs
+
+DEBUG="x"
+V=1
+PECHO="-->"
+
+YARCHIVE="/usr/local/bin/yarchive"
+RSYNC="rsync"
+LOG="/var/log/ycron.log"
+LFS="/xfs"
+
+OPTION="-ax --partial"
+
+if [ -z $DEBUG ] ; then 
+
+        OPTIONS="$OPTION -q"
+        LOG="/var/log/ycron.log"
+
+else 
+
+        OPTIONS="$OPTION -v"
+        LOG="/tmp/ycron.log"
+
+fi
+
+
+echo "*** Start $0 `date` ***" >> $LOG
+test $V -ge 2 && echo "OPTIONS: $OPTIONS" >> $LOG
+
+#--------------------------------------------------------------
+# rsync desktop /vm/ to LFS
+
+EXCLUDES="--exclude=tmp/"
+
+test -n "x" && {
+	test $V -ge 1 && echo "$PECHO rsync VDI's to LFS" >> $LOG 2>&1
+	mkdir -p /backup/vm/`hostname -s`/ >> $LOG 2>&1
+	$RSYNC $OPTIONS $EXCLUDES /xdir/vm/ /backup/vm/`hostname -s`/ >> $LOG 2>&1
+
+}
+#--------------------------------------------------------------
+
+echo "***   End $0 `date` ***" >> $LOG

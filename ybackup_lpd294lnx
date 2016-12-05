@@ -1,0 +1,133 @@
+#!/bin/bash
+# Based on template.src version 1.0 last modified 2006.01.05 by y
+# Monthly backup of bagyog file server
+# rsync dirs to szovat
+# rsync /xdir to external disk array
+# backup some ybackup policies to tapes
+
+# TODO
+#	- exit of external disk already mounted
+
+trap y_exit TERM HUP INT
+
+# Uncomment this to allow colors on the console
+USE_COLOR="yes"
+
+# This will enable positioning of a text to the end (-8 char) 
+# of a line independent of window size
+USE_POS="yes"
+
+# Source the function library
+FUNCTIONS="/bin/y_functions.sh"
+if [ -r ${FUNCTIONS} ]; then source ${FUNCTIONS}; else y_exit; fi
+
+# define the following to match the program current state
+PROGRAM_NAME="ybackup_lpd294"
+VERSION="1.0-rc1"
+LAST_MOD="2008.05.05"
+
+# Define log file here
+LOG="/var/log/ybackup_local.log"
+
+# Uncomment this if you need debug enabled
+#Y_DEBUG="true"
+
+TMP_FILE="/tmp/rsync_list_$$"
+RSYNC_SOURCE_LIST="/home/jenov/ /usr/local/ /vm/"
+RSYNC_EXCLUDES="backup/ tmp/ AUTOSAVE/ TMP/ TEMP/  .VirtualBox/*/*/Logs/ *.vdi data/ proj/"
+RSYNC_SOURCE_DIR="/xdir/"
+
+BKP_SERVER="lpdsrv15"
+BKP_DEST_DIR="/Users/jenov/lpd294"
+BKP_SOURCE_LIST="/proj/lpd/"
+BKP_EXCLUDES="tmp/ TMP/ TEMP/"
+
+EXT_DISK="/dev/extdisk1"
+CMD_EXTD="y_rsync_to_extdisk"
+CMD_BSERV="y_rsync_to_backup_server"
+
+# use these to set cleanup on exit
+#MOUNTED=""		# y_exit will unmount them
+#DELETE_ON_EXIT=""	# y_exit will delete them
+#LAST_CMD=""		# y_exit will run it just before exit
+
+# rsync RSYNC_LIST dirs to backup server
+y_rsync_to_backup_server () {
+    y_info "Running rsync on: $RSYNC_LIST"
+    y_info "Make sure backup server [${RSYNC_BKS_DEST_DIR%:*}] is on!"
+    for i in $RSYNC_LIST ; do echo $i >> $TMP_FILE ; done
+    DELETE_ON_EXIT="$TMP_FILE"
+    y_run_cmd"rsync -arv --delete --files-from=$TMP_FILE $RSYNC_SOURCE_DIR $RSYNC_BKS_DEST_DIR"
+    if [ "$?" = "0" ] ; then y_info "rsync is done"; else y_warning "rsync is failed!"; fi
+    rm -f $TMP_FILE
+}
+
+# rsync RSYNC_SOURCE_LIST to external disk array
+y_rsync_to_extdisk () {
+    MNT_DIR="/tmp/ybackup_lpd294_$$"
+    local DSAVE
+
+    DSAVE="$DELETE_ON_EXIT"
+	CSAVE="$LAST_CMD"
+
+    y_run_cmd "mkdir -p $MNT_DIR"
+#    DELETE_ON_EXIT="$DELETE_ON_EXIT $MNT_DIR"
+    y_run_cmd2 "mount $EXT_DISK $MNT_DIR"
+    test "$?" = "0" || {
+        y_warning " Mount $EXT_DISK at $MNT_DIR is failed!"
+		return 1
+#		y_get_confirm "External disk is powered on?"
+#        y_run_cmd "mount $EXT_DISK $MNT_DIR"
+    }
+	LAST_CMD="umount $MNT_DIR"
+	y_progress "Create exclude list..."
+	for i in $RSYNC_EXCLUDES ; do
+        EX_LIST="$EX_LIST --exclude=$i"
+	done
+	y_progress_end 0
+
+	for i in $RSYNC_SOURCE_LIST ; do
+		y_progress "Syncing $i..."
+		y_run_cmd "mkdir -p $MNT_DIR/`uname -n`/$i"
+	    y_run_cmd "rsync -arq --delete-excluded $EX_LIST $i $MNT_DIR/`uname -n`/$i"
+		y_progress_end 0
+	done
+	y_info "External disk status: `df -h | grep $MNT_DIR`"
+    y_run_cmd "umount $MNT_DIR"
+    y_run_cmd "rm -r $MNT_DIR"
+    y_info "Check $LOG then power off external disk if everything is OK"
+	DELETE_ON_EXIT="$DSAVE"
+	LAST_CMD="$CSAVE"
+}
+
+y_start
+# ===================================================================================
+y_info 0 "Local backup script."
+while [ "$1" != "" ] ; do
+    case $1 in
+	--help|-h)	y_help "[Options]"; exit;;	#; Help
+	--extdisk|-e)	RUN_CMD="$RUN_CMD $CMD_EXTD";;	#; Run rsync to external disk function
+	--bserver|-b)	RUN_CMD="$RUN_CMD $CMD_BSERV";;	#; Run rsync to backup server function
+	--disk|-d)		#; Define external disk [EXT_DISK]
+	    case $2 in
+			-*|'')	;;
+			*)		EXT_DISK="$2" ; shift ;;
+	    esac ;;
+	--tape|-t)					#; Run tape backup function: {all|list}
+	    RUN_CMD="$RUN_CMD $CMD_TAPE";
+	    case $2 in
+		-*|all|'')	;;
+		*)		TAPE_LIST="$2" ; shift ;;
+	    esac ;;
+	--all|-a)	RUN_CMD="$CMD_EXTD $CMD_BSERV";; #; Run all backup functions
+    esac
+    shift
+done
+for i in $RUN_CMD ; do
+    y_info "Running $i function..."
+    $i
+done
+
+# ===================================================================================
+# Leave this as the last line
+y_exit

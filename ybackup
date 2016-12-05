@@ -1,0 +1,554 @@
+#!/bin/bash
+# ybackup is a rule based backup utility
+# 4.4 : improve get_param and some clean-up
+# 4.5 : change parameter calls
+#
+# to do list:
+#	test it
+
+
+VERSION="Version 4.5 31/10/2003 by y"
+
+#----------------------------------------------------------
+# init section
+USAGE="USAGE: $0 [--help|-h] [--version|-V] [hostname rule] [select_dirs [source]] [options]"
+
+# read ybackup rc file
+if [ ! -z $YBACKUPRC ] ; then
+    . $YBACKUPRC
+else
+    if [ -r "/etc/ybackup/rc.ybackup" ] ; then
+	. /etc/ybackup/rc.ybackup
+    else
+	echo "WARNING: No init file found"
+    fi
+fi
+
+# reads ydvdlib rc file
+if [ ! -z $YDVDLIBRC ] ; then
+    . $YDVDLIBRC
+else
+    test -r "/etc/ydvdlib/rc.ydvdlib" && . /etc/ydvdlib/rc.ydvdlib
+fi
+
+# default settings for key variables if no rc file found
+test -z $RULE_PATH && RULE_PATH="/etc/ybackup"
+test -z $TMP && TMP="/tmp"
+test -z $TAPE && TAPE="/dev/tape"
+test -z $EXCLUDE_LIST && EXCLUDE_LIST="$TMP/ybackup_exclude.$$"
+test -z $MNT_PATH && MNT_PATH="$TMP/ymnt.$$"
+test -z $TAPE_IDFILE && TAPE_IDFILE="TapeID_"
+test -z $YBACKUP_LOG_DIR && YBACKUP_LOG_DIR="/etc/ybackup"
+test -z $YBACKUP_LOG_FILE && YBACKUP_LOG_FILE="$YBACKUP_LOG_DIR/ybackup.log"
+
+# other local variables defaults
+LINES="----------------------------------------"
+DATE="date +%Y.%m.%d-%T"
+DIR_SIZE="0"
+RCMD=""
+
+# end init section
+# ---------------------------------------------------------
+
+# function definition
+
+# help: prints help message 
+# local variables: *_0
+help () {
+    echo "Usage: ybackup [main_command] [options]" 
+    echo "Available main_command line options:"
+    echo "	--help|-h : display this help"
+    echo "	--version|-V: print version information"
+    echo "	--cleanup [hostname] [user]: removes ALL temp files and mounts done by preveous runs"
+    echo "	--show_tapehist|-s: list ybackup tape history files for all tapes"
+    echo "	select_dirs [source]: let you select what to backup for a list: user@host:/source_dir"
+    echo "	hostname rule: you need an rc.hostname file with rule listed in there"
+    echo "Other options:"
+    echo "	-y: set noninteractive mode (no question asked!)"
+    echo "	--tape|-t [tape]: backup to tape device, default /dev/tape"
+    echo "	--dir|-d [dir]: backup to the specified directory and file name"
+    echo "	--newtape|-n #: create a new tape, set TapeID to #"
+    echo "	--gzip|-z: same as tar -z"
+    echo "	--bzip2|-j: same es tar -j"
+    echo "	--verify|-W: same as tar -W"
+    echo "	--vebose|-v: same as tar -v"
+    echo "	--create|-c: same as tar -c"
+    echo "	--update|-u: same as tar -u"
+    echo "  Examples:"
+    echo "  \"ybackup szovat full --create --newtape --number 15\""
+    echo "   or in short format: \"ybackup szovat full -c -n -N 15\""
+    echo "  The above will backup szovat rule: full to a new tape marked as number 15"
+    echo "  \"ybackup szovat core --dir /tmp/test.tgz --gzip\""
+    echo "  Backup szovat rule: core to /tmp/test.tgz file with gzip"
+}
+
+# error: prints error messages to stdout and log file
+#  usage: error [-l] error_messages : use -l to send message to log file as well
+#  return: return 1 and exit srcipt
+# local variables: *_1
+error () {
+    test "$1" = "-l" && {
+	shift
+	echo "$DATE *** ERROR: $1 ; aborting operation" >> $YBACKUP_LOG_FILE
+    }
+    echo "ERROR: $1"
+    clean_up
+    exit 1
+}
+
+# make_exclude: create a file for a list ready for the exclude file forat
+#  usage: make_exclude list_of_exclude_dirs
+#  return: creates a file with one exclude dir in each line
+# local variables: *_2
+make_exclude () {
+    echo -n > $EXCLUDE_LIST 
+    for i_2 in $* ; do
+	echo $i_2 >> $EXCLUDE_LIST 
+    done
+} 
+
+# clean_up: cleans up temp files
+#  usage: clean_up ; preset EXCLUDE_LIST, MNT_PATH
+#  return: no return value
+# local variables: *_3
+clean_up () {
+    $RCMD rm -f $EXCLUDE_LIST >/dev/null 2>&1
+    rm -f $EXCLUDE_LIST >/dev/null 2>&1
+    (test -z "$REMOTE" || test "$REMOTE" = "false") && return 
+    test -d $MNT_PATH && {
+	i_3=`mount | grep $MNT_PATH/ 2>/dev/null`
+	while true ; do
+	    test -z "$i_3" && break
+	    i_3=${i_3#*on }
+	    ii_3=${i_3%% type*}
+	    test "$ii_3" = "${i_3% type*}" && {
+		umount $ii_3
+		break
+            }
+	    test "$ii_3" = "$MNT_PATH" && continue
+	    umount $ii_3
+	    i_3=`mount | grep $MNT_PATH 2>/dev/null`
+	done
+	umount "$MNT_PATH"
+	mount | grep $MNT_PATH 2>/dev/null
+        test "$?" = "0" && error "CLEAN_UP: umount $MNT_PATH"
+	rm -r $MNT_PATH
+    }																										    
+}
+
+# get_dir_size: get dir size of a list of dirs
+#  usage: get_dir_size list_of_dirs
+#  return: set sum dir size in DIR_SIZE
+# local variables: *_4
+get_dir_size () {
+    j_4=""
+    for i_4 in $* ; do
+	test "$i_4" = "-h" && {
+	    OPT_4="-h"
+	    continue
+	}
+	j_4="$j_4 ${BACKUP_FROM%/}/$i_4"
+    done
+    x_4=`$RCMD du -s -c $OPT_4 $j_4 2>/dev/null | grep total 2>/dev/null`
+    x_4=`echo $x_4`
+    DIR_SIZE=${x_4%% total}
+}
+
+# get dir size minus the exclude dirs in the second parameter (a file with the list like tar exclude)
+#  usage: getdirsize_excl dir_name filename_with_exclude_list_in extra_option_for_du
+#  return: set dir size in DIR_SIZE variable
+# local variables: *_5
+getdirsize_excl () {
+    FROM=$1 ; j_5=""
+    for i_5 in `$RCMD ls -A $1 2>/dev/null | grep --file=$2 -v 2>/dev/null` ; do
+	j_5="$j_5 ${FROM%/}/$i_5"
+    done 
+    x_5=`$RCMD du -s $3 -c $j_5 2>/dev/null | grep total 2>/dev/null`
+    x_5=`echo $x_5`
+    DIR_SIZE=${x_5%%total}
+}
+
+# ready2go: display set key parameters and gives a last exit point before backup starts
+#  usage: ready2go
+#  return: no return value
+# local variables: *_6
+ready2go () {
+    echo $LINES
+    echo "READY to start backup with the following settings"
+    echo $LINES
+    echo "Backup      = $BACKUP_SYS"
+    echo "Backup from =	$BACKUP_FROM" 
+    echo "Backup to   =	$BACKUP_TO"
+    echo "Backup this = $BACKUP_THIS"
+    echo "Tape number = $TAPE_NUMBER"
+    test "$BACKUP_TO" = "$TAPE" && echo "TapeID file = $TAPE_IDFILE$TAPE_NUMBER"
+    echo "Excludes:"
+    $RCMD cat $EXCLUDE_LIST 2>/dev/null
+    echo "Command: $YBACKUP_CMD"
+    test "$BACKUP_TO" = "$TAPE" && {
+	echo "Log history for TapeID_$TAPE_NUMBER:"
+	cat $YBACKUP_LOG_DIR/$TAPE_IDFILE$TAPE_NUMBER
+    }
+    echo -n "Calculating dir size. Please wait..."
+    if [ "$BACKUP_THIS" = "." ] ; then 
+	getdirsize_excl $BACKUP_FROM $EXCLUDE_LIST -h
+    else
+	get_dir_size $BACKUP_THIS -h
+    fi
+    printf "\r%s %-40s\n" "Size of selected source: " $DIR_SIZE
+    echo $LINES
+    echo -n "INPUT: Type (yes) to go: "
+    read x_6
+    test "$x_6" = "yes" && return 
+    error "Backup interrrupted by user"
+} 
+
+# make_newtape: erase a tape and init it with the specified tape id
+#  usage: make_newtape : need TAPE_NUMBER, NEWTAPE been preset
+#  return: no return value
+# local variables: *_7
+make_newtape () {
+    test "$NEWTAPE" = "true" && test "$TAPE_NUMBER" = "" && {
+	echo -n "INPUT: Specify new tape number: "
+	read number_7
+	test "$number_7" = "" && error "Invalid tape number specified"
+	TAPE_NUMBER="$number_7"
+    }
+    echo "This is to mark the tape" > $TMP/$TAPE_IDFILE$TAPE_NUMBER
+
+    printf "%-40s\r" "INFO: Rewind new tape..."
+    mt -f $TAPE rewind ; test "$?" != "0" && return 1
+
+    printf "%-40s\r" "INFO: Erase new tape..."
+    mt -f $TAPE erase ; test "$?" != "0" && return 1
+
+    printf "%-40s\r" "INFO: Creating TapeID file..."
+    tar -c -C $TMP -f $TAPE $TAPE_IDFILE$TAPE_NUMBER 
+    test "$?" != "0" && return 1
+
+    printf "%-40s\r" "INFO: Create log file"
+    test -f $YBACKUP_LOG_DIR/$TAPE_IDFILE$TAPE_NUMBER && {
+	cat $YBACKUP_LOG_DIR/$TAPE_IDFILE$TAPE_NUMBER >> $YBACKUP_LOG_DIR/$TAPE_IDFILE$TAPE_NUMBER.o
+    }
+    echo `$DATE` "-- New tape created." > $YBACKUP_LOG_DIR/$TAPE_IDFILE$TAPE_NUMBER 
+    printf "%-40s\n" "INFO: New tape created OK"
+    rm -f $TMP/$TAPE_IDFILE$TAPE_NUMBER >/dev/null 2>&1
+    return 0
+}
+
+# check_tape: check if the correct tape is in the tape drive
+# local variables: *_8
+check_tape () {
+    printf "%-40s\r" "INFO: Rewinding tape..."
+    mt -f $TAPE rewind ; test "$?" != "0" && return 1
+
+    printf "%-40s\r" "INFO: Reading TapeID file..."
+    test ! `tar tf $TAPE` = "$TAPE_IDFILE$TAPE_NUMBER" && {
+	printf "%-40s\r" " "
+	return 1
+    }
+    printf "%-40s\r" "INFO: TapeID OK, position tape..."
+    mt -f $TAPE eom >/dev/null 2>&1 
+    test "$?" != "0" && mt -f $TAPE eod >/dev/null 2>&1
+    test "$?" != "0" && return 1
+
+    printf "%-40s\n" "INFO: Tape ready"
+    test -r $YBACKUP_LOG_DIR/$TAPE_IDFILE$TAPE_NUMBER || error "Reading $YBACKUP_LOG_DIR/$TAPE_IDFILE$TAPE_NUMBER"
+    echo "INFO: Tape_ID file OK"
+    return 0
+}
+
+# sel_dirs: let you select directories to backup from the specified directory
+#  usage: sel_dir source_dir
+#  return: selected dir list in BACKUP_THIS
+# local variables: *_9
+sel_dirs () {
+    MAX_DIR_9=10 ; LSCOM_9="$RCMD ls -F -A $1"
+    FROM_9=$1 ; FROM_9=${FROM_9%/}
+    DIR_LIST_9=""
+    while true ; do 
+	echo $LINES
+	echo "  # : Saved In     Size  Name"
+	echo $LINES
+	j_9=1
+	for i_9 in `$LSCOM_9` ; do
+	    DIR_SIZE=""
+	    get_dir_size $i_9 "-h"
+	    test "$DIR_SIZE" = "0" && continue
+	    DIR_LIST_9="$DIR_LIST_9 $i_9"
+	    printf "%3d %s" $j_9 ": "
+	    SAVED_9=`$RCMD ls $FROM_9/$i_9/$TAPE_IDFILE* 2>/dev/null`
+	    SAVED_9=${SAVED_9##*/}
+	    test -z $SAVED_9 && SAVED_9="not_saved"
+	    test -z $DIR_SIZE && DIR_SIZE="------"
+	    printf "%-10s %6s  %s\n" $SAVED_9 $DIR_SIZE $i_9
+	    j_9=$(($j_9+1))
+	done
+	echo $LINES
+	echo -n "INPUT: Please select what to archive (max $MAX_DIR_9): "
+	read num1 num2 num3 num4 num5 num6 num7 num8 num9 num10
+	test "$?" != "0" && error "Read input"
+	j_9=1 ; k_9=1 ; BACKUP_THIS=""
+	for i_9 in $DIR_LIST_9 ; do
+	    test $((num$k_9)) = $j_9 && {
+		BACKUP_THIS="$BACKUP_THIS $i_9"
+		k_9=$(($k_9+1))
+		test "$k_9" -gt $MAX_DIR_9 && break
+	    }
+	    j_9=$(($j_9+1))
+	done
+	echo $LINES
+	get_dir_size $BACKUP_THIS "-h"
+	echo "INFO: Selected dirs: $BACKUP_THIS"
+	echo "INFO: Total size: $DIR_SIZE"
+	echo $LINES
+	echo -n "INPUT: Check your selection above. Is it OK (y): "
+	read x_9
+	test "$x_9" = "y" && return 0
+    done
+}
+
+# ============================
+# main srcipt start here
+# ============================
+# command line interpreter
+case "$1" in
+    "")			echo $USAGE ; echo $VERSION ; exit ;;
+    --help|-h)      	help ; exit ;;
+    --version|-V)	echo $VERSION ; exit ;;
+    --cleanup)
+	REMOTE="false"
+	test ! -z "$2"  && { 
+	    REMOTE="true"
+	    BACKUP_HOSTNAME="$2"
+	    BACKUP_USER=$3
+	    test ! -z $3 && BACKUP_USER="-l $BACKUP_USER"
+	    RCMD="rsh $BACKUP_USER $BACKUP_HOSTNAME"
+	}
+    	EXCLUDE_LIST=${EXCLUDE_LIST%.*}*
+	clean_up
+	test "$REMOTE" != "false" && exit
+	MNT_PATH=${MNT_PATH%.*}
+	ii=${MNT_PATH%/*}
+	cd $ii
+	test "$?" -gt "0" && exit
+	for i in `ls | grep ${MNT_PATH##*/} 2>/dev/null` ; do
+	    MNT_PATH=$ii/$i
+	    clean_up
+	done
+	exit 
+    ;;
+    --show_tapehist|-s)
+	cd $YBACKUP_LOG_DIR
+	echo `$DATE`" ybackup history files snap shot"> $TMP/ybackup_hist
+	for i in `ls -A $TAPE_IDFILE*` ; do
+	    echo $LINES >> $TMP/ybackup_hist
+	    echo $i >> $TMP/ybackup_hist
+	    cat $i >> $TMP/ybackup_hist
+	    echo $LINES >> $TMP/ybackup_hist
+	done
+	cat $TMP/ybackup_hist
+	rm $TMP/ybackup_hist
+	exit 0
+    ;;
+    -*) 		echo $USAGE ; exit 1 ;;
+    select_dirs)
+	make_exclude ""
+	BACKUP_HOSTNAME=`uname -n`
+	case $2 in
+	    ""|-*) 
+		echo -n "INPUT: Please specify parent directory: "
+		read BACKUP_FROM
+	    ;;
+	    *)	BACKUP_FROM="$2" ; shift ;;
+	esac
+	REMOTE="false"
+	Y_HOST=${BACKUP_FROM%%:*}
+	Y_USER=${Y_HOST%%@*}
+	Y_HOST=${Y_HOST##*@}
+	test "$Y_HOST" != "$BACKUP_FROM" && {
+	    test "$Y_USER" != "$Y_HOST" && BACKUP_USER="-l $Y_USER"
+	    BACKUP_HOSTNAME=$Y_HOST
+	    RCMD="rsh $BACKUP_USER $BACKUP_HOSTNAME $RCMD"
+	    BACKUP_FROM=${BACKUP_FROM#*:}
+	    REMOTE="rsh"
+	    $RCMD cat ">" $EXCLUDE_LIST < $EXCLUDE_LIST
+	}
+	sel_dirs $BACKUP_FROM
+	BACKUP_SYS="$BACKUP_HOSTNAME -> $BACKUP_THIS"
+    ;;
+    *)
+	SYS_NAME="$1"
+	test -r "$RULE_PATH/rc.$SYS_NAME" || error "Cannot read $RULE_PATH/rc.$SYS_NAME"
+	RULE="$2"
+	test -z $RULE && {
+	    echo $LINES
+	    cat "$RULE_PATH/rc.$SYS_NAME" | grep '_PATH="'
+	    echo $LINES
+	    error "No backup rule specified. See available rules above and try again"
+	}
+	shift
+	. "$RULE_PATH/rc.$SYS_NAME"
+	
+	eval BACKUP_EXCLUDE='$'$RULE"_EXCLUDE"
+	eval BACKUP_FROM='$'$RULE"_PATH"
+	eval TAPE_NUMBER='$'$RULE"_TAPE"
+	eval GET_PARAM='$'$RULE"_THIS"
+
+	if [ -z "$GET_PARAM" ] ; then 
+	    BACKUP_THIS="."	
+	else 
+	    BACKUP_THIS=$GET_PARAM
+	fi
+
+	BACKUP_SYS="$SYS_NAME rule: $RULE"
+	make_exclude $BACKUP_EXCLUDE
+	case "$REMOTE" in
+	    nfs) 
+		test ! -d $MNT_PATH && mkdir -p $MNT_PATH
+		mount -t nfs -r $BACKUP_HOSTNAME:$BACKUP_FROM $MNT_PATH
+		test "$?" != "0" && error "Mount $BACKUP_HOSTNAME:$BACKUP_FROM"
+		
+		eval SYS_MOUNT='$'$RULE"_MOUNT"	
+		for i in $SYS_MOUNT ; do
+		    mount -t nfs -r $BACKUP_HOSTNAME:$i $MNT_PATH$i
+		    test "$?" != "0" && error "Mount $BACKUP_HOSTNAME:$i"
+		done
+		BACKUP_FROM=$MNT_PATH 
+    	    ;;
+	    rsh) 
+		eval GET_PARAM='$'$RULE"_USER"
+		test -z "$GET_PARAM" || REMOTE_USER=$GET_PARAM
+
+		test ! -z "$REMOTE_USER" && REMOTE_USER="-l $REMOTE_USER"
+		RCMD="rsh $REMOTE_USER $BACKUP_HOSTNAME"
+		
+		test -z "$RSH_LOCAL_TMP" && RSH_LOCAL_TMP="/tmp"
+		$RCMD cat ">" $RSH_LOCAL_TMP/${EXCLUDE_LIST##*/} < $EXCLUDE_LIST
+		rm -f $EXCLUDE_LIST >/dev/null 2>&1
+		EXCLUDE_LIST=$RSH_LOCAL_TMP/${EXCLUDE_LIST##*/}    		
+	    ;;
+	esac
+	test "$BACKUP_THIS" = "ask"  && {
+	    sel_dirs $BACKUP_FROM
+	}
+    ;;
+esac
+
+shift
+while [ "$1" != "" ] ; do
+    case $1 in
+	--tape|-t)	
+	    case $2 in
+		""|-*) BACKUP_TO="$TAPE" ;;
+		*)	BACKUP_TO="$2" ; TAPE="$2" ; shift ;;
+	    esac 
+	    mt tell 1>&/dev/null 2>/dev/null
+	    TARFILE_EXT=""
+	    sleep 4 
+	;;
+	--dir|-d)	
+	    case $2 in
+		""|-*) ;;
+		*)	BACKUP_TO="$2" ; shift ;;
+	    esac 
+	    TAPE_NUMBER=""
+	;;	
+	--newtape|-n)	
+	    NEWTAPE="true"
+	    case $2 in
+		""|-*) ;;
+		*)	TAPE_NUMBER="$2" ; shift ;;
+	    esac 
+	;;
+	--gzip|-z)	TAR_OPT="-z $TAR_OPT" ;;
+	--bzip2|-j)	TAR_OPT="-j $TAR_OPT" ;;
+	--update|-u)	TAR_OPT="-u $TAR_OPT" ;;
+	--create|-c)	TAR_OPT="-c $TAR_OPT" ;;
+	--verify|-W)	TAR_OPT="-W $TAR_OPT" ;;
+	--verbose|-v)	TAR_OPT="-v $TAR_OPT" ;;
+	-y)		INTERACTIVE="false" ;;
+    esac
+    shift
+done
+
+# -------------------------------------------------------------
+# main body
+
+# check source and destination
+test -z "$BACKUP_FROM" && error "Source not specified"
+test -z "$BACKUP_TO" && error "Destination not specified"
+
+case "$REMOTE" in
+    rsh)
+	test -z `$RCMD "test -d $BACKUP_FROM && echo OK"` && {
+	    error "Bad rule path: $BACKUP_HOSTNAME:$BACKUP_FROM"
+	}
+    ;;
+    *)	test -d $BACKUP_FROM || error "Bad rule path: $BACKUP_FROM" ;;
+esac
+
+# check destination media
+if [ "$BACKUP_TO" = "$TAPE" ] ; then
+    if [ "$NEWTAPE" = "true" ] ; then 
+	make_newtape
+	test "$?" != "0" && error "Create new tape"
+    else
+	test "$TAPE_NUMBER" = "" && {
+	    test "$INTERACTIVE" = "true" || error "No tape number specified"
+	    echo -n "INPUT: Specify tape number: "
+	    read TAPE_NUMBER
+	} 
+	check_tape $TAPE_NUMBER
+	test "$?" != "0" && error "Invalide tape number"
+    fi
+fi
+
+# assemble final backup command
+YBACKUP_CMD="$RCMD tar $TAR_OPT -O -C $BACKUP_FROM -X $EXCLUDE_LIST $BACKUP_THIS"
+
+# do final check with user
+test "$INTERACTIVE" != "false" && ready2go
+
+# run backup
+TAR_ERROR="no error"
+echo "INFO: "`$DATE`" PID=$$: Star backup..."
+echo `$DATE`" PID=$$: Start: $YBACKUP_CMD" >> $YBACKUP_LOG_FILE
+$YBACKUP_CMD > $BACKUP_TO
+test "$?" -gt "0" && TAR_ERROR="error"
+echo `$DATE`" PID=$$: Finished with $TAR_ERROR" >> $YBACKUP_LOG_FILE
+
+if [ "$BACKUP_TO" = "$TAPE" ] ; then 
+    test "$TAR_ERROR" = "error" && {
+        echo "ERROR: Creating tar files"
+	echo `$DATE` "*** ERROR: Tar exited with error! ***" \
+	 >> $YBACKUP_LOG_DIR/$TAPE_IDFILE$TAPE_NUMBER
+    }
+    echo `$DATE` "-- Tape updated with $BACKUP_SYS" \
+      >> $YBACKUP_LOG_DIR/$TAPE_IDFILE$TAPE_NUMBER
+    echo "             End " `mt tell` >> $YBACKUP_LOG_DIR/$TAPE_IDFILE$TAPE_NUMBER
+    mt rewind
+    sleep 2
+fi
+
+# update log file in source directories
+BACKUP_FROM=${BACKUP_FROM%/}
+for i in $BACKUP_THIS ; do
+    i="/$i"
+    test "$BACKUP_THIS" = "." && i="/"
+    $RCMD rm -f $BACKUP_FROM/$TAPE_IDFILE* >/dev/null 2>&1
+    if [ "$REMOTE" = "false" ] ; then
+	$RCMD echo "`$DATE` Last backup with $TAR_ERROR" > $BACKUP_FROM$i$TAPE_IDFILE$TAPE_NUMBER
+    else
+	$RCMD echo "`$DATE` Last backup with $TAR_ERROR" ">" $BACKUP_FROM$i$TAPE_IDFILE$TAPE_NUMBER
+    fi
+
+done
+
+echo "INFO: "`$DATE`" PID=$$: Backup finished"
+
+# --------------------------------------------------------------
+# clean up and exit
+clean_up
+
+# end of ybackup

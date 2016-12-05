@@ -1,0 +1,19 @@
+#!/bin/bash
+
+LIMIT=1000 # ms
+
+test -n "$1" || {
+    echo "Usage $0 input_file [limit]"
+    exit
+}
+test -n "$2" && LIMIT=$2
+
+while read -r x
+do 
+    `echo $x | grep icmp_seq 2>&1 > /dev/null`
+    test "$?" != 0 && continue
+    y=${x##*time=}
+    y=${y%.*}
+    y=${y%m*}
+    test "${y}" -gt $LIMIT && echo $y
+done < $1

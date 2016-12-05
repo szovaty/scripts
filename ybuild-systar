@@ -1,0 +1,93 @@
+#!/bin/bash
+# build system tar file for install
+
+trap y_exit TERM HUP INT
+
+USE_COLOR="yes"
+USE_POS="yes"
+VERSION="0.0"
+LAST_MOD="2006.02.22"
+L_DATE="date +%Y%m%d-%H%M"
+Y_DEBUG="true"
+
+Y_FUNC="/proj/y_functions/y_functions.sh"
+test -r ${Y_FUNC} && source ${Y_FUNC}
+test "$?" -ne 0 && { echo "Error to source $Y_FUNC" ; exit 1 ; }
+
+# set defaults
+LOG="/tmp/ybuild-systar.log"
+BUILD_DATE=`${L_DATE}`
+TEST_ONLY=""
+test -z "${TMP}" && TMP="/tmp/${0##*/}_$$"
+#test -z "${SOURCE_DIR}" && SOURCE_DIR="/big/firewall"
+test -z "${DEST_DIR}" && DEST_DIR="/tmp"
+
+y_start
+
+# get command line options
+while [ -n "$1" ] ; do
+    case "$1" in
+		--help|-h) 			y_help "[options]" ;;		#; Print this help
+		--test|-t) 			TEST_ONLY="true" ;;			#; Make a test install image [TEST_ONLY]
+		--save|-s) 			TEST_ONLY="" ;;				#; Make a non test install image - default
+		--source|-S) 		shift ; SOURCE_DIR="$1" ;;	#; Define source directory for image [SOURCE_DIR]
+		--dest_dir|-D)		shift ; DEST_DIR="$1" ;;	#; Define dir [DEST_DIR]
+		--dest|-d) 			shift ; DEST_FILE="$1" ;;	#; Define destination file [DEST_FILE]
+		--exclude|-e) 		shift ; EXCLUDE_FILE="$1" ;;#; Define source exclude files [EXCLUDE_FILE]
+		--tmp|-T)			shift ;	TMP="$1" ;;			#; Define TMP directory [TMP]
+    esac
+    shift
+done
+
+# check settings
+test ! -d "${SOURCE_DIR}" && y_fatal_error "Source dir ${SOURCE_DIR} does not exists"
+test -z "${EXCLUDE_FILE}" && EXCLUDE_FILE="${SOURCE_DIR}/build.exclude"
+test ! -r ${EXCLUDE_FILE} && y_fatal_error "Exclude file ${EXCLUDE_FILE} is not readable"
+test -z "${DEST_FILE}" &&  DEST_FILE="${SOURCE_DIR##*/}"
+
+#Y_DRY_RUN=true
+y_run_cmd "mkdir -p ${TMP}"
+
+DELETE_ON_EXIT="${TMP}"
+
+# check if we run as root:root
+test `id -u -r` != 0 || test `id -g -r` != 0 && { echo "Only root can run this!" ; exit 1 ; }
+
+y_info 2 "Source dir: $SOURCE_DIR"
+y_info 2 "Dest dir:   $DEST_DIR"
+y_info 2 "Output file: $DEST_FILE"
+y_info 2 "Flags: MKTEST=${TEST_ONLY}"
+
+# update boot image
+BOOT_IMAGE_SOURCE="${SOURCE_DIR}/usr/src/linux/arch/i386/boot/bzImage"
+if [ -n "${TEST_ONLY}" ] ; then  EXT=".test" ; else EXT="" ; fi
+BOOT_IMAGE_DEST="${SOURCE_DIR}/boot/vmlinuz${EXT}"
+test "$BOOT_IMAGE_SOURCE" -nt "${BOOT_IMAGE_DEST}" && {
+	y_info 0 "Boot file is new, update it..."
+	test -z "${TEST_ONLY}" &&
+		test -f "${BOOT_IMAGE_DEST}" && y_run_cmd "mv ${BOOT_IMAGE_DEST} ${BOOT_IMAGE_DEST}.old"
+	y_run_cmd "cp ${BOOT_IMAGE_SOURCE} ${BOOT_IMAGE_DEST}"
+	y_run_cmd "cp ${SOURCE_DIR}/usr/src/linux/System.map ${SOURCE_DIR}/boot"
+}
+
+# copy system to temp dir
+y_run_cmd "rsync -arq --delete --delete-excluded --exclude-from=${EXCLUDE_FILE} ${SOURCE_DIR}/ ${TMP}"
+y_run_cmd "mknod ${TMP}/dev/null c 1 3"
+y_run_cmd "mknod ${TMP}/dev/console c 5 1"
+y_run_cmd "mknod ${TMP}/dev/tty1 c 4 1"
+y_run_cmd "mkdir -p ${TMP}/dev/fb"
+y_run_cmd "mkdir -p ${TMP}/dev/vc"
+y_run_cmd "mkdir -p ${TMP}/dev/misc"
+y_run_cmd "touch ${TMP}/var/log/lastlog"
+y_run_cmd "mkdir -p ${TMP}/var/log/news"
+y_run_cmd "mkdir -p ${TMP}/boot"
+y_run_cmd "cp ${SOURCE_DIR}/usr/share/zoneinfo/GMT ${TMP}/usr/share/zoneinfo/GMT"
+
+# create misc. files on loop
+echo ${BUILD_DATE} > ${MNT}/.build
+
+# tar and compress dest file
+y_info 0 "Tar and compress install file..."
+y_run_cmd "tar -c -C ${TMP} -j -f $DEST_DIR/$DEST_FILE.tar.bz2 ."
+y_info 0 "Tar file is ready!"
+y_exit

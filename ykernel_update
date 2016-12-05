@@ -1,0 +1,10 @@
+#!/bin/bash
+
+mount -o remount,rw /boot
+cp /boot/vmlinuz /boot/vmlinuz.safe
+cp /boot/System.map /boot/System.safe
+cd /usr/src/linux
+make bzlilo modules modules_install
+emerge -q1 x11-drivers/nvidia-drivers app-emulation/virtualbox-modules app-emulation/virtualbox-extpack-oracle
+echo "you need to run 'emerge -1 udev' after rebooted to the new kernel!"
+

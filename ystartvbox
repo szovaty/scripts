@@ -1,0 +1,2 @@
+VBoxHeadless --startvm linux_gentoo_2.6_test --vrdp on --vrdpport 3389 &
+

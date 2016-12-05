@@ -1,0 +1,11 @@
+# config file for ydvdlib utility
+
+TMP="/tmp"
+
+DVDLIB_PATH="/home/jenov/tmp/dvdlib"
+DVDLIB1_PATH="/home/jenov/tmp/dvdlib/dvdlib1"
+TAPE=""
+LOG_FILE="$DVDLIB_PATH"
+DVD="/dvd"
+RIPPER_DVD="/usr/local/bin/ydvd"
+INFO_TEMPLATE="$DVDLIB_PATH/info"

@@ -1,0 +1,234 @@
+#!/bin/bash
+# v.1.2:
+# v1.3: fix last backup file not been overwritten
+# v2.0: make more generic for archive any part of the filesystem
+#	and add policy feature
+# V2.1: add full archive only -> no update
+# V2.2: fix exclude file location bug
+# V2.3: fix file rotate function, fill-up holes
+# v2.3.1: fix filename definition in config file
+# v2.4: add backup copy function
+# v2.4.1: add ccopy function
+# v3.0: rewrite to use y_functions.sh, add compression mode selection
+
+trap y_exit TERM HUP INT
+
+RC_VERSION_MIN=3
+
+# Global definition
+USE_COLOR="yes"
+USE_POS="yes"
+USE_BELL="no"
+
+# Define log file here
+LOG="/var/log/${0##*/}.log"
+
+# Source the function library
+FUNCTIONS="/bin/y_functions.sh"
+test -r ${FUNCTIONS} && source ${FUNCTIONS}
+
+# define the following to match the program current state
+PROGRAM_NAME="yarchive"
+VERSION="3.0"
+LAST_MOD="2011.06.29"
+
+
+# Uncomment this if you need debug enabled
+#Y_DEBUG="true"
+
+DATE=`date +%Y%m%d`
+HOST=`uname -n`
+HOST=${HOST%%.*}
+
+# command name definitions
+TARFULL="-c"
+TARUPDATE="-u"
+TARSNAP="-s"
+TARPARAMS=""
+COPY="copy"
+BCOPY="bcopy"
+CCOPY="ccopy"
+
+# Default definitions
+YARCHIVERC="/etc/yarchive.rc"
+EXCLUDE_FILE="/tmp/yarchive_exclude.$$"
+BACKUP_DEST="/backup"
+SOURCE="."
+FILE="$HOST"
+EXCLUDE=""
+BLEVELS="1"
+
+# define last command before exit
+LAST_CMD="rm -f $EXCLUDE_FILE"
+
+# generic funtion definitions
+make_exclude () {
+    y_run_cmd "rm -f $EXCLUDE_FILE"
+    for me_i in $* ; do
+		echo $me_i >> $EXCLUDE_FILE
+    done
+}
+
+# rotate files by filling up missing ones
+#  so if we have 0,1,2,4 is will create 0,1,2,3,4 where 0 is the latest file
+rotate_archive () {
+    for (( i=0 ; $(($BLEVELS-$i)) ; i=$(($i+1)) )) ; do
+		y_debug 1 "======== rotate_archive: i=$i ==========================================="
+		if [ -r $FILE.$i$EXT ] ; then 
+		    if [ -f $FILE.$(($i+1))$EXT ] ; then
+				y_run_cmd "mv -f $FILE.$i$EXT $FILE.$(($i+1))$EXT.tmp"
+	    		test -f "$FILE.$i$EXT.tmp" && y_run_cmd "mv -f $FILE.$i$EXT.tmp $FILE.$i$EXT"
+		    else 
+				y_run_cmd "mv -f $FILE.$i$EXT $FILE.$(($i+1))$EXT"
+				break
+		    fi
+		    test -f "$FILE.$i$EXT.tmp" && y_run_cmd "mv -f $FILE.$i$EXT.tmp $FILE.$i$EXT"	    
+		else 
+		    break
+		fi
+	done
+    test -f "$FILE.$i$EXT.tmp" && y_run_cmd "mv -f $FILE.$i$EXT.tmp $FILE.$i$EXT"
+}
+
+
+# read command line parameters
+test -z "$1" && { y_help "[Options]"; y_exit; }
+
+while [ -n "$1" ] ; do
+    case $1 in
+		--help|-h)				y_help "[Options]"; y_exit;;	#; Help
+		--update|-u|--daily)	CMD=$TARUPDATE ;;				#; Daily archive
+		--full|-f|--weekly)		CMD=$TARFULL ;;					#; Weekly archive
+		--monthly|--copy)		CMD=$COPY ;;					#; Monthly archive
+		--snap|-s)				CMD=$TARSNAP ;;					#; Snapshot
+		--bcopy|-b)				CMD=$BCOPY ;;					#; Backup copy
+		--ccopy|-c)				CMD=$CCOPY ;;					#; Carbon copy
+		--compress)				COMP="$2" ; shift ;;			#; Compression to use -j,-z,none [COMP]
+		--config)				YARCHIVERC="$2"; shift ;;		#; Config file [YARCHIVERC]
+		--file|-F)				FILE_NAME="$2"; shift;;			#; Output file name
+		--ext)					EXT="$2"; shift ;;				#; File extension [EXT]
+		--debug)				Y_DEBUG="true";;				#; Enable debug mode
+		-*)		echo "ERROR: $1 is unknown command!" ; exit ;;
+		*)		POLICY=$1
+    esac
+    shift    
+done
+
+# read config file
+if [ ! -z $YARCHIVERC ] ; then
+    . $YARCHIVERC
+else
+    if [ -r "/etc/yarchive.rc" ] ; then
+	. /etc/yarchive.rc
+    fi
+fi
+
+# set parameters from the config file
+eval COMMENT='$'$POLICY"_COMMENT"
+if [ "$COMMENT" = "" ] ; then
+    warning "$POLICY policy definition can not find! Using defaults."
+else
+    eval BACKUP_DEST='$'$POLICY"_BACKUP_DEST"
+    eval SOURCE='$'$POLICY"_SOURCE"
+    eval EXCLUDE='$'$POLICY"_EXCLUDE"
+    eval LOG_RC='$'$POLICY"_LOG"
+    eval BLEVELS='$'$POLICY"_BLEVELS"
+    eval FILE_OUT='$'$POLICY"_FILENAME"
+    eval TAREXTRA='$'$POLICY"_TAREXTRA"
+    eval BCOPY_DEST='$'$POLICY"_BCOPY_DEST"
+    FILE=$HOST.$POLICY
+    test -n "$FILE_OUT" && FILE=$FILE_OUT
+    TARPARAMS="$TARPARAMS $TAREXTRA $COMP"
+	eval EXT_RC='$'$POLICY"_EXT"
+fi
+
+test -n "$FILE_NAME" && FILE="$FILE_NAME"
+
+# check parameters
+test -n "$LOG_RC" && LOG="$LOG_RC"
+
+# =============================================================================================
+y_start
+
+# check to make sure the config file is not too old version
+test "${RC_VERSION}" -lt $RC_VERSION_MIN && y_fatal_error "Config file verion is too old! $RC_VERSION"
+
+# do some other checks
+if [ -d "$BACKUP_DEST" ] ; then
+    cd $BACKUP_DEST >> $LOG 2>&1
+else
+    error "$BACKUP_DEST is not find!"
+fi
+test -d "$SOURCE" || error "$SOURCE is not find!"
+test $BLEVELS -ge 0 || error "Backup level=$BLEVELS is too low!" 
+if [ -z "$EXT" ] ; then
+	test -n "$EXT_RC" && EXT="$EXT_RC"
+fi
+
+if [ ! -z $YARCHIVERC ] ; then
+    y_debug "Using $YARCHIVERC as config file"
+else
+    if [ -r "/etc/yarchive.rc" ] ; then
+		y_debug "Using /etc/yarchive.rc as config file"
+    else
+		y_warning "No rc file specified! Using defaults."
+    fi
+fi
+
+# print debug info
+y_debug "LOG file=$LOG"
+y_debug "RC_VERSION=$RC_VERSION"
+y_debug "BACKUP_DEST=$BACKUP_DEST"
+y_debug "SOURCE=$SOURCE"
+y_debug "EXCLUDE=$EXCLUDE"
+y_debug "POLICY=$POLICY"
+y_debug "BLEVELS=$BLEVELS"
+y_debug "FILE=$FILE"
+y_debug "CMD=$CMD"
+y_debug "TARPARAMS=$TARPARAMS"
+y_debug "BCOPY_DEST=$BCOPY_DEST"
+y_debug "EXT=$EXT"
+
+# create exclude list
+make_exclude $EXCLUDE
+
+# do the actual task now
+case $CMD in
+    $TARUPDATE)
+	CMD="$TARFULL" ; test -f $FILE && CMD="$TARUPDATE" 
+	y_run_cmd "tar $TARPARMS $CMD -C $SOURCE -X $EXCLUDE_FILE  -f $FILE$EXT ."
+    ;;
+    $TARFULL)
+	y_run_cmd "tar $TARPARMS $CMD -C $SOURCE -X $EXCLUDE_FILE -f $FILE$EXT.tmp ."
+	test "$?" = "1" && error "Tar exited with error!"
+	rotate_archive
+	test -f $FILE && {
+	    y_run_cmd "mv -f $FILE$EXT $FILE.0$EXT"
+	}
+	y_run_cmd "mv -f $FILE$EXT.tmp $FILE$EXT"
+    ;;
+    $TARSNAP)
+	y_run_cmd "tar $TARPARAMS -c -C $SOURCE -X $EXCLUDE_FILE -f $FILE$EXT ."
+	test "$?" = "1" && error "Tar exited with error!"
+	rotate_archive
+	test -f "$FILE$EXT" && {
+	    y_run_cmd "mv -f $FILE$EXT $FILE.0$EXT"
+	}
+    ;;
+    
+    $COPY)
+	test -f "$FILE.0$EXT" && y_run_cmd "cp $FILE.0$EXT $FILE.`date +%Y%m`$EXT"
+    ;;
+    $BCOPY)
+	test -f "$FILE.0$EXT" && y_run_cmd "cp -a $FILE.0$EXT $BCOPY_DEST/$FILE.`date +%Y%m`$EXT"
+    ;;
+    $CCOPY)
+	test -f "$FILE.0$EXT" && y_run_cmd "cp -a $FILE.0$EXT $BCOPY_DEST"
+    ;;
+
+    *)
+	echo "ERROR: [$CMD] Unknown option!" >> $LOG
+    ;;
+esac
+
+y_exit

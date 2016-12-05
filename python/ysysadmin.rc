@@ -1,0 +1,23 @@
+# Config file for ysysadmin utility
+
+[global]
+cfgversion  = 0.1
+quiet       = false
+pretend     = false
+
+[kernel]
+source          = /usr/src_1/linux
+build           = bzlilo modules modules_install
+backup          = true
+prebuild        = mount -o remount,rw /boot
+postbuild       = mount -o remount,ro /boot
+
+[gentoo]
+options         = -uDN world
+prebuild        = yarchive -s sys
+postbuild       = revdep-repuild -i -p
+
+[system]
+shutdown        = init 0
+hibernate       = echo disk > /sys/power/state
+suspend         = echo mem > /sys/power/state

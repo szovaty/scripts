@@ -1,0 +1,68 @@
+#!/bin/bash
+# local file server daily cron script
+
+DEBUG=""
+V=1
+PECHO="-->"
+
+RSYNC="rsync"
+YARCHIVE="/usr/local/bin/yarchive"
+
+LFS="/xfs"
+CFS="cfs:"
+CFS_USER="jenov"
+
+OPTION="-rlpgoDx --partial --delete"
+
+if [ -z $DEBUG ] ; then 
+	OPTIONS="$OPTION -q"
+	LOG="/var/log/ycron.log"
+else 
+	OPTIONS="$OPTION -v"
+	LOG="/tmp/ycron.log"
+fi
+
+
+echo "*** Start ycron_LFS_daily `date` ***" >> $LOG
+test $V -ge 2 && echo "OPTIONS: $OPTIONS" >> $LOG
+
+#--------------------------------------------------------------
+# rsync '/data/' to CFS
+
+EXCLUDES="--exclude=tmp/ --exclude=.~lock.*# --exclude=InstallSources/"
+test -n "x" && {
+
+	test $V -ge 1 && echo "$PECHO rsync /data/ to $CFS/data/" >> $LOG 2>&1
+	test $V -ge 2 && echo "EXCLUDES: $EXCLUDE" >> $LOG
+	su $CFS_USER -c "$RSYNC $OPTIONS --bwlimit=15 $EXCLUDES /data/ $CFS/data/" >> $LOG 2>&1
+
+}
+#--------------------------------------------------------------
+
+#--------------------------------------------------------------
+# rsync '/proj/' to $CFS:/proj
+
+test -n "x" && {
+
+	EXCLUDES="--exclude=exosite/insync/ --exclude=exosite/grive/ --exclude=tmp/ --exclude=.~lock.*# --exclude=falcon/projects/ --exclude=.svn/ --exclude=lpd/ --exclude=sedeq/coreboot/sw/ --exclude=sedeq/bingo/"
+	test $V -ge 1 && echo "$PECHO rsync /proj/ to $CFS/proj/" >> $LOG 2>&1
+	test $V -ge 2 && echo "EXCLUDES: $EXCLUDE" >> $LOG
+	su $CFS_USER -c "$RSYNC $OPTIONS --bwlimit=15 $EXCLUDES /proj/ $CFS/proj/" >> $LOG 2>&1
+
+}
+#--------------------------------------------------------------
+
+#--------------------------------------------------------------
+# archive important data
+test -n "x" && {
+	LIST="titkok"
+	for i in $LIST ; do	
+		test $V -ge 1 && echo "$PECHO yarchive -s $i" >> $LOG 2>&1
+		$YARCHIVE -s $i >> $LOG 2>&1
+	done
+
+}
+#--------------------------------------------------------------
+
+
+echo "***   End ycron_LFS_daily `date` ***" >> $LOG

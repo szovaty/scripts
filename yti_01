@@ -1,0 +1,74 @@
+#!/bin/bash
+# vim:set ts=4:
+
+trap _exit INT HUP TERM
+
+set -e
+
+VERSION="1.0-rc1 2015.06.01 by y"
+
+DIR="$HOME/titkok"
+if [ -n "$2" ]; then
+    FILENAME="$DIR/$2"
+else 
+    FILENAME="$DIR/titkok.01"
+fi
+TMPFILE="$HOME/.tmpfile.$$"
+AES=`which aescrypt`
+
+test -z "$EDITOR" && EDITOR="vi"
+
+version () {
+    echo $VERSION
+}
+
+help () {
+    echo "USAGE: $0 [option] filename"
+    echo "	options:"
+    echo "		--help|-h: 	help message"
+    echo "		--version|-V: 	display version info"
+    echo "		--view|-v: 	display file"
+    echo "		--edit|-e: 	edit file"
+}
+
+unknown_command () {
+    help
+}
+
+_exit () {
+    rm -f $TMPFILE $FILENAME.$$ &>/dev/null
+    exit
+}
+
+test -x "$AES" || { echo "Bin error: $AES"; _exit; }
+test -r "$FILENAME" || { echo "Input error: $FILENAME"; _exit; }
+
+case "$1" in
+    --version|-V) version ;;
+    --help|-h)	help ;;
+    --view|-v)	
+        $AES -d -o $TMPFILE $FILENAME
+        chmod 400 $TMPFILE
+        less -I $TMPFILE
+	    echo
+    ;;
+    --edit|-e)
+        test -f $FILENAME && {
+            $AES -d -o $TMPFILE $FILENAME
+            test "$?" = "0" || _exit
+            mv $FILENAME $FILENAME.back
+        }
+        $EDITOR $TMPFILE
+        echo "Save new file: :"
+        read -e -p"Save new file: " -i "y" input
+        if [ "$input" = "y" ]; then
+            $AES -e -o $FILENAME $TMPFILE
+        else
+            cp $FILENAME.back $FILENAME
+        fi
+    ;;
+    *) unknown_command ;;
+esac
+
+_exit
+

@@ -1,0 +1,159 @@
+#!/bin/bash
+# Based on template.src version 1.1 last modified 2006.08.07 by y
+# sync PC to an external HD
+# v1.0-r2 : added wait for device to settle
+# v1.0    : added pkill firefox when HD -> sys to enable bookmark update
+
+trap y_exit TERM HUP INT
+
+# Uncomment this to allow colors on the console
+USE_COLOR="yes"
+
+# This will enable positioning of a text to the end (-8 char) 
+# of a line independent of window size
+USE_POS="yes"
+
+USE_BELL="yes"
+
+INFO=""
+
+# Source the function library
+FUNCTIONS="/bin/y_functions.sh"
+test -r ${FUNCTIONS} && source ${FUNCTIONS}
+
+# define the following to match the program current state
+PROGRAM_NAME="yrsync_hd"
+VERSION="1.0.4"
+LAST_MOD="2010.09.14"
+
+RETRY_MOUNT=30
+RETRY_DEV=10
+
+# Define log file here
+LOG="/var/log/${0##*/}.log"
+
+# Uncomment this if you need debug enabled
+#Y_DEBUG="true"
+
+# define backup system mount point
+MNT_DIR="/tmp/yrsync_hd.$$"
+ROOT_DIR="/yrsync_hd"
+HD_DEV=""
+
+# define filesystems to sync
+HOME="/home/jenov"
+#DIR_LIST="/proj/ $HOME/.evolution/ $HOME/titkok/ $HOME/docs/ $HOME/data/ $HOME/bin/ $HOME/TODO/ $HOME/.mozilla/firefox/"
+DIR_LIST="/proj/ $HOME/titkok/ $HOME/docs/ $HOME/bin/ $HOME/TODO/ $HOME/.mozilla/firefox/ $HOME/.wine/"
+#DIR_LIST="/proj/ $HOME/"
+
+# define exclude list
+EXCLUDE_LIST="tmp/ *.VOB exchange/ lock Cache"
+
+# define rsync command
+RSYNC_OPT="-arxbu --delete"
+#RSYNC_OPT="-arxbu"
+
+# use these to set cleanup on exit
+#MOUNTED=""		# y_exit will unmount them
+#DELETE_ON_EXIT=""	# y_exit will delete them
+#LAST_CMD=""		# y_exit will run it just before exit
+
+y_start "$*"
+# ===================================================================================
+# there is a bug in y_functions around y_help, it can not display RSYNC_OPT well
+
+CMD_OPT="$*"
+# read command line parameters
+while [ -n "$1" ] ; do
+    case $1 in
+	--help|-h)	y_help "[Oprions]"; y_exit;;	#; Help
+	--pc2hd|-o) CMD="o";;						#; Sync PC to external HD [DST]
+	--hd2pc|-i) CMD="i";;						#; Sync external HD to PC [SRC]
+	--home)		HOME="$2"; shift;;				#; Redefine HOME dir [HOME]
+	--mdir|-m)	MNT_DIR="$2"; shift;;			#; Define mount dir [MNT_DIR]
+	--root|-x)	ROOT_DIR="$2"; shift;;			#; Define root_dir [ROOT_DIR]
+	--dirs|-d)	DIR_LIST="$2"; shift;;			#; Define dirs to copy [DIR_LIST]
+	--exclude|-E) EXCLUDE_LIST="$2"; shift;;	#; Define exclude list [EXCLUDE_LIST]
+	--dev|-e)	HD_DEV="$2"; shift;;			#; Define external HD device [HD_DEV]
+	--rsync|-r)	RSYNC_OPT="$2"; shift ;;		#; Define rsync options
+	--nocolor|-C) USE_COLOR="no";;				#; Use color display [USE_COLOR]
+	--quiet|-Q)	Y_QUIET="yes";;					#; Make less output
+    esac
+    shift
+done
+
+test -r ${FUNCTIONS} && source ${FUNCTIONS}
+
+# check for external hard disk
+# as it may just comming back from sleep it needs a bit of time to settle
+for (( i=$RETRY_DEV ; $i ; i=$(($i-1)) )) ; do { test -b "$HD_DEV" && break ; sleep 1; } done
+test -b "$HD_DEV" || { y_warning "HD device [$HD_DEV] not found skipping rsync!"; y_exit; }
+
+test -n "$INFO" && y_info "rsync options: $RSYNC_OPT"
+test -z "$CMD" && y_error "No command direction defind! Use -o or -i option."
+
+# convert symlink
+test -h ${HD_DEV} && HD_DEV="/dev/`readlink $HD_DEV`"
+test -n "$INFO" && y_info "storage device: $HD_DEV"
+
+test -n "$INFO" && y_info "Dir list: $DIR_LIST"
+test -n "$INFO" && y_info "Exclude list: $EXCLUDE_LIST"
+
+# mount external disk
+mount | grep ${HD_DEV} > /dev/null 2>&1
+if [ $? -ne 0 ]; then {
+	y_run_cmd "mkdir -p $MNT_DIR"
+	DELETE_ON_EXIT="$MNT_DIR"	
+	for (( i=$RETRY_MOUNT ; $i ; i=$(($i-1)) )) ; do
+		mount $HD_DEV $MNT_DIR >/dev/null 2>&1
+		if [ $? -ne 0 ] ; then
+			echo -n "." >> $LOG
+			sleep 1
+		else 
+			echo >> $LOG
+			break
+		fi
+	done
+	mount | grep ${MNT_DIR} >/dev/null 2>&1
+	test $? -ne 0 && y_fatal_error "Failed to mount $HD_DEV"
+    MOUNTED=$MNT_DIR
+}
+else
+	MNT_DIR=`mount | grep ${HD_DEV} | awk '{ print $3 } /dev/fd0' | grep -v ${HD_DEV}`
+fi
+
+# set source and destination
+if [ "$CMD" = "o" ] ; then
+	DST="$MNT_DIR/$ROOT_DIR"; SRC=""
+else
+	SRC="$MNT_DIR/$ROOT_DIR"; DST=""
+	y_run_cmd1 "pkill firefox"
+fi
+
+# setup backup dir
+y_run_cmd "mkdir -p $MNT_DIR/$ROOT_DIR/yrsync_hd_backup"
+RSYNC="rsync $RSYNC_OPT --backup-dir=$MNT_DIR/$ROOT_DIR/yrsync_hd_backup"
+
+# setup log dir
+LOG_DIR="$MNT_DIR/$ROOT_DIR/yrsync_hd_log"
+y_run_cmd "mkdir -p $LOG_DIR"
+LOG_FILE="$LOG_DIR/yrsync_hd.log"
+echo "`$Y_DATE` [`uname -n`]: Start [$$] $0 $CMD_OPT ; [V${VERSION} , Last modified: ${LAST_MOD}]" >> $LOG_FILE
+
+# create exclude list
+for i in $EXCLUDE_LIST ; do
+    EXCLUDE="$EXCLUDE --exclude=$i"
+done
+
+# sync dirs
+for i in $DIR_LIST ; do
+    y_progress "Sync ${SRC}/${i} -> ${DST}${i} ..."
+	y_run_cmd "mkdir -p $DST/$i"
+    y_run_cmd "$RSYNC $EXCLUDE $SRC/$i $DST/$i"
+    y_progress_end 0
+done
+
+echo "`$Y_DATE` [`uname -n`]:   End [$$]" >> $LOG_FILE
+# ===================================================================================
+# Leave this as the last line
+y_exit

@@ -1,0 +1,93 @@
+# Backup script rc file for a workstation
+# for TESTING only!
+
+# Global settings
+RC_VERSION="3"
+LOG="/tmp/yarchive.log"
+BACKUP_SERVER=""
+BACKUP_DEST0="/backup"
+#BACKUP_DEST1="/net/lpd/Users/jenov/backup"
+#BACKUP_DEST2="/net/lpd/share/Users/jenov/backup"
+SYS_EXCLUDE="./xos/* ./xdir/* ./home/* ./var/log/* ./sys/* ./media/* ./dev/* ./mnt/* ./proc/* ./net/* ./win/* *.VOB */tmp*"
+# Policy settings
+
+# system files backup policy definition
+sys_COMMENT="system files backup policy"
+sys_BACKUP_DEST="$BACKUP_DEST0/systems"
+sys_BCOPY_DEST="$BACKUP_DEST2"
+sys_SOURCE="/"
+sys_EXCLUDE="$SYS_EXCLUDE ./usr/src/*"
+sys_LOG="/var/log/yarchive.log"
+sys_BLEVELS="1"
+sys_TAREXTRA="-W"
+
+# system files snapshot policy definition
+syss_COMMENT="system files snapshot policy"
+syss_BACKUP_DEST="$BACKUP_DEST0/systems"
+syss_BCOPY_DEST="$BACKUP_DEST2"
+syss_SOURCE="/"
+syss_EXCLUDE="$SYS_EXCLUDE"
+syss_LOG="/var/log/yarchive.log"
+syss_FILENAME="`hostname`.sys_snapshot"
+syss_BLEVELS="1"
+syss_TAREXTRA="-W"
+
+# home files backup policy definition
+home_COMMENT="home files backup policy"
+home_BACKUP_DEST="$BACKUP_DEST0/home"
+home_BCOPY_DEST="$BACKUP_DEST2"
+home_SOURCE="/home/"
+home_EXCLUDE="*/.dvdcss/* */.mozilla/*/Cache/* */.thumbnails/* */.nautilus/saved* ./xdir *.VOB */tmp*"
+home_LOG="/var/log/yarchive.log"
+home_BLEVELS="4"
+home_TAREXTRA="-W"
+
+# /usr/src files backup policy definition
+src_COMMENT="/usr/src files backup policy"
+src_BACKUP_DEST="$BACKUP_DEST0/systems"
+src_BCOPY_DEST="$BACKUP_DEST2"
+src_SOURCE="/usr/src"
+src_EXCLUDE="*/*.o */*.o.cmd */.tmp*"
+src_LOG="/var/log/yarchive.log"
+src_BLEVELS="2"
+src_TAREXTRA="-W"
+
+# windows install backup policy
+win_COMMENT="windows install backup policy"
+win_BACKUP_DEST="$BACKUP_DEST0/hometems"
+win_SOURCE="/win"
+win_EXCLUDE="*/pagefile.sys *.VOB */tmp* */temp* */Temp* */TEMP* */cache* */Cache* */CACHE* */empire* */BMP*"
+win_LOG="/var/log/yarchive.log"
+win_BLEVELS="1"
+win_TAREXTRA="-W"
+
+# /vm files backup policy definition
+vm_COMMENT="/vm files backup policy"
+vm_BACKUP_DEST="$BACKUP_DEST0/vm"
+vm_BCOPY_DEST="$BACKUP_DEST2"
+vm_SOURCE="/vm/"
+vm_EXCLUDE="*/tmp/* ./backup/* ./.VirtualBox/VDI/* *.iso *.ISO *.img */Snapshots/* */Logs/*"
+vm_LOG="/var/log/yarchive.log"
+vm_BLEVELS="5"
+vm_TAREXTRA="-W"
+
+# /proj files backup policy definition
+proj_COMMENT="/vm files backup policy"
+proj_BACKUP_DEST="$BACKUP_DEST0/proj"
+proj_BCOPY_DEST="$BACKUP_DEST1"
+proj_SOURCE="/proj/"
+proj_EXCLUDE="*/tmp/* ./lpd/cvs/*"
+proj_LOG="/var/log/yarchive.log"
+proj_BLEVELS="1"
+proj_TAREXTRA="-W"
+
+# titkok files backup policy definition
+titkok_COMMENT="titkok files backup policy"
+titkok_BACKUP_DEST="/tmp"
+titkok_BCOPY_DEST="/tmp"
+titkok_SOURCE="/home/jenov/titkok/"
+titkok_EXCLUDE="*/tmp*"
+titkok_BLEVELS="3"
+titkok_TAREXTRA="-j"
+titkok_EXT=".tbz2"
+#titkok_LOG="/tmp/xx.log"

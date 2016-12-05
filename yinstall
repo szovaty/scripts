@@ -1,0 +1,102 @@
+#/bin/bash
+# script creates an encrypted root partioned mint installation semi-automatically
+#  Limitations: 
+#   user needs to set partitions mounting points and fs type
+#   user needs to select usual items for the install (like language,...)
+#
+Y_VER="0.9"
+
+# configuration
+Y_DEV="/dev/sda"
+
+Y_BOOT_SIZE="200"
+Y_SWAP_SIZE="4000"
+
+Y_ROOT_NAME="root"
+Y_ROOT_PASSWD="csolnok"
+
+# input 
+while [ -n "$1" ]; do
+    case $1 in
+        --help|-h)  echo "Usage: $0 [-d] [-n] [-l] [-h]"; exit 0;;
+        --debug|-d) Y_DEBUG="true";;
+        --dry|-n)   Y_DRY_RUN="true";;
+        --log|-l)   test -n "$2" && Y_LOG="$2"; shift;;
+    esac
+    shift
+done
+
+test "${Y_LOG}x" = "x" && export Y_LOG="$0.log"
+
+echo VER=$Y_VER, DEBUG=$Y_DEBUG, LOG=$Y_LOG, DRY_RUN=$Y_DRY_RUN | tee -a $Y_LOG
+
+# run function that checks sucessful command exit status and breaks if not
+yrun () {
+    if [ "$Y_DEBUG" = "true" ] ; then {
+        echo DEBUG: "$*"
+        OUT=${Y_LOG}
+    }
+    else
+        OUT="/dev/null"
+    fi
+    test -z "$Y_DRY_RUN" && {
+        test -n "$FOUT" && OUT=$FOUT
+        $* >>$OUT 2>>$Y_LOG
+        test "$?" = "0" || { echo "FATAL ERROR" | tee -a $Y_LOG; exit 1; }
+    }
+    return 0
+}
+
+# setup partitions
+yrun sudo parted --script $Y_DEV mklabel gpt
+
+Y_START=0; Y_END=$Y_BOOT_SIZE
+yrun sudo parted --script $Y_DEV mkpart primary ext2 $Y_START $Y_END
+
+Y_START=$Y_END; Y_END=$(($Y_START+$Y_SWAP_SIZE))
+yrun sudo parted --script $Y_DEV mkpart primary linux-swap $Y_START $Y_END
+
+Y_START=$Y_END; Y_END="100%"
+yrun sudo parted --script $Y_DEV mkpart primary ext2  $Y_START $Y_END
+
+Y_BOOT="1"
+Y_SWAP="2"
+Y_ROOT="3"
+
+yrun sudo parted --script $Y_DEV set $Y_BOOT "boot" on 
+
+# setup filesystems
+yrun sudo mkfs.ext2 -F ${Y_DEV}$Y_BOOT
+yrun sudo mkswap -f ${Y_DEV}$Y_SWAP
+echo $Y_ROOT_PASSWD | yrun sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat ${Y_DEV}$Y_ROOT
+echo $Y_ROOT_PASSWD | yrun sudo cryptsetup luksOpen ${Y_DEV}$Y_ROOT $Y_ROOT_NAME
+yrun sudo cryptsetup -v status $Y_ROOT_NAME
+yrun sudo mkfs.ext4 -F /dev/mapper/$Y_ROOT_NAME
+
+# run GUI based installation
+echo "NOTE: Select 'Continue Testin' after installation finished!"
+yrun ubiquity
+
+# fix up installed image
+yrun sudo mount /dev/mapper/$Y_ROOT_NAME /mnt
+yrun cd /mnt
+yrun sudo mount ${Y_DEV}$Y_BOOT boot
+yrun sudo mount --bind /dev dev
+yrun sudo mount -t proc proc proc
+
+FOUT="/tmp/ydev"
+yrun blkid -o export ${Y_DEV}$Y_ROOT
+FOUT=""
+
+yrun source /tmp/ydev
+
+FOUT="/tmp/crypttab"
+yrun echo root UUID=$UUID none luks
+FOUT=""
+
+yrun sudo cp /tmp/crypttab /mnt/etc
+
+yrun sudo chroot /mnt update-initramfs -u -k all
+
+echo All should be DONE, reboot: `date`
+#sudo init 0

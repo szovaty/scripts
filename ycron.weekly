@@ -1,0 +1,25 @@
+#!/bin/bash
+# generic desktop cron script, mainly for backup and sync jobs
+
+V=1
+PECHO="-->"
+
+YARCHIVE="/usr/local/bin/yarchive"
+LOG="/var/log/ycron.log"
+
+echo "*** Start $0 `date` ***" >> $LOG
+
+#--------------------------------------------------------------
+# archive desktop
+
+test -n "x" && {
+	LIST="home vm sys"
+	for i in $LIST ; do	
+		test $V -ge 1 && echo "$PECHO yarchive -s $i" >> $LOG 2>&1
+		$YARCHIVE -s $i >> $LOG 2>&1
+	done
+
+}
+#--------------------------------------------------------------
+
+echo "***   End $0 `date` ***" >> $LOG

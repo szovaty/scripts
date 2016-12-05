@@ -1,0 +1,10 @@
+#!/bin/bash
+DIR="/home/jenov/bin/insync-portable/"
+EXE="./insync-portable"
+
+test -z "$1" && {
+    echo "Usage: $0 command; start/quit"
+    exit -1
+}
+cd $DIR
+$EXE $1

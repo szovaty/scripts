@@ -1,0 +1,66 @@
+#!/bin/bash
+# generic desktop cron script, mainly for backup and sync jobs
+
+DEBUG=""
+V=1
+PECHO="-->"
+
+RSYNC="rsync"
+YARCHIVE="/usr/local/bin/yarchive"
+
+LFS="/xfs"
+CFS="ddr.dvrdns.org:"
+CFS_USER="jenov"
+
+OPTION="-ax --partial --delete --specials"
+
+if [ -z $DEBUG ] ; then 
+	OPTIONS="$OPTION -q"
+	LOG="/var/log/ycron.log"
+else 
+	OPTIONS="$OPTION -v"
+	LOG="/home/tmp/ycron.log"
+fi
+
+echo "*** Start $0 `date` ***" >> $LOG
+test $V -ge 2 && echo "OPTIONS: $OPTIONS" >> $LOG
+
+#--------------------------------------------------------------
+# rsync LFS/data/ to /xdir/data/
+test -n "x" && {
+
+	EXCLUDES="--exclude=tmp/ --exclude=.~lock.*# --exclude=InstallSources/"
+	test $V -ge 1 && echo "$PECHO rsync $LFS/data/ to /xdir/data/" >> $LOG 2>&1
+	test $V -ge 2 && echo "EXCLUDES: $EXCLUDE" >> $LOG
+	$RSYNC $OPTIONS $EXCLUDES $LFS/data/ /xdir/data/ >> $LOG 2>&1
+
+}
+#--------------------------------------------------------------
+
+#--------------------------------------------------------------
+# rsync '$LFS/proj/' to /xdir/proj/
+test -n "x" && {
+
+	EXCLUDES="--exclude=tmp/ --exclude=.~lock.*#"
+	test $V -ge 1 && echo "$PECHO rsync $LFS/proj/ to /xdir/proj/" >> $LOG 2>&1
+	test $V -ge 2 && echo "EXCLUDES: $EXCLUDE" >> $LOG
+	$RSYNC $OPTIONS $EXCLUDES $LFS/proj/ /xdir/proj/ >> $LOG 2>&1
+
+}
+#--------------------------------------------------------------
+
+#--------------------------------------------------------------
+# archive desktop to LFS
+# move to LFS cron job
+test -n "" && {
+	LIST="titkok szamla"
+	for i in $LIST ; do	
+		test $V -ge 1 && echo "$PECHO yarchive -s $i" >> $LOG 2>&1
+		$YARCHIVE -s $i >> $LOG 2>&1
+	done
+
+}
+#--------------------------------------------------------------
+
+
+echo "***   End $0 `date` ***" >> $LOG

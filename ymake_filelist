@@ -1,0 +1,246 @@
+#!/bin/bash
+# Based on template.src version 1.1 last modified 2006.08.07 by y
+# this program can generate file lists to help to build embedded systems
+# it can generate include and exclude file list usable by rsync
+# to generate list based on input files and reference source tree
+# to use in different mode use symlinks to the script
+
+trap y_exit TERM HUP INT
+
+# Uncomment this to allow colors on the console
+USE_COLOR="yes"
+
+# This will enable positioning of a text to the end (-8 char) 
+# of a line independent of window size
+USE_POS="yes"
+
+# Source the function library
+FUNCTIONS="/bin/y_functions.sh"
+test -r ${FUNCTIONS} && source ${FUNCTIONS}
+
+# define the following to match the program current state
+PROGRAM_NAME="Make file list"
+VERSION="0.1"
+LAST_MOD="2006.09.29"
+
+# Define log file here
+#LOG="/tmp/${0##*/}.log"
+LOG="/tmp/webtc.log"
+
+# Uncomment this if you need debug enabled
+#Y_DEBUG="true"
+
+# use these to set cleanup on exit
+#MOUNTED=""		# y_exit will unmount them
+#DELETE_ON_EXIT=""	# y_exit will delete them
+#LAST_CMD=""		# y_exit will run it just before exit
+#EXCLUDE_IN="$PWD/make.exclude.in"
+INCLUDE_IN="$PWD/make.include.in"
+DIFF_IN="$PWD/make.diff.in"
+INCLUDE_REF="$PWD/make.include.ref"
+INCLUDE="$PWD/build.include.$$"
+EXCLUDE="$PWD/build.exclude.$$"
+TMP_DIR="/tmp/ymake_tmp_dir.$$"
+TMP_FILE="/tmp/ymake_tmp_file.$$"
+TMP_FILE_1="/tmp/ymake_tmp_file_1.$$"
+DELETE_ON_EXIT="$TMP_FILE $TMP_FILE_1 $TMP_DIR"
+
+_print_pass_init () { cnt=0; }
+_print_pass () { test -z "$QUIET" && printf "  Progress: %d\r" $((cnt++)) ; }
+
+# build file list from source dir using optional exclude file
+# inputs: SOURCE_DIR [EXCLUDE_IN]
+# output: OUT_FILE - source file list excluded EXCLUDE_IN files
+# _build_file_list source_dir [output_file]
+_build_file_list () {
+	local FOO
+	if [ -z "$EXCLUDE_IN" ] ; then 
+		y_warning "No exlude file defined!"
+	else
+		if [ -r "$EXCLUDE_IN" ] ; then 
+			RSYNC_EXCLUDE="--exclude-from=$EXCLUDE_IN"
+		else 
+			y_fatal_error "Cannot read exclude_in file $EXCLUDE_IN"
+		fi
+	fi
+	test -d "$1" || y_fatal_error "Cannot stat source input dir $1!"
+	FOO=$TMP_FILE; test -n "$2" && FOO=$2
+
+	# make tmp dir
+	y_progress "Creating temp dir $TMP_DIR..."
+	y_run_cmd "mkdir -p $TMP_DIR"
+	y_run_cmd "rsync -arq --delete -x $RSYNC_EXCLUDE $1 $TMP_DIR"
+	y_progress_end 0
+	y_run_cmd "cd $TMP_DIR"
+	y_progress "Creating file list $FOO..."
+	_print_pass_init
+	for i in `find -xdev` ; do
+		_print_pass
+		test -d "$i" || echo $i >> $FOO 2>>$LOG
+	done
+	y_run_cmd "cd $OLDPWD"
+	y_progress_end 0
+}
+
+# build include file
+_build_include () {
+	test -r "$INCLUDE_IN" || y_fatal_error "Cannot read include-in file $INCLUDE_IN!"
+	test -r "$INCLUDE_REF" || y_fatal_error "Cannot read include-ref file $INCLUDE_REF!"
+	test -d "$SRC_DIR" || y_fatal_error "Cannot stat source dir $SRC_DIR!"
+
+	_build_file_list "$SRC_DIR"
+	y_progress "Adding $INCLUDE_IN to include file..."
+	_print_pass_init
+	for i in `cat $INCLUDE_IN` ; do
+		_print_pass
+		test "$i" = "${i#\#}" && {
+			y_run_cmd1 "grep -w $i $TMP_FILE"	
+			test "$?" = "0" && echo "$i" >> $OUT_FILE
+		}
+	done
+	y_progress_end 0
+	y_progress "Adding $INCLUDE_REF to include file..."
+	_print_pass_init
+	for i in `cat $INCLUDE_REF` ; do
+		_print_pass
+		test "$i" = "${i#\#}" && {
+			y_run_cmd1 "grep -w $i $TMP_FILE"	
+			test "$?" = "0" && echo "$i" >> $OUT_FILE
+		}
+	done
+	y_progress_end 0
+	test -r "$DIFF_IN" && {
+		y_progress "Adding $DIFF_IN to include file..."
+		_print_pass_init
+		for i in `cat $DIFF_IN` ; do
+			_print_pass
+			test "$i" = "${i#\#}" && echo "$i" >> $OUT_FILE
+		done
+	}
+}
+
+# build exlude file list usable by rsync
+# inputs: SCR_DIR [EXCLUDE_IN]
+# output: OUT_FILE - exclude file list
+_build_exclude () {
+	test -r "$INCLUDE_IN" || y_fatal_error "Cannot read include-in file $INCLUDE_IN!"
+	test -d "$SRC_DIR" || y_fatal_error "Cannot stat source dir $SRC_DIR!"
+
+	_build_file_list "$SRC_DIR"	
+	y_progress "Building exclude file list $OUT_FILE..."
+	_print_pass_init
+	for i in `cat $TMP_FILE` ; do
+		_print_pass
+		y_run_cmd1 "grep -w $i $INCLUDE_IN"	
+		test "$?" = "0" || echo "$i" >> "$OUT_FILE"
+	done
+	y_progress_end 0
+	test -r "$EXCLUDE_IN" && {
+		y_progress "Adding $EXCLUDE_IN to exclude file..."
+		cat $EXCLUDE_IN >> $OUT_FILE
+		y_progress_end $?
+	}
+}
+
+# build diff.in file list which is 
+# the difference between ref and current system's files
+# inputs: SRC_DIR FILE_LIST
+# output: OUT_FILE - a file listing all files that exists in SRC_DIR but not in FILE_LIST
+_build_diff_in () {
+	test -d "$SRC_DIR" || y_fatal_error "Cannot stat source dir $SRC_DIR!"
+	test -r "$FILE_LIST" || y_fatal_error "Cannot read file list $FILE_LIST!"
+
+	_build_file_list "$SRC_DIR"
+	y_progress "Comparing source file list to $FILE_LIST..."
+	_print_pass_init
+	for i in `cat $TMP_FILE` ; do
+		_print_pass
+		test -d "$TMP_DIR/$i" && continue
+		y_run_cmd1 "grep -w $i $FILE_LIST"
+		test "$?" = "0" || echo "$i" >> "$OUT_FILE"
+	done
+	y_progress_end 0
+	echo
+}
+
+y_start
+# ===================================================================================
+
+# read command line parameters
+while [ -n "$1" ] ; do
+	case $1 in
+		--help|-h)			y_help "[Options]"; y_exit;;	#; Help
+		--mode|-m)			MODE="$2"; shift;;				#; Set execution mode
+		--exclude-in|-e)	EXCLUDE_IN="$2"; shift;;		#; Define exclude input file [EXCLUDE_IN]
+		--include-in|-i)	INCLUDE_IN="$2"; shift;;		#; Define include input file [INCLUDE_IN]
+		--include-ref|-r)	INCLUDE_REF="$2"; shift;;		#; Define include reference file [INCLUDE_REF]
+		--diff-in|-d)		DIFF_IN="$2"; shift;;			#; Define diff_in file [DIFF_IN]
+		--src-dir|-s)		SRC_DIR="$2/"; shift;;			#; Define source dir [SRC_DIR]
+		--file-list|-f)		FILE_LIST="$2"; shift;;			#; Define file list [FILE_LIST]
+		--tmp-dir|-t)		TMP_DIR="$2"; shift;;			#; Define temp directory [TMP_DIR]
+		--output|-o)		OUT_FILE="$2"; shift;;			#; Define output file
+		--quiet|-q)			QUIET="true";;					#; Enable quiet mode
+	esac
+	shift
+done
+
+# check user
+test `id -u` != "0" && y_fatal_error "You need to rus this as root!"
+
+# set execution mode
+if [ -z "$MODE" ] ; then
+	MODE=${0##*/}
+else
+	MODE="ymake_$MODE"
+fi
+
+# execute functions
+case $MODE in
+	# generates an include file 
+	# inputs: INCLUDE_IN, INCLUDE_REF, EXCLUDE_IN and SRC_DIR
+	# output: OUT_FILE - rsync usable include file list
+	ymake_include)			
+		y_set_default OUT_FILE "$INCLUDE"	
+		test -f "$OUT_FILE" && {
+			y_get_confirm "Overwrite ${OUT_FILE}? ($YES) : "
+			y_run_cmd "rm -f $OUT_FILE"
+		}
+		y_info "Building include file..."
+		_build_include
+	;;
+	# generates a reference include file
+	# inputs: SRC_DIR [EXCLUDE_IN]
+	# output: OUT_FILE - source dir file list excluded optional EXCLUDE_IN files
+	ymake_include_ref)	
+		y_set_default OUT_FILE "$INCLUDE_REF"
+		y_info "Building include_ref file..."
+		_build_file_list $SRC_DIR $OUT_FILE
+	;;
+	# generates an exclude file list usable by rsync
+	# inputs: SRC_DIR INCLUDE_IN
+	# output: OUT_FILE - all files that in SRC_DIR but not in INCLUDE_IN list
+	ymake_exclude)			
+		y_set_default INCLUDE_IN "$INCLUDE"
+		y_set_default OUT_FILE "$EXCLUDE"
+		y_info "Building exclude file..."
+		_build_exclude
+	;;
+	# generates a difference file list
+	# inputs: SRC_DIR FILE_LIST
+	# output: OUT_FILE - a list of files of source dir excluded files in optional EXCLUDE_IN
+	# 	and not in FILE_LIST file
+	ymake_diff_in)
+		y_set_default OUT_FILE "make.diff.in"
+		test -f "$OUT_FILE" && {
+			y_get_confirm "Overwrite ${OUT_FILE}? ($YES) : "
+			y_run_cmd "rm -f $OUT_FILE"
+		}
+		y_info "Building diff_in file..."
+		_build_diff_in
+	;;
+	*)	y_fatal_error "Unknown mode $MODE";;
+esac
+
+# ===================================================================================
+# Leave this as the last line
+y_exit

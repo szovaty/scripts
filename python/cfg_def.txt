@@ -1,0 +1,33 @@
+group_key,group_name
+	option_key,option_name,option_type,default_value
+
+GLOBAL,global
+
+
+( ( 'C_GLOBAL',
+    'global',
+    'group',
+    ( ('C_CFGV', 'cfgver', 'cfg_only', '0.0'),
+      ('C_QUIET', 'quiet', 'store_true', 'false'),
+      ('C_PRETEND', 'pretend', 'store_true', 'false'),
+      ('C_DEBUG', 'debug', 'store_true', 'false'))),
+  ( 'C_KERNEL',
+    'kernel',
+    'group',
+    ( ('C_SOURCE', 'source', 'store', '/usr/src/linux'),
+      ('C_BUILD', 'build', 'store', 'make bzlilo modules modules_install'),
+      ('C_BACKUP', 'backup', 'store_true', 'true'),
+      ('C_PREB', 'prebuild', 'store', 'mount -o remount,rw /boot'),
+      ('C_POSTB', 'postbuild', 'store', 'mount -o remount,ro /boot'))),
+  ( 'C_GENTOO',
+    'gentoo',
+    'group',
+    ( ('C_BUILD', '__X__', 'store', 'emerge -uDN world'),
+      ('C_PREB', '__X__', 'store', 'yarchive -s sys'),
+      ('C_POSTB', '__X__', 'store', 'revdep-rebuild -i -p'))),
+  ( 'C_SYSTEM',
+    'system',
+    'group',
+    ( ('C_SHUTDOWN', 'shutdown', 'store', 'init 0'),
+      ('C_HIBERNATE', 'hibernate', 'store', 'echo disk > /sys/power/state'),
+      ('C_SUSPEND', 'suspend', 'store', 'echo mem > /sys/power/state'))))

@@ -1,0 +1,15 @@
+#!/bin/bash
+LOG="/backup/systems/ysystest.log"
+ROOT=""
+
+echo =============== $0@`uname -n` ==================== >> $LOG
+date >> $LOG
+uname -a >> $LOG
+gcc --version | grep gcc >> $LOG
+cat /proc/meminfo | grep MemTotal >> $LOG
+hdparm -tT /dev/sd[a-c] >> $LOG
+
+echo "Testing $ROOT/xos" >> $LOG
+bonnie -d $ROOT/xos -s 12000 >> $LOG
+echo "Testing $ROOT/xdir" >> $LOG
+bonnie -d $ROOT/xdir -s 12000 >> $LOG

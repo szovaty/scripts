@@ -1,0 +1,67 @@
+#!/bin/bash
+# sync development source with host system
+
+Y_FUNC="/bin/y_functions.sh"
+if [ -r "$Y_FUNC" ] ; then . $Y_FUNC ; else exit 1 ; fi
+
+# define the following to match the program current state
+PROGRAM_NAME="yrsync"
+VERSION="0.5"
+LAST_MOD="2011.07.12"
+
+y_start
+# get command line options
+while [ -n "$1" ] ; do
+	case "$1" in
+		--help|-h)		y_help ; y_exit;;
+		--in|-i)		MODE="i" ;; 					#; Upload files from destination
+		--out|-o)		MODE="o" ;;						#; Download files from source with exclude
+		--out1|-o1)		MODE="o1" ;;					#; Download files from source with include
+		--kernel|-k)	MODE="k" ;;						#; Copy new kernel files to boot
+		--source|-s)	shift; YRSYNC_SOURCE="$1" ;;	#; Define source [YRSYNC_SOURCE]
+		--dest|-d)		shift; YRSYNC_DEST="$1" ;;		#; Define destination [YRSYNC_DEST]
+		--exclude|-e)	shift; YRSYNC_EXCLUDE="$1" ;;	#; Define exclude file [YRSYNC_EXCLUDE]
+		--include|-I)	shift; YRSYNC_INCLUDE="$1" ;;	#; Define exclude file [YRSYNC_INCLUDE]
+		--update|-u)	OPT="$OPT -u";;					#; see rsync man page
+		--verbose|-v)	OPT="$OPT -v";;					#; see rsync man page
+		--quiet|-q)		OPT="$OPT -q";;					#; see rsync man page
+		--pre-cmd)		shift; PRE_CMD="$1";;			#; run command before rsync [PRE_CMD]
+		--post-cmd)		shift; POST_CMD="$1";;			#; run command after rsync [POST_CMD]
+		--debug)		export Y_DEBUG="yes";;
+		*)				break ;;
+	esac
+	shift
+done
+
+test -z "$MODE" && { echo "ERROR: No mode defined!" ; exit 3 ; }
+test -e "$YRSYNC_SOURCE" || { echo "ERROR: Invalid source!" ; exit 1 ; }
+test -z "$YRSYNC_EXCLUDE" && YRSYNC_EXCLUDE="$YRSYNC_SOURCE/build.exclude"
+test -z "$YRSYNC_INCLUDE" && YRSYNC_INCLUDE="$YRSYNC_SOURCE/build.include"
+test -r "$YRSYNC_EXCLUDE" || { echo "ERROR: Invalid exclude file: [$YRSYNC_EXCLUDE]" ;  exit 2 ; }
+#echo "rsync options: [$*]"
+
+# run cmd
+y_run_cmd2 "$PRE_CMD"
+
+# check kernel
+KERNEL_SOURCE="${YRSYNC_SOURCE}/usr/src/linux/arch/i386/boot/bzImage"
+KERNEL_DEST="${YRSYNC_SOURCE}/boot/vmlinuz"
+test "$KERNEL_SOURCE" -nt "$KERNEL_DEST" && {
+    y_info "We have a new kernel, updating it..."
+    test -f "$KERNEL_DEST" && mv "$KERNEL_DEST" "${KERNEL_DEST}.old"
+    cp "$KERNEL_SOURCE" "$KERNEL_DEST"
+    cp "${YRSYNC_SOURCE}/usr/src/linux/System.map" "${YRSYNC_SOURCE}/boot"
+}
+
+case $MODE in
+	i)	OPT="$OPT --exclude-from=$YRSYNC_EXCLUDE $YRSYNC_DEST $YRSYNC_SOURCE";;
+	o)	OPT="$OPT --exclude-from=$YRSYNC_EXCLUDE $YRSYNC_SOURCE/ $YRSYNC_DEST";;
+	o1)	OPT="$OPT --files-from=$YRSYNC_INCLUDE $YRSYNC_SOURCE/ $YRSYNC_DEST";;
+	k)	OPT="$OPT ${YRSYNC_SOURCE}/boot ${YRSYNC_DEST}";;
+esac
+
+y_info "OPT=$OPT"
+rsync -ar $* $OPT
+y_run_cmd2 "$POST_CMD"
+
+y_exit

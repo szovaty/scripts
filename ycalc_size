@@ -1,0 +1,82 @@
+#!/bin/bash
+# Based on template.src version 1.2 last modified 2006.09.29 by y
+# Add your description here of the program here!
+
+trap y_exit TERM HUP INT
+
+# Uncomment this to allow colors on the console
+#USE_COLOR="yes"
+
+# This will enable positioning of a text to the end (-8 char) 
+# of a line independent of window size
+USE_POS="yes"
+
+# Source the function library
+FUNCTIONS="/bin/y_functions.sh"
+test -r ${FUNCTIONS} && source ${FUNCTIONS}
+
+# define the following to match the program current state
+PROGRAM_NAME="Program Name"
+VERSION="0.0"
+LAST_MOD="20xx.xx.xx"
+
+# Define log file here
+LOG="/tmp/${0##*/}.log"
+
+# Uncomment this if you need debug enabled
+#Y_DEBUG="true"
+
+# use these to set cleanup on exit
+#MOUNTED=""		# y_exit will unmount them
+#DELETE_ON_EXIT=""	# y_exit will delete them
+#LAST_CMD=""		# y_exit will run it just before exit
+
+OUT_FILE="ycalc_size.result"
+
+y_start
+# ===================================================================================
+test -z "$1" && { y_help "[Options]"; y_exit; }
+# read command line parameters
+while [ -n "$1" ] ; do
+	case $1 in
+		--help|-h)					y_help "[Options]"; y_exit;;	#; Help
+		-s|--src-dir)				SRC_DIR="$2"; shift;;					#; Define source directory [SRC_DIR]
+		-i|--include_file)	INCLUDE_FILE="$2"; shift;;		#; Define include file [INCLUDE_FILE]
+		-o|--out-file)			OUT_FILE="$2"; shift;;				#; Define output file name
+		-d|--dirs)					DO_DIRS="true";;							#; Do directories list
+		-f|--files)					DO_FILES="true";;							#; Do file list	
+		--sort)							SORT="true";;									#; Sort size list file by size
+	esac
+	shift
+done
+
+test -r "$INCLUDE_FILE" || y_fatal_error "Cannot read include file $INCLUDE_FILE!"
+test -d "$SRC_DIR" || y_fatal_error "Cannot stat source dir $SRC_DIR!"
+
+LIST=`cat $INCLUDE_FILE 2>/dev/null`
+y_run_cmd "cd $SRC_DIR"
+y_run_cmd "rm -f $OUT_FILE"
+#y_run_cmd "touch $OUT_FILE"
+j=1
+for i in $LIST ; do
+	_PRINT=""
+	x=`du -b -s $i 2>/dev/null`; x=`echo $x`;	_SIZE=${x%' '*}; _NAME=${x#*' '}
+	test -n "$DO_DIRS" && test -d "$_NAME" && _PRINT="1"
+	test -n "$DO_FILES" && test -d "_NAME" || _PRINT="1"
+	test -n "$_PRINT" && printf "%10d %s\n" $_SIZE $_NAME  >> "$OUT_FILE"
+  test -e $i || continue
+  TOTAL=$(($TOTAL+$_SIZE))
+  printf "\rFiles %d: Total size = %d Bytes or %d MBytes" $((j++)) $TOTAL $(($TOTAL/1048576))
+done
+printf "\n"
+test -n "$SORT" && {
+	if [ -r "$OUT_FILE" ] ; then
+		cat $OUT_FILE | sort -n > $OUT_FILE
+	else 
+		y_warning "Can read file $OUT_FILE"
+	fi
+}
+y_run_cmd "cd $OLDPWD"
+# ===================================================================================
+# Leave this as the last line
+y_exit

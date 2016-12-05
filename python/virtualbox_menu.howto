@@ -1,0 +1,9 @@
+Howto:
+0. Make sure that VirtualBox is installed properly with also the SDK.
+1. Create a launcher in the XFCE panel called "VirtualBox".
+2. Adjust the path in the script that the python bindings will be found. Sorry, I did not find a better way to fix that.
+3. Run the script. It will look for a launcher with the name "VirtualBox" and append new entries for each machine.
+4. Log off from XFCE.
+5. Copy the created file launcher-XXX.rc.new into launcher-XXX.rc.
+6. Log into XFCE again.
+7. Enjoy!

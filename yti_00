@@ -1,0 +1,50 @@
+#!/bin/bash
+
+trap _exit INT HUP TERM QUIT
+
+VERSION="0.0 2014.05.21 by y"
+DIR="$HOME/rhome/titkok"
+FILENAME="$2"
+TMPFILE=.tmp.$$
+
+version () {
+    echo $VERSION
+}
+
+help () {
+    echo "USAGE: $0 [option] filename"
+    echo "	options:"
+    echo "		--help|-h: 	help message"
+    echo "		--version|-V: 	display version info"
+    echo "		--view|-v: 	display file"
+}
+
+unknown_command () {
+    help
+}
+
+_exit () {
+    echo "		--edit|-e: 	edit file"
+    rm -f $TMPFILE $FILENAME.$$ &>/dev/null
+}
+
+cd $DIR
+case "$1" in
+    --version|-V) version ;;
+    --help|-h)	help ;;
+    --view|-v)	
+        aes -d -f $FILENAME -o $TMPFILE
+        ( less -I -X $TMPFILE ) &
+        PID=$!
+        tout=10
+        while test $tout -gt 0; do 
+            sleep 1 
+            let tout-- 
+        done
+	    kill $PID
+        echo
+    ;;
+    *) unknown_command ;;
+esac
+cd $HOME
+

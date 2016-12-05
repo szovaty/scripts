@@ -1,0 +1,8 @@
+#!/bin/bash
+
+PROJ_PATH="/proj/jenov/scripts"
+
+cd $PROJ_PATH
+test -r "./env.proj" && source ./env.proj
+
+mp -geometry 840x590+0+560 mp.proj y_functions.sh yarchive.rc yarchive ycron.CFS.weekly ycron_LFS_monthly ycron_LFS_weekly ycron_LFS_daily ycron.monthly ycron.weekly ycron.daily &

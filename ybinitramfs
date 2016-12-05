@@ -1,0 +1,9 @@
+#!/bin/bash
+
+cd /usr/src/linux
+mount -o remount,rw /boot
+scripts/gen_initramfs_list.sh -o /boot/initrd.cpio.gz /usr/src/initramfs/initramfs_list
+lilo
+mount -o remount,ro /boot
+
+

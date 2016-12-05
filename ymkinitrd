@@ -1,0 +1,114 @@
+#!/bin/bash
+# build initrd file
+
+trap y_exit TERM HUP INT
+
+USE_COLOR="yes"
+USE_POS="yes"
+VERSION="1.0"
+LAST_MOD="2006.11.23"
+L_DATE="date +%y%m%d-%H%M"
+#Y_DEBUG="true"
+
+Y_FUNC="/proj/y_functions/y_functions.sh"
+test -r ${Y_FUNC} && source ${Y_FUNC}
+test "$?" -ne 0 && { echo "Error to source $Y_FUNC" ; exit 1 ; }
+
+BUILD_DATE=`date +%y%m%d`
+TEST_ONLY="true"
+BUILD_INITRAMFS=""
+
+# set defaults
+y_set_default TMP "/tmp"
+y_set_default INITRD_FILE "ddr.initrd"
+y_set_default INC_SIZE=10
+
+y_start
+y_info "Running ${0##*/} $*"
+
+# get command line options
+while [ -n "$1" ] ; do
+	case "$1" in
+		--help|-h) 		y_help "[options]"; y_exit;;	#; Print this help
+		--source|-s) 	shift; SOURCE_DIR="$1";;		#; Define source directory for initrd image [SOURCE_DIR]
+		--dest|-d) 		shift; INITRD_FILE="$1";;		#; Define destination file for initrd file [INITRD_FILE]
+		--exclude|-e)	shift; EXCLUDE_FILE="$1";;	#; Define source exclude files [EXCLUDE_FILE]
+		--inc-size|-i) shift; INC_SIZE="$1";;			#; Define extra space for loop fs [INC_SIZE]
+		--tmp|-t) 		shift; TMP="$1";;						#; Define TMP directory [TMP]
+		--mnt|-m) 		shift; MNT="$1";;						#; Define temp mount directory for initrd [MNT]
+	esac
+	shift
+done
+
+# init env
+y_set_default MNT "$TMP/ymkinitrd_$$"
+y_run_cmd "rm -rf $MNT"
+y_run_cmd "mkdir -p ${MNT}"
+y_set_default TMP_INITRD_FILE "$TMP/tmp_initrd_file_$$"
+DELETE_ON_EXIT="$TMP_INITRD_FILE $MNT"
+
+# check settings
+test -z "${SOURCE_DIR}" && y_fatal_error "No source dir specified!"
+test ! -d "${SOURCE_DIR}" && y_fatal_error "Source dir ${SOURCE_DIR} does not exists"
+test -n "${EXCLUDE_FILE}" && {
+	test ! -r ${EXCLUDE_FILE} && y_fatal_error "Exclude file ${EXCLUDE_FILE} is not readable"
+	EXCLUDE_FROM="--exclude-from=$EXCLUDE_FILE"
+}
+
+# check uid
+test `id -u -r` != 0 || test `id -g -r` != 0 && { echo "Only root can run this!" ; exit 1 ; }
+
+# calculate loop file size
+y_progress "Calculating file size ..."
+SUMM_MSG="total size is "
+FSIZE=`rsync -arn --stats ${EXCLUDE_FROM} ${SOURCE_DIR}/ ${TMP} | grep "${SUMM_MSG}"`
+FSIZE=${FSIZE#${SUMM_MSG}*} ; FSIZE=${FSIZE%%' '*} ; LOOPFS_SIZE=$((${FSIZE}/1024/1024+$INC_SIZE))
+y_progress_end 0
+
+# create loop file and mount it
+y_progress "Create loop file and mount it..."
+y_run_cmd "dd if=/dev/zero of=$TMP_INITRD_FILE bs=1M count=$LOOPFS_SIZE"
+y_run_cmd "mkfs.ext2 -F -q -m 0 $TMP_INITRD_FILE"
+y_run_cmd "tune2fs -i 0 -c 0 $TMP_INITRD_FILE"
+y_run_cmd "modprobe loop"
+y_run_cmd "mount $TMP_INITRD_FILE $MNT -o loop"
+MOUNTED=$MNT
+y_progress_end 0
+
+# copy system to the loop file
+y_progress "Populate loop filesystem..."
+y_run_cmd "rsync -arq ${EXCLUDE_FROM} ${SOURCE_DIR}/ ${MNT}"
+y_run_cmd "mknod ${MNT}/dev/null c 1 3"
+y_run_cmd "mknod ${MNT}/dev/console c 5 1"
+y_run_cmd "mknod ${MNT}/dev/tty1 c 4 1"
+y_run_cmd "mkdir -p ${MNT}/dev/fb"
+y_run_cmd "mkdir -p ${MNT}/dev/vc"
+y_run_cmd "mkdir -p ${MNT}/dev/misc"
+y_run_cmd "touch ${MNT}/var/log/lastlog"
+y_run_cmd "mkdir -p ${MNT}/var/log/news"
+
+# create misc. files on loop
+#y_run_cmd "mkdir -p ${MNT}/tmp/.esd"
+#y_run_cmd "touch ${MNT}/tmp/.esd/socket"
+echo ${BUILD_DATE} > ${MNT}/.build_date
+y_progress_end 0
+
+# calculate new client system size and clean up
+y_get_dirsize $MNT
+SYSTEM_SIZE="$?"
+y_progress "Clean up tmp files..."
+y_run_cmd "umount $MNT" ; MOUNTED=""
+y_run_cmd "rm -r $MNT"
+y_run_cmd "rm -f $TMP_INITRD_FILE.gz"
+y_progress_end 0
+
+# compress loop file
+y_progress "Compress initrd file..."
+y_run_cmd "gzip -9 -q $TMP_INITRD_FILE"
+y_run_cmd "mv $TMP_INITRD_FILE.gz $INITRD_FILE"
+y_progress_end 0
+X=`du -h $INITRD_FILE 2>/dev/null`; X=`echo $X`; INITRD_SIZE=${X%' '*}
+y_info "Loopfs: ${LOOPFS_SIZE}M; System: ${SYSTEM_SIZE}M; Initrd: $INITRD_SIZE size."
+
+# =========================================================================
+y_exit

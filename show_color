@@ -1,0 +1,13 @@
+i="31 32 33 34 35 36 37 31;01 32;01 33;01 34;01 35;01 36;01 37;01"
+for j in $i ; do
+    printf "%-07s" $j
+done
+echo
+for j in $i ; do 
+    echo -n -e "\e[${j}mHello  \e[0m"
+done
+echo
+for j in $i ; do 
+    echo -n -e "\e[41${j}mHello  \e[0m"
+done
+echo

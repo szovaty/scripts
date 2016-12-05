@@ -1,0 +1,37 @@
+#!/bin/bash
+# Based on template.src version 0.0 last modified 2005.09.16 by y
+# Add your description here of the program here
+
+# Uncomment this to allow colors on the console
+#USE_COLOR="yes"
+
+# This will enable positioning of a text to the end (-8 char) 
+# of a line independent of window size
+USE_POS="yes"
+
+# Source the function library
+FUNCTIONS="/bin/y_functions.sh"
+test -r ${FUNCTIONS} && source ${FUNCTIONS}
+
+# define the following to match the program current state
+PROGRAM_NAME="NEW SCRIPT"
+VERSION="0.0-r0"
+LAST_MOD="2005.09.19"
+
+# Define log file here
+LOG="/dev/null"
+
+# Uncomment this if you need debug enabled
+#DEBUG="true"
+
+y_start
+
+TEMP_FILE="/proj/jenov/scripts/template.src"
+
+test -z "$1" &&  y_usage "$0 new_src_name"
+test -e "$1" && y_error "File $1 already exists"
+cp ${TEMP_FILE} "$1" > /dev/null
+chmod +x "$1"
+
+# Leave this as the last line
+y_exit

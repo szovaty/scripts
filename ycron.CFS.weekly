@@ -1,0 +1,36 @@
+#!/bin/bash
+
+LASTMODIFIED="2013.02.28"
+
+LOG="/var/log/ycron.log"
+INFO="yes"
+
+echo "*** Starting $0 on: `date` ***" >> $LOG
+
+# backup system
+ARCH_LIST="proj home sys www orcadlib"
+for i in $ARCH_LIST ; do
+	test -n "$INFO" && echo yarchive -s $i >> $LOG
+	/usr/local/bin/yarchive -s $i >> $LOG 2>&1
+done
+
+# backup svn
+for i in `ls /svn/` ; do
+	test -e /svn/${i}/format && {
+		test -n "$INFO" && echo Archive /svn/${i} >> $LOG
+		svnadmin -q dump /svn/$i | bzip2 -9 -c > /backup/`hostname`.svndump.${i}.bz2 2>> $LOG
+	}
+done
+
+# backup all mysql databases
+test -n "$INFO" && echo "Backup mysql databases" >> $LOG
+/usr/bin/mysqldump -l -u root --events --password=digidokisql --all-databases --single-transaction | bzip2 -9 > /backup/`hostname`.mysql_alldatabases_dump.bz2
+
+# rsync CFS to backup server
+#OPTIONS="-lpgoDrqxC"
+#EXCLUDES="--exclude=tmp/ --exclude=offline/"
+
+#test -n "$INFO" && echo "rsync /backup/ to backupserver" >> $LOG
+#su jenov -c "rsync $OPTIONS $EXCLUDES /backup/ backupserver:/home/jenov/backup/`hostname` >> $LOG 2>&1"
+
+echo "*** End $0 on: `date` ***" >> $LOG

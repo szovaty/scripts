@@ -1,0 +1,17 @@
+#!/bin/sh
+# this script makes lilo to reboot same option after sleep
+# place file under pm_utils sleep.d directory [/usr/lib64/pm_utils/sleep.d/]
+
+case "$1" in
+	hibernate|suspend)
+		mount -o remount,rw /boot
+#		/sbin/lilo -R Gentoo
+		x=`cat /proc/cmdline`
+		x=${x#*BOOT_IMAGE=}
+		x=${x%%' '*}
+		/sbin/lilo -R $x
+		mount -o remount,ro /boot
+		;;
+	*) exit $NA
+		;;
+esac

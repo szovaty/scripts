@@ -1,0 +1,191 @@
+#!/bin/bash
+
+VERSION="Version 0.4 09/01/2003 by y"
+
+#---------------------------------------------------
+# init section
+USAGE="USAGE: ydvdlib command [source] [destination] [other options]"
+LINES="------------------------------------------------"
+CORE_FILES="*.BUP *.buf *.IFO *.ifo *.VOB *.vob kulcsok*"
+OTHER_FILES="TapeID_* info"
+COPY="cp -a "
+DATE=`date +%Y.%m.%d-%T`
+FREE_SPACE="0"
+DIR_SIZE="0"
+
+# export global config file
+if [ ! -z $YDVDLIBRC ] ; then
+    . $YDVDLIBRC
+else
+    test -r "/etc/ydvdlib/rc.ydvdlib" && . /etc/ydvdlib/rc.ydvdlib
+fi 
+ 
+#---------------------------------------------------
+# funtions
+
+help () {
+    echo $USAGE
+    echo $VERSION
+    echo ""
+    echo "  commands:"
+    echo "	add_dvd:    rip a DVD disc to $DVDLIB_PATH/destination"
+    echo "	add_dir:    copy a film to the $DVDLIB_PATH DVD library"
+    echo "	copy_in:    copy a film form the external DVD library to the internal one; only $CORE_FILES"
+    echo "	move_in:    same as copy_in but deletes source $CORE_FILES"
+    echo "	delete_in:  deletes $CORE_FILES form internal DVD library, only if you have a tape backup"
+    echo "	copy_out:   copy a film from the internal DVD library to the exterlnal one; only $CORE_FILES"    
+    echo "	move_out:   same as copy_out but deletes source $CORE_FILES"
+    echo "	delete_out: deletes $CORE_FILES from external DVD library"
+    echo ""
+    echo "  other options:"
+    echo "	delete|move: deletes source file after command complate -> add_dir only"
+}
+
+error () {
+    test "$1" = "-l" && {
+	shift
+	echo "$DATE *** ERROR: $1 ; aborting operation" >> $LOG_FILE
+    }  
+    echo "ERROR: $1"
+    clean_up ; exit 1
+}
+
+clean_up () {
+    printf "INFO: Clean up started ..."
+    printf "\rINFO: Clean up finished         \n"
+}
+
+get_free_space () {
+    Y=" "
+    x=`df $1 | grep /`
+    x=`echo ${x#*$Y}`
+    x=`echo ${x#*$Y}`
+    x=`echo ${x#*$Y}`
+    x=`echo ${x%%$Y*}`
+    FREE_SPACE=$x
+}
+
+get_dir_size () {
+    x=`du -s -c $2 $1 | grep total`
+    x=`echo $x`
+    x=${x%%total}
+    DIR_SIZE=$x
+}
+
+ycopy () {
+    echo "$DATE ycopy $*" >> $LOG_FILE
+    test "$3" = "delete" || {  
+    	for i in $CORE_FILES ; do
+	    ls $SOURCE/$i 1>&/dev/null 2>/dev/null
+	    test "$?" = "1" && continue
+	    $COPY $SOURCE/$i $DEST 2>> $LOG_FILE
+	    test "$?" = "1" && error -l "During $COPY $SOURCE/$i $DEST"
+	done
+	test "${DEST%/${DEST##*/}}" != "$DVDLIB_PATH" && {
+	    for i in $OTHER_FILES ; do
+		ls $SOURCE/$i 1>&/dev/null 2>/dev/null
+		test "$?" = "1" && continue
+		test $SOURCE/$i -nt $DEST/$i && $COPY $SOURCE/$i $DEST
+	    done
+	}
+    }
+    ( test "$3" = "delete" || test "$3" = "move" ) && {
+	for i in $CORE_FILES ; do 
+	    rm -f $SOURCE/$i 2>> $LOG_FILE
+	    test "$?" = "1" && error -l "Delete $SOURCE/$i"
+	    test "$3" = "move" && test "${SOURCE%/${SOURCE##*/}}" = "$DVDLIB_PATH" && {		
+		for j in `ls $DEST/$i 2>/dev/null` ; do
+		    ln -s $DEST/${j##*/} $SOURCE/${j##*/}
+		done 
+	    }
+	done 
+    }
+}
+
+#---------------------------------------------------
+# command line interpreter
+case "$1" in
+    --help|-h)		help ; exit 0 ;;
+    "")			echo $USAGE ; exit 0 ;;
+    --version|-V) 	echo $VERSION ; exit 0 ;;
+    add_dvd)
+	DEST="$DVDLIB_PATH/$2"
+	test -f "$DEST" && error "$DEST is a file"
+	test -d $DEST || mkdir -p $DEST
+	test "$?" = "1" && error "Creating $DEST directory"
+	mount $DVD_DRIVE 2>/dev/null 1>/dev/null
+	SOURCE="$DVD_DRIVE/$DVD_VIDEO$3.*"
+	ls "$SOURCE" 2>/dev/null 1>/dev/null
+	test "$?" = "1" && error "Cannot stat $SOURCE"
+	$COPY $INFO_TEMPLATE $DEST
+	echo "INFO: Please fill in the info file while I'm copying the film"
+	OPT="add_dvd"
+	CMD="$RIPPER_DVD $DEST $3"
+	test "$4" = "move" && CMD="$CMD move"
+	echo "$DATE $*" >> $LOG_FILE
+    ;;
+    add_dir)
+	SOURCE="$2"
+	DEST="$DVDLIB_PATH/$3"
+	test -f "$DEST" && error "$DEST is a file"
+	test -d $DEST || mkdir -p $DEST
+	test "$?" = "1" && error "Creating $DEST directory"
+	$COPY $INFO_TEMPLATE $DEST
+	echo "INFO: Please fill in the info file while I'm copying the film"
+	OPT="add_dvd"
+	CMD="ycopy $SOURCE $DEST $4 "
+    ;;
+    copy_in|move_in|delete_out)
+	SOURCE="$DVDLIB1_PATH/$2"
+	DEST="$DVDLIB_PATH/$2"
+	test "$1" = "copy_in" && OPT="copy"
+	test "$1" = "move_in" && OPT="move"
+	test "$1" = "delete_out" && OPT="delete"
+	CMD="ycopy $SOURCE $DEST $OPT"
+    ;;
+    copy_out|move_out|delete_in)
+	SOURCE="$DVDLIB_PATH/$2"
+	DEST="$DVDLIB1_PATH/$2"
+	test "$1" = "copy_out" && OPT="copy"
+	test "$1" = "move_out" && OPT="move"
+	test "$1" = "delete_in" && {
+	    OPT="delete"
+	    test -f $SOURCE/TapeID_* || error "Cannot delete $2 from $DVDLIB_PATH as no backup on tape yet"
+	}
+	CMD="ycopy $SOURCE $DEST $OPT"
+    ;;
+    *)	error "ERROR: Unknown command: $1" ;;
+esac
+
+# other command line parameters
+shift
+for i in $* ; do
+    case $i in
+	-v)	COPY="$COPY -v"
+    esac
+done
+
+#---------------------------------------------------
+# check command parameters
+ls $SOURCE 2>/dev/null 1>/dev/null
+test "$?" = "1" && error "Cannot stat $SOURCE"
+test "$OPT" = "delete" || test -d $DEST || mkdir -p $DEST
+test "$?" = "1" && error "Cannot create $DEST"
+
+# check free space on destination
+case "$OPT" in
+    copy|move|add_dir|add_dvd)
+	get_free_space $DEST
+	get_dir_size "$SOURCE"
+	printf "%s %10d %s\n" "INFO: Free space on destination:" $FREE_SPACE "kBytes"
+	printf "%s %10d %s\n" "INFO: Size of source           :" $DIR_SIZE "kBytes"
+	test $FREE_SPACE -lt $DIR_SIZE && error "Not enough space on destination"
+    ;;
+esac
+
+# looks all OK lets do run the command
+$CMD
+
+#---------------------------------------------------
+# clean up
+clean_up

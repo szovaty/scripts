@@ -1,0 +1,149 @@
+#!/bin/bash
+# dvd to avi converter three pass version using mencoder by Y
+# 09/02/2003 - 0.0: project stated
+# 05/03/2003 - 0.4: first usable version
+# 09/05/2003 - 0.5: make it a bit more user friendly and add shutdown feature
+# 13/05/2003 - 0.6: add logging feature
+# 27/11/2003 - 0.7: fix skip paramater handling
+
+USAGE="usage: ydvd2avi -i input_file -o output_file -br vbitrate -s skip --shutdown any_other_mencoder_option"
+VERSION="0.7 27/11/2003"
+
+DEBUG="true"
+LOGFILE="$HOME/ydvd2avi.log"
+YDVD2AVI_TMP="/tmp/ydvd2avi_$$.tmp"
+SHUTDOWN_CMD="init 0" # make sure you can run it!
+AUDIO="mp3lame"
+OFILE="movie.avi"
+IFILE="*.VOB"
+ALANG="-alang hu,en"
+VBIT=""
+EXT="$ALANG"
+SKIP=-1
+
+MSG_BITRATE="Recommended video bitrate for"
+CD_650="650MB CD:"
+CD_700="700MB CD:"
+CD_800="800MB CD:"
+CD_2x650="2 x 650MB CD:"
+CD_2x700="2 x 700MB CD:"
+CD_2x800="2 x 800MB CD:"
+
+ymess2log () {
+    echo -n `date +%Y.%m.%d-%H:%M:%S`" - $$ " >> $LOGFILE
+    echo "$1" >> $LOGFILE
+}
+
+yexit () {
+    test -z "$2" || echo "$1"
+    ymess2log "INFO: Exit: $1"
+    test "$SHUTDOWN" = "true" && {
+	echo "INFO: Shutting down in 60 seconds..."
+	sleep 60
+    	ymess2log "INFO: Shutting down system"
+	sleep 2
+	$SHUTDOWN_CMD
+    }
+    exit
+}
+
+ymess2log "INFO: Starting: $0 $*"
+
+# checking if I can run the encoder
+which mencoder 2>/dev/null 1>&2
+test "$?" = "1" && yexit "ERROR: Cannot run encoder utility: mencoder." 1
+
+# get all command line options
+while test ! -z "$1" ; do
+    case "$1" in
+	--help|-h)	echo $USAGE ; yexit OK ;;
+	--version|-V)	echo "$0 version: $VERSION" ; yexit OK ;;
+	--output|-o)
+	    case "$2" in
+		''|-*)	yexit "ERROR: No outfile name given" 1 ;;
+		*)	OFILE="$2" ; shift ;;
+	    esac
+	;;
+	--vbitrate|-br)
+	    VBIT="get"
+	    case "$2" in
+		''|-*)	   yexit "ERROR: No bit rate given" 1 ;;
+		get_650)   MSG_BITRATE="$MSG_BITRATE $CD_650" ;;
+		get_700)   MSG_BITRATE="$MSG_BITRATE $CD_700" ;;
+		get_800)   MSG_BITRATE="$MSG_BITRATE $CD_800" ;;
+		get_2x650) MSG_BITRATE="$MSG_BITRATE $CD_2x650" ;;
+		get_2x700) MSG_BITRATE="$MSG_BITRATE $CD_2x700" ;;
+		get_2x800) MSG_BITRATE="$MSG_BITRATE $CD_2x800" ;;
+		*)	   VBIT="$2" ;;
+	    esac
+	    shift
+	;;
+	--input|-i)
+	    case "$2" in
+		''|-*)	yexit "ERROR: No input file name given" 1 ;;
+		*)	IFILE="$2" ; shift ;;
+	    esac
+	;;
+	--aid|-a)
+	    case "$2" in
+		''|-*)	yexit "ERROR: No aid given" 1 ;;
+		*)	AID="-aid $2" ; shift ;;
+	    esac
+	;;
+	--skip|-s)
+	    case "$2" in
+		''|-*)	yexit "ERROR: No skip level given" 1 ;;
+		*)	SKIP=$2 ; shift ;;
+	    esac
+	;;
+	--shutdown)
+	    SHUTDOWN="true"
+	    which ${SHUTDOWN_CMD%%' '*}>/dev/null 1>&2
+	    test "$?" = "1" && yexit "ERROR: Cannot run shutdown command: $SHUTDOWN_CMD." 1
+	;;
+	*)	EXT="$EXT $1" ;;
+    esac
+    shift
+done
+test "$DEBUG" = "true" && echo "$YDATE DEBUG: IFILE=[$IFILE]; AID=[$AID]; AUDIO=[$AUDIO]; VBIT=[$VBIT]; SKIP=[$SKIP]; EXT=[$EXT]"
+
+# OK we are ready to run the real stuff...
+
+# pass 0: audio encode
+test "$SKIP" -ge 0 || {
+    ymess2log "INFO: Encoding pass 0 started"
+    rm -f frameno.avi
+    echo -n >  $YDVD2AVI_TMP
+    tail -f $YDVD2AVI_TMP --pid=$$ &
+    cat $IFILE | mencoder -ovc frameno $AID -oac $AUDIO -lameopts vbr=3 -o frameno.avi $EXT - > $YDVD2AVI_TMP
+}
+
+test -r "$YDVD2AVI_TMP" -a "$VBIT" = "get" && {
+    x=`cat $YDVD2AVI_TMP | grep "$MSG_BITRATE"`
+    VBIT=${x##*: }
+}
+
+test -z "$VBIT" -o "$VBIT" = "get" && {
+    echo -n "INPUT: Set video bit rate: "
+    read VBIT
+}
+ymess2log "INFO: VBIT = $VBIT"
+
+# pass 1: first pass video encoding
+test "$SKIP" -ge 1 || {
+    ymess2log "INFO: Encoding pass 1 stated"
+    cat $IFILE | mencoder -ovc lavc $AID -lavcopts vcodec=mpeg4:vpass=1:vhq:vbitrate=$VBIT -oac copy -o /dev/null $EXT -
+}
+
+# pass 2: final video encoding
+test "$SKIP" -ge 2 || {
+    ymess2log "INFO: Encoding pass 2 started"
+    cat $IFILE | mencoder -ovc lavc $AID -lavcopts vcodec=mpeg4:vpass=2:vhq:vbitrate=$VBIT -oac copy -o $OFILE $EXT -
+}
+
+ymess2log "INFO: Clean up"
+rm -f frameno.avi
+rm -f divx2pass.log
+rm -f $YDVD2AVI_TMP
+
+yexit "OK"

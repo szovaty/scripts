@@ -1,0 +1,172 @@
+#!/bin/bash
+# This script is copy a DVD to the specified (or current) directory
+# and archive the disk key and file keys to a file called 'kulcsok'
+# V2.0 28/06/2002 modified to work with new css-cat version
+# V2.2 09/11/2002 add css-cat params option
+# V2.3 01/01/2003 add chown command
+# V2.5 17/01/2003 remove error messages from stdout
+# V2.6 17/01/2004 add main title detection
+
+echo "INFO: ydvd script V2.6 17/01/2004"
+
+DVD="/media/dvd"
+BINPATH="/usr/local/bin"
+USAGE="USAGE: ydvd <destination dir> <chapter to DeCSS> <css-cat params>"
+DVD_DEV="/dev/dvd"
+
+# find main title
+ymain_title () {
+    LAST=""
+    VOB_LIST=""
+    cd $DVD/VIDEO_TS
+    VOB=`ls VTS_*.VOB`
+    # find chapter list
+    for i in $VOB ; do
+	j=${i#*_}; j=${j%%_*}
+	if [ "$j" != "$LAST" ] ; then
+	    VOB_LIST="$VOB_LIST $j"
+	    LAST="$j"
+	fi 
+    done
+    # calculate chaprets size
+    for i in $VOB_LIST ; do
+	SIZE=`du -c VTS_$i*.VOB | grep total`
+	VOB_SIZE="$VOB_SIZE ${SIZE%total}"
+    done
+    # select bigist chapter
+    BIGGER=0; COUNT=0
+    for i in $VOB_SIZE ; do
+	COUNT=$(($COUNT+1))
+	if [ $i -gt $BIGGER ] ; then 
+	    BIGGER=$i
+	    BIGGER_NUM=$COUNT
+	fi
+    done
+    # find chapter number
+    COUNT=0
+    for i in $VOB_LIST ; do
+	COUNT=$(($COUNT+1))
+	if [ $COUNT -eq $BIGGER_NUM ] ; then
+	    CHAPTER=$i"_*"
+	    echo "INFO: Find main chapter: $i; size: "$(($BIGGER/1024))" MB" 
+	    return
+	fi
+    done
+}
+# end ymain_title
+
+if [ -z "$1" ] ; then
+    WORK_PWD=`pwd`
+    echo "WARNING: No destination directory specified!"
+    echo -n "Use current (y/n): "
+    read OK
+    if [ "$OK" = "n" ] ; then
+	echo $USAGE
+	exit 1
+    fi
+else
+    test "$1" = "-h" && {
+	echo $USAGE
+	exit 0
+    }
+    WORK_PWD=$1
+    if test -e "$WORK_PWD" ; then
+	echo "WARNING: Specified directory exists!"
+	echo -n "INFO: Do you want to use it anyway? (y/n)"
+	read OK
+	if [ "$OK" = "n" ] ; then
+	    echo "WARNING: No destination dir to use! Exiting..."
+	    exit 1
+	fi
+    else
+	mkdir -p $WORK_PWD
+	test "$?" = "1" && {
+	    echo "ERROR: Failed to create $WORK_PWD"
+	    exit 1
+	}
+    fi
+fi
+
+cd $WORK_PWD
+echo "INFO: Destination directory:" $WORK_PWD
+
+if test -e $DVD/VIDEO_TS ; then
+    echo "INFO: DVD mount OK!"
+else
+    mount $DVD
+    if test -e $DVD/VIDEO_TS ; then
+	echo "INFO: DVD mount OK!"
+    else
+	echo "ERROR: Cannot read" $DVD/VIDEO_TS"!"
+	echo "INFO: Make sure you have a DVD in the DVD drive!"
+	exit 1
+    fi
+fi 
+
+$BINPATH/tstdvd_new $DVD_DEV >/dev/null 2>&1
+if test -e "./disc-key" ; then
+    echo "INFO: Have the disc-key!"
+else
+    echo "ERROR: Cannot get disc-key!"
+    exit 1
+fi
+
+# set which chapters to ripp
+cd $DVD/VIDEO_TS
+if [ -z "$2" ] ; then 
+    CHAPTER="--all"
+else
+    CHAPTER="$2"
+    case "$2" in
+        --main|-m) ymain_title ;;
+    esac
+fi
+case "$CHAPTER" in
+    --all|-a)
+	echo "INFO: DeCSS all chapters!"
+	VOB=`ls *.VOB`
+	BUP=*
+	IFO=*
+	KULCSOK=kulcsok	
+    ;;
+    *)
+	echo "INFO: DeCSS chapter "$CHAPTER "!"  
+	VOB=`ls VTS_$CHAPTER.VOB`
+	BUP=VTS_$CHAPTER
+	IFO=VTS_$CHAPTER
+	KULCSOK=kulcsok_$CHAPTER
+    ;;
+esac
+
+# set css-cat parameters 
+PARAMS="$3"
+test -z "$3" && PARAMS="av1P"
+echo "INFO: css-cat params:" $PARAMS
+
+# copy non cryptied files
+cd $WORK_PWD
+test -r $DVD/VIDEO_TS/$BUP.BUP && {
+    cp $DVD/VIDEO_TS/$BUP.BUP .
+    chmod 0644 $BUP.BUP
+}
+test -r $DVD/VIDEO_TS/$IFO.IFO && {
+    cp $DVD/VIDEO_TS/$IFO.IFO .
+    chmod 0644 $IFO.IFO
+}
+echo "INFO: Copy BUP and IFO files done!"
+
+# copy crypted files
+for i in $VOB ; do
+	echo "INFO: Copy "$i
+	$BINPATH/tstdvd_new $DVD_DEV $DVD/VIDEO_TS/$i > /dev/null 2>&1
+	cp title-key title-key.$i
+	$BINPATH/css-cat_new -$PARAMS $DVD/VIDEO_TS/$i > $i 2>/dev/null
+done
+echo "INFO: Copy VOB files done!"
+
+# clean up
+umount $DVD
+tar czf $KULCSOK.tgz ./title-key.* ./disc-key
+rm -f title-key* >/dev/null 2>&1 
+rm -f dis* >/dev/null 2>&1
+echo "INFO: Done!"

@@ -1,0 +1,23 @@
+#!/bin/bash
+
+
+get_ip () {
+    x=`ifconfig -a ppp0 | grep inet`
+    x=${x#*:}
+    x=${x%%' '*}
+    CURR_IP=$x
+}
+
+get_ip
+LAST_IP=$CURR_IP
+printf "%s: Current IP - %s\n" `date +%Y.%m.%d-%H:%M` $LAST_IP
+while true ; do    
+    sleep 10
+    get_ip
+    if [ "$CURR_IP" != "$LAST_IP" ] ; then
+	if [ -z "$CURR_IP" ] ; then CURR_IP="Link-down"; fi
+	printf "%s:   IP Changed - %s\n" `date +%Y.%m.%d-%H:%M` $CURR_IP
+	LAST_IP=$CURR_IP
+    fi
+done
+    

@@ -1,0 +1,97 @@
+#!/usr/bin/python
+# Create a costed BOM (Bill of Material) with AVL info 
+#   from an OrCAD generated cvs format BOM
+#   using Exosite PartNumber file for cost and AVL info
+
+import csv, argparse
+
+Version = 'V0.1.0'
+
+# PartNumber file format
+PN = {
+    'pn':   'Part Number',
+    'stat': 'Status',
+    'desc': 'Description',
+    'dist': 'Distributor',
+    'dpn':  'Distributor P/N',
+    '1pc':  'Price [$]/1pc',
+    '100pc':'Price [$]/100pc',
+    '1kpc': 'Price [$]/1kpc'
+    }
+
+# input BOM format
+BOM = {
+    'pn':   'Part Number',
+    'qty':  'Quantity',
+    'val':  'Value',
+    'ref':  'Part Reference'
+    }
+
+# output BOM format
+csvheader = (
+        'Item#',
+        BOM['pn'],
+        BOM['qty'],
+        BOM['val'],
+        PN['desc'],
+        BOM['ref'],
+        PN['dist'],
+        PN['dpn'],
+        PN['1pc'],
+        PN['100pc'],
+        PN['1kpc']
+        )
+
+def commandline_opts():
+    """ Define command line options """
+
+    parser = argparse.ArgumentParser(prog='makebom %s'%(Version))
+
+    parser.add_argument('-i','--input',action='store',\
+            help='Input BOM file name')
+    parser.add_argument('-r','--ref',action='store',\
+            help='Exosite\'s PartNumber file')
+    parser.add_argument('-o','--output',action='store',\
+            help='Output BOM file name')
+    parser.add_argument('-V','--version',action='version',\
+            version='%(prog)s')
+
+    return parser.parse_args()
+
+# read command line arguments
+args = commandline_opts()
+
+# read PartNumber database
+pndb = csv.DictReader(open(args.ref))
+
+# read input BOM and ignore _np and none BOM parts
+bom = []
+inbom = csv.DictReader(open(args.input))
+for row in inbom:
+    if row[BOM['pn']] != 'NA' and row[BOM['pn']].find('_np') == -1 :
+        bom.append(row)
+
+bom.sort()
+
+
+# add extra data from PartNumber file
+for idx, row_bom in enumerate(bom):
+    for row_pndb in pndb:
+        if row_pndb[PN['pn']] == row_bom[BOM['pn']]:
+            break
+
+    bom[idx][PN['desc']]    = row_pndb[PN['desc']]
+    bom[idx][PN['dist']]    = row_pndb[PN['dist']]
+    bom[idx][PN['dpn']]     = row_pndb[PN['dpn']]
+    bom[idx][PN['1pc']]     = row_pndb[PN['1pc']]
+    bom[idx][PN['100pc']]   = row_pndb[PN['100pc']]
+    bom[idx][PN['1kpc']]    = row_pndb[PN['1kpc']]
+    bom[idx]['Item#']       = idx + 1
+
+# write out the BOM with AVL and price info
+with open(args.output,'wb') as f:
+    outbom = csv.DictWriter(f,fieldnames=csvheader,extrasaction='ignore')
+    outbom.writeheader()
+    for row in bom:
+        outbom.writerow(row)
+

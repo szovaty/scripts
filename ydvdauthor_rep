@@ -1,0 +1,32 @@
+#!/bin/bash
+
+DEBUG="yes"
+VER="V0.0 23/03/2005 by y"
+USAGE="ydvdauthor_rep -i input_dir -p ydvdauthor_params"
+PAR=" "
+
+error () { echo "  ERROR: "$* >> /dev/stderr ; exit 1 ; }
+debug () { test -n "$DEBUG" && echo "  DEBUG: "$* ; }
+
+test -z "$1" && { echo $USAGE ; exit ; }
+while [ "$1" != "" ] ; do
+    case $1 in
+	--input|-i)
+	    case "$2" in
+		''|-*)	error "No input file specified" ;;
+		*)	INDIR="$2" ; shift ;;
+	    esac
+	    test -d $INDIR || error "$INDIR is not a valid input directory!" ;;
+	-p)	shift ; PAR="$*" ; continue ;;
+    esac
+    shift
+done
+debug "PAR="$PAR
+DIRS=`ls $INDIR 2>/dev/null`
+for i in $DIRS ; do
+    x=`ls $INDIR/$i/*.VOB 2>/dev/null`
+    test -n "$x" && {
+	debug "Doing movi: ===== $i ====="
+	ydvdauthor.latest -i $INDIR/$i $PAR
+    }
+done

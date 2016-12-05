@@ -1,0 +1,27 @@
+#!/bin/bash
+VERSION="V0.1    "
+LOG="/var/log/ybench.log"
+
+echo "#******************************************************************************#" >> $LOG
+echo "| ybench $VERSION                                                              |" >> $LOG
+echo "+------------------------------------------------------------------------------+" >> $LOG
+date +%Y-%m-%d >> $LOG
+echo "`uname -n -p`" >> $LOG
+echo "`uname -r -o`" >> $LOG
+echo "`uname -v`" >> $LOG
+
+ramsmp -b 3 >> $LOG
+
+nbench >> $LOG
+echo "+------------------------------------------------------------------------------+" >> $LOG
+DEV=`mount | grep "/dev/" | grep " on / "`
+DEV=${DEV%%' '*}
+echo "hdparm -tT $DEV" >> $LOG
+hdparm -tT $DEV >> $LOG
+
+echo "+------------------------------------------------------------------------------+" >> $LOG
+echo "bonnie -d /tmp -s 2000" >> $LOG
+bonnie -d /tmp -s 2000 >> $LOG
+echo "+------------------------------------------------------------------------------+" >> $LOG
+echo "bonnie -d /xdir/tmp -s 2000" >> $LOG
+bonnie -d /xdir/tmp -s 2000 >> $LOG

@@ -1,0 +1,30 @@
+#!/bin/bash
+
+CMD="xfce4-terminal"
+DIR=`pwd`
+H=`hostname`
+G="--geometry"
+W="--working-directory"
+T="--tab"
+OX=1920
+OY=0
+X=100/14
+Y=100/6
+
+MODE="dev"
+test -n "$1" && MODE=$1
+case $MODE in
+    adm)
+        #display 1920x1050
+        $CMD $W=$DIR $T $G=182x12-$(($OX+0))+$(($OY+0));
+        $CMD $W=$DIR $T $G=80x14-$(($OX+100*$X))+$(($OY+15*$Y));
+        $CMD $W=$DIR $T $G=80x36-$(($OX+100*$X))-$(($OY+0));
+        $CMD $W=$DIR $T $G=100x54-$(($OX+0))-$(($OY+0));
+        $CMD $W=$DIR $T $G=89x21+0-0;;
+    dev)
+        $CMD $W=$DIR $T $G=107x35+0+0;
+        $CMD $W=$DIR $T $G=107x12+0-$((26*$Y));
+        $CMD $W=$DIR $T $G=107x18+0-0;
+        $CMD $W=$DIR $T $G=164x55-$(($OX+0))+0;
+        $CMD $W=$DIR $T $G=164x12-$(($OX+0))-0;;
+esac

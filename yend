@@ -1,0 +1,9 @@
+#!/bin/bash
+
+YFN="/tmp/yend_$$"
+
+echo Control_file = $YFN
+while ! [ -f $YFN ] ; do 
+	sleep 10
+done
+xfce4-session-logout --hibernate

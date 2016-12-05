@@ -1,0 +1,98 @@
+#!/bin/bash
+# Based on template.src version 0.0 last modified 2005.09.16 by y
+# build initramfs for splash boot
+
+trap y_exit TERM HUP INT
+
+# Uncomment this to allow colors on the console
+USE_COLOR="yes"
+
+# This will enable positioning of a text to the end (-8 char) 
+# of a line independent of window size
+USE_POS="yes"
+
+# Source the function library
+FUNCTIONS="/bin/y_functions.sh"
+test -r ${FUNCTIONS} || { echo "ERROR: Failed to source $FUNCTIONS!"; exit 1; }
+source ${FUNCTIONS}
+
+# define the following to match the program current state
+PROGRAM_NAME="ymkinitramfs"
+VERSION="0.2"
+LAST_MOD="2006.06.16"
+
+# Define log file here
+test -z "$LOG" && LOG="/tmp/ymkinitrd.log"
+
+# Uncomment this if you need debug enabled
+#Y_DEBUG="true"
+
+# use these to set cleanup on exit
+#MOUNTED=""		; y_exit will unmount them
+#DELETE_ON_EXIT=""	; y_exit will delete them
+#LAST_CMD=""		; y_exit will run it just before exit
+
+y_start
+# ===================================================================================
+y_set_default TMP_DIR "/tmp"
+y_set_default SPLASH_DIR "/etc/splash"
+y_set_default MAKE_CMD "bzlilo"
+y_set_default LINUX_DIR "linux"
+
+# get command line options
+while [ -n "$1" ] ; do
+    case "$1" in
+		--help|-h) 		y_help "[options]" ; y_exit ;;	#; Print this help
+		--source|-s) 	shift; SOURCE_DIR="$1";;		#; Define source directory [SOURCE_DIR]
+		--tmp|-t) 		shift; TMP_DIR="$1";;			#; Define tmp directory [TMP_DIR]
+		--splash|-S)	shift; SPLASH_DIR="$1";;		#; Define splash source directory [SPLASH_DIR]
+		--makecmd|-m)	shift; MAKE_CMD="$1";;			#; Define make command option [MAKE_CMD]
+		--linux|-l)		shift; LINUX_DIR="$1";;			#; Define linux source dir [LINUX_DIR]
+		--helper|-H)	shift; SPLASH_HELPER="$1";;		#; Define splash_helper
+		-v)				shift; V="$1";;					#; Verbose mode [0,1,2]
+		--debug)		Y_DEBUG="true";					#; Enable debug mode
+    esac
+    shift
+done
+
+TMP_DIR="$TMP_DIR/ymkinitramfs_$$"
+y_run_cmd "rm -r -f ${TMP_DIR}"
+y_run_cmd "mkdir -p ${TMP_DIR}"
+DELETE_ON_EXIT="$TMP_DIR"
+
+test -z "$SOURCE_DIR" && y_warning "SOURCE_DIR is not specified!"
+test -z "$SPLASH_HELPER" && SPLASH_HELPER="/sbin/fbcondecor_helper"
+test ! -e "$SOURCE_DIR/$SPLASH_HELPER" && y_fatal_error "$SOURCE_DIR/$SPLASH_HELPER does not exists!"
+test -e "$SOURCE_DIR/usr/src/$LINUX_DIR" || y_fatal_error "$SOURCE/usr/src/$LINUX_DIR does not exists!"
+
+mkdir -p ${TMP_DIR}/{dev,dev/fb,dev/misc,dev/vc,lib/splash/proc,proc,root,sbin,/lib/splash/sys,sys,etc}
+if [ $EUID == 0 ] ; then
+    test ! -e "{$TMP_DIR}/dev/null" && mknod "${TMP_DIR}/dev/null" c 1 3
+    test ! -e "{$TMP_DIR}/dev/console" && mknod "${TMP_DIR}/dev/console" c 5 1
+    test ! -e "{$TMP_DIR}/dev/tty1" && mknod "${TMP_DIR}/dev/tty1" c 4 0
+else
+    y_warning " Can not create devices as I'm not ROOT!"
+fi
+
+# copy splash helper and theme files
+y_run_cmd "cp -a ${SOURCE_DIR}${SPLASH_HELPER} ${TMP_DIR}${SPLASH_HELPER}"
+y_run_cmd "mkdir -p $TMP_DIR/etc/splash"
+y_run_cmd "cp -r $SPLASH_DIR/* $TMP_DIR/etc/splash"
+
+y_info "$V" "Creating $SOURCE_DIR/usr/src/$LINUX_DIR/usr/initramfs_data.cpio.gz"
+(cd ${TMP_DIR} ; find . | cpio --quiet --dereference -o -H newc | gzip -9 > $SOURCE_DIR/usr/src/$LINUX_DIR/usr/initramfs_data.cpio.gz)
+ERROR="$?"
+test "$ERROR" = 0 || y_error "Creating initramfs image file!"
+
+y_info "$V" "Creating new kernel image"
+(cd ${SOURCE_DIR}/usr/src/$LINUX_DIR ; touch usr/initramfs_data.cpio.gz ; make -s $MAKE_CMD >>$LOG 2>&1)
+ERROR="$?"
+if [ "$ERROR" = 0 ] ; then
+	y_info "$V" "New kernel image with updated initramfs ready!"
+else
+	y_error "Kernel build error!"
+fi
+
+# ===================================================================================
+# Leave this as the last line
+y_exit "$ERROR"

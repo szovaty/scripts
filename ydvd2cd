@@ -1,0 +1,41 @@
+#!/bin/bash
+
+VERSION="0.1 03/03/2004"
+TMP_VOBDIR="/dvdlib/tmpvob_$$"
+TMP_AVIDIR="/tmp"
+LOGFILE="/dvdlib/ydvd2cd.log"
+MOVI_TITLE="movie"
+CDRW_DEF="0,0,0"
+CDRW_TYPE="Sony"
+
+ymess2log () {
+    echo -n `date +%Y.%m.%d-%H:%M:%S`" - $$ " >> $LOGFILE
+    echo "$1" >> $LOGFILE
+}
+
+CDRW_DEV=`sudo cdrecord --scanbus | grep $CDRW_TYPE`
+CDRW_DEV=${CDRW_DEV%0)*}
+
+ymess2log "INFO: Starting: $0 $*; version $VERSION"
+rm -rf ${TMP_VOBDIR%_*}_*
+ymess2log "INFO: Starting DVD ripper"
+ydvdripper $TMP_VOBDIR --main
+
+cd $TMP_VOBDIR
+rm *_0.*
+ymess2log "INFO: Starting: DVD to AVI convertion"
+ydvd2avi -o $TMP_AVIDIR$MOVI_TITLE'.avi' -br get_700 -a 128 
+rm *.VOB
+
+ymess2log "INFO: Make ISO file"
+mkisofs -R -o $MOVI_TITLE'.avi.iso' $TMP_AVIDIR$MOVI_TITLE'.avi'
+rm $TMP_AVIDIR$MOVI_TITLE'.avi'
+
+ymess2log "INFO: Starting CD recording"
+sudo cdrecord -v speed=16 dev=$CDRW_DEV $MOVI_TITLE'.avi.iso'
+
+cd ..
+rm -r $TMP_VOBDIR
+
+ymess2log "INFO: Finished: $0 $*"
+

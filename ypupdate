@@ -1,0 +1,21 @@
+#!/bin/bash
+# update portage tree
+
+VER="V0.0 31/10/2004 by y"
+LOG="/var/log/ypupdate.log"
+DATE=`date +%Y%m%d`
+BACKUPDIR="/archive/gentoo"
+MAKECONF="/etc/make.conf"
+
+echo "ypupdate, Version $VER Started: "`date +%Y.%m.%d%t%H:%M:%S` >> $LOG 2>&1
+
+# backup current portage tree
+. $MAKECONF
+tar -c -j -C $PORTDIR -f $BACKUPDIR/portage.backup.tar.bz2 . >> $LOG 2>&1
+
+# update portage tree
+emerge --sync > /dev/null 2>> $LOG
+
+echo "Script finished: "`date +%Y.%m.%d%t%H:%M:%S` >> $LOG 2>&1
+
+

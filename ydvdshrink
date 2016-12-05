@@ -1,0 +1,73 @@
+#!/bin/bash
+# Based on template.src version 1.0 last modified 2006.01.05 by y
+# Add your description here of the program here
+
+trap y_exit TERM HUP INT
+
+# Uncomment this to allow colors on the console
+USE_COLOR="yes"
+
+# This will enable positioning of a text to the end (-8 char) 
+# of a line independent of window size
+USE_POS="yes"
+
+# Source the function library
+FUNCTIONS="/bin/y_functions.sh"
+test -r ${FUNCTIONS} && source ${FUNCTIONS}
+
+# define the following to match the program current state
+PROGRAM_NAME="ydvdshrink"
+VERSION="0.0-r1"
+LAST_MOD="2006.06.02"
+
+# Define log file here
+LOG="/tmp/ydvdshrink.log"
+
+# Uncomment this if you need debug enabled
+#Y_DEBUG="true"
+
+# use these to set cleanup on exit
+#MOUNTED=""		# y_exit will unmount them
+#DELETE_ON_EXIT=""	# y_exit will delete them
+#LAST_CMD=""		# y_exit will run it just before exit
+
+y_start
+# ===================================================================================
+y_run_cmd "rm -rf tmp"
+y_run_cmd "mkdir tmp"
+
+MOVIE_VIDEO="tmp/movie.m2v"
+MOVIE_AUDIO="tmp/movie.ac3"
+MOVIE_SHRINKED="tmp/movie.m2s"
+MOVIE_FINAL="tmp/movie.VOB"
+DELETE_ON_EXIT="tmp"
+
+y_info "Extract video..."
+cat *.VOB | tcextract -t vob -x mpeg2 > $MOVIE_VIDEO 2>>$LOG
+y_info "Extract audio..."
+cat *.VOB | tcextract -a 0 -x ac3 -t vob > $MOVIE_AUDIO 2>>$LOG
+v_size=`du -k $MOVIE_VIDEO`; v_size=${v_size%$MOVIE_VIDEO}; v_size=$((1024*$v_size))
+a_size=`du -k $MOVIE_AUDIO`; a_size=${a_size%$MOVIE_AUDIO}; a_size=$((1024*$a_size))
+s_factor=`echo "scale=2; $v_size/$((4700000000-$a_size))" | bc`
+s_factor=`echo "scale=2; $s_factor*1.05" | bc`
+sf_factor=`echo "scale=0; 100*$s_factor" | bc`; sf_factor=`printf "%.0f" $sf_factor`
+
+if [ "$sf_factor" -le 100 ] ; then
+    y_info "No shrinking is required!"
+    MOVIE_SHRINKED=$MOVIE_VIDEO
+else
+    y_info "Shrink factor set to: $s_factor"
+    y_info "Shrink movie..."
+    y_run_cmd "tcrequant -i $MOVIE_VIDEO -o $MOVIE_SHRINKED -f $s_factor"
+fi
+y_info "Multiplex audio and video stream..."
+mplex -v 0 -f 8 -o $MOVIE_FINAL $MOVIE_SHRINKED $MOVIE_AUDIO >>$LOG 2>&1
+y_info "Author DVD..."
+ydvdauthor -i tmp >>$LOG 2>&1
+y_info "Make DVD image..."
+mkisofs -dvd-video -V ${PWD##*/} -o /2burn/dvd/${PWD##*/}.iso tmp/dvd >>$LOG 2>&1
+y_info "Clean-up and exit..."
+
+# ===================================================================================
+# Leave this as the last line
+y_exit

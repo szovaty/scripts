@@ -1,0 +1,77 @@
+#!/bin/bash
+# generic desktop cron script, mainly for backup and sync jobs
+
+DEBUG=""
+V=1
+PECHO="-->"
+
+RSYNC="rsync"
+YARCHIVE="/usr/local/bin/yarchive"
+
+LFS="/xfs"
+CFS="cfs:"
+CFS_USER="jenov"
+
+OPTION="-ax --partial --delete --specials"
+
+if [ -z $DEBUG ] ; then 
+
+	OPTIONS="$OPTION -q"
+	LOG="/var/log/ycron.log"
+
+else 
+
+	OPTIONS="$OPTION -v"
+	LOG="/tmp/ycron.log"
+
+fi
+
+
+echo "*** Start $0 `date` ***" >> $LOG
+test $V -ge 2 && echo "OPTIONS: $OPTIONS" >> $LOG
+
+#--------------------------------------------------------------
+# rsync $CFS/backup to /backup/systems/ddrli01
+EXCLUDES="--exclude=tmp/"
+DEST="/backup/systems/CFS"
+DEST1="/backup/systems/CFS_monthly"
+BWLIMIT="--bwlimit=20"
+mkdir -p $DEST >> $LOG 2>&1
+
+test -n "x" && {
+
+	test $V -ge 1 && echo "$PECHO rsync $CFS/backup/ to $DEST" >> $LOG 2>&1
+	test $V -ge 2 && echo "EXCLUDES: $EXCLUDE" >> $LOG
+	su $CFS_USER -c "$RSYNC $OPTIONS $BWLIMIT $EXCLUDES $CFS/backup/ $DEST >> $LOG 2>&1"
+	# retry if we had an error
+	test "$?" = "0" || su $CFS_USER -c "$RSYNC $OPTIONS $BWLIMIT $EXCLUDES $CFS/backup/ $DEST >> $LOG 2>&1"
+	test "$?" = "0" || su $CFS_USER -c "$RSYNC $OPTIONS $BWLIMIT $EXCLUDES $CFS/backup/ $DEST >> $LOG 2>&1"
+
+}
+
+# copy files to permanent names
+test -n "x" && {
+
+	mkdir -p $DEST1 >> $LOG 2>&1
+	for i in `cd $DEST; find`; do
+		test -f "$DEST/$i" && mv $DEST/${i#./} $DEST1/`date +%Y%m`.${i#./} >> $LOG 2>&1
+	done
+
+}
+
+#--------------------------------------------------------------
+
+#--------------------------------------------------------------
+# archive LFS
+ 
+test -n "x" && {
+    LIST="proj home titkok ymmlib"
+    for i in $LIST ; do
+        test $V -ge 1 && echo "$PECHO yarchive -s $i" >> $LOG 2>&1
+        $YARCHIVE --monthly $i >> $LOG 2>&1
+    done
+       
+}     
+#--------------------------------------------------------------
+
+echo "***   End $0 `date` ***" >> $LOG

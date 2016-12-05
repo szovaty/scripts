@@ -1,0 +1,87 @@
+C_DESC      = 'description'
+C_DESC_S    = 'Gentoo based system admin tool'
+C_VER       = '0.2'
+C_EPI       = 'epiloge'
+C_EPI_S     = 'A ddr-consulting.com tool.'
+C_CFGFN     = '/etc/ysysadmin.rc'
+C_CFG       = 'config'
+C_V         = 'version'
+C_V_S       = '%(P)s V%(V)s'%{'P':sys.argv[0],'V':C_VER}
+
+C_KERNEL_SOURCE = '/usr/src/linux'
+
+C_TOOL      = 'argparser'
+C_GLOBAL    = 'global'
+C_KERNEL    = 'kernel'
+C_GENTOO    = 'gentoo'
+C_SYSTEM    = 'system'
+C_CFGV      = 'cfgversion'
+C_QUIET     = 'quiet'
+C_VERBOSE   = 'verbose'
+C_PRETEND   = 'pretend'
+C_BACKUP    = 'backup'
+C_DEBUG     = 'debug'
+C_SOURCE    = 'source'
+C_BUILD     = 'build'
+C_PREB      = 'prebuild'
+C_POSTB     = 'postbuild'
+C_SHUTDOWN  = 'shutdown'
+C_HIBERNATE = 'hibernate'
+C_SUSPEND   = 'suspend'
+C_COLOR     = 'color'
+
+
+# flags definition
+NA      = 'na'
+T_G     = 'group'
+T_C     = 'cfg_only'
+T_T     = 'store_true'
+T_S     = 'store'
+T_V     = 'version'
+
+# config definitions
+cfg_def = \
+    (C_TOOL,NA,(\
+        (C_DESC,'Gentoo BASED system admin tool'),
+        (C_EPI,'A DDR-consilting.com tool.'))),\
+    (C_GLOBAL,T_G,(\
+        (C_V,       T_V,'V','version',C_V_S),
+        (C_CFG,     T_S,'c','config',C_CFGFN,'Config file to use'),
+        (C_CFGV,    T_C,NA,NA,NA,'0.0'),
+        (C_QUIET,   T_T,'q','quiet',    'false',\
+                'Set quiet mode - very little output'),
+        (C_VERBOSE, T_T,'v','verbose',  'false','Set verbose mode'),
+        (C_PRETEND, T_T,'p','pretend',  'false',\
+                'Pretend (simulate) run, but do nothing'),
+        (C_COLOR,   T_T,'C','color',    'false','Set color mode'),
+        (C_DEBUG,   T_T,'B','debug',    'false',\
+                'Enable debug mode'))),\
+    (C_KERNEL,T_G,(\
+        (C_SOURCE,  T_S,'s','source',   '/usr/src/linux',\
+                'Define kernel source dir'),
+        (C_BUILD,   NA,NA,NA,    \
+                'make bzlilo modules modules_install',\
+                'Kernel build command'),
+        (C_BACKUP,  T_T,'b','backup',   'true',\
+                'Backup kernel image'),
+        (C_PREB,    NA,NA,NA, \
+                'mount -o remount,rw /boot','Kernel build pre-command'),
+        (C_POSTB,   T_S,'3','postbuild',\
+                'mount -o remount,ro /boot','Kernel build post-command'))),\
+    (C_GENTOO,T_G,(\
+        (C_BUILD,   NA,NA,NA,        \
+                'emerge -uDN world','gentoo build command'),
+        (C_PREB,    NA,NA,NA,        \
+                'yarchive -s sys','Gentoo build pre-command'),
+        (C_POSTB,   NA,NA,NA,        \
+                'revdep-rebuild -i -p','Gentoo build post-command'))),\
+    (C_SYSTEM,T_G,(\
+        (C_SHUTDOWN,T_S,NA,'shutdown', \
+                'init 0','System shutdown command'),
+        (C_HIBERNATE,NA,NA,'hibernate',\
+                'echo disk > /sys/power/state','System hibernate command'),
+        (C_SUSPEND, T_S,'9','suspend',  \
+                'echo mem > /sys/power/state','System suspend command')))
+    
+
+

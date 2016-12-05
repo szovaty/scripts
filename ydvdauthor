@@ -1,0 +1,163 @@
+#!/bin/bash
+# V0.1: fine tune code
+# V0.2: add chapter generation code
+# V0.3: add multi input dir feature
+# V0.4: fix default outdir feature when using multi input
+# V0.5: fix parameter settings like DEBUG and CHAP
+
+DEBUG="no"
+VER="V0.5 19/08/2005 by y"
+USAGE="ydvdauthor -i input_dir [-o output_dir] [other parameters]"
+DVD5_LIMIT="4450"	# 4450 MBytes plus few KBytes for other files
+DVDRW="/dev/cdroms/cdrom0"
+#TOCGEN="tocgen"
+TOCGEN="dvdauthor -T -o"
+#IFOGEN="ifogen"
+IFOGEN="dvdauthor"
+DVDBURN="growisofs -Z $DVDRW -dvd-video"
+CHAP="0"
+
+# generic funtion definitions
+
+help () { 
+    echo $USAGE
+    cat $0 | grep -e -- | grep -v USAGE
+}
+error () { echo "  ERROR: "$* >> /dev/stderr ; exit 1 ; }
+warning () { echo "  WARNING: "$* >> /dev/stdout ; }
+debug () { test "$DEBUG" = "true" && echo "  DEBUG: "$* >> /dev/stdout ; }
+get_dir_size () { x=`du -s -c -m $1 | grep total` ; x=`echo $x` ; DIR_SIZE=${x%%total} ; }
+get_free_space () {
+    Y=" " ; x=`df $1 | grep /` ; x=`echo ${x#*$Y}` ; x=`echo ${x#*$Y}` ; x=`echo ${x#*$Y}`
+    FREE_SPACE=`echo ${x%%$Y*}`
+}
+
+# function definitions
+check_dvd5 () {
+    get_dir_size "$1/*.VOB"
+    debug "VOB size= $DIR_SIZE MBytes"
+    test "$DIR_SIZE" -le "$DVD5_LIMIT"
+    return $?
+}
+
+y_ifogen () { 
+    test "$NOCHAP" = "true" && CHAP="0,10:00,20:00,30:00,40:00,50:00,1:00:00,1:10:00,1:20:00,1:30:00,1:40:00,1:50:00,2:00:00,2:30:00"
+    $IFOGEN -o $OUTDIR -c $CHAP -f "cat $INDIR/*.VOB |" 
+}
+
+y_tocgen () { $TOCGEN $OUTDIR ; }
+
+y_burndvd () {
+    KERNEL=`uname -r` ; KERNEL=${KERNEL%.*}
+# should work is not using SCSI emulation
+#    test "$KERNEL" != "2.4" && error "System will crash with this kernel. Need 2.4.xx." 
+    test "$PAUSE" = "true" && {
+	eject $DVDRW
+	echo "Ready to burn! Insert DVD, then press ENTER"
+	read x
+	eject -t
+    }
+    $DVDBURN -V ${INDIR##*/} $OUTDIR
+    eject $DVDRW
+}
+
+# command line interpreter
+test -z "$1" && { help ; exit ; }
+while [ "$1" != "" ] ; do
+    case $1 in
+	--help|-h)	# print help messages
+	    help ; exit ;;		
+	--version|-V)	# print version info
+	    echo $VER ; exit ;;	
+	--output|-o)	# output dir definition
+	    case "$2" in
+		''|-*)	error "No output directory specified!" ;;
+		*)	OUTDIR="$2" ; shift ;;
+	    esac
+	    test -d $OUTDIR || {
+		mkdir $OUTDIR 
+		test "$?" = "1" && error "$OUTDIR is not valid!"
+	    }
+	;;
+	--input|-i)	# input dir definition
+	    YOUT=""
+	    while [ "$YOUT" != "true"  ] ; do
+		case $2 in
+		    ''|-*)	YOUT="true" ;;
+		    *)		INDIRS="$INDIRS $2" ; shift ;;
+		esac
+	    done
+#	    debug "INDIRS="$INDIRS	    
+	    test -z "$INDIRS" && error "No input directory specified!"
+	;;
+	--burn)		# enable DVD burn
+	    BURN="true" ;;		
+	--clean|-C)	# remove output dir after burn
+	    CLEAN="true" ;;		
+	--pause|-P)	# wait for DVD in before burn
+	    PAUSE="true" ;;		
+	--nochapt)	# do not generate chapters
+	    NOCHAP="true" ;;	
+	--debug)	# enable debug mode
+	    DEBUG="yes" ;;		
+	--dvd5)		# test if DVD fit to a DVD5 disk
+	    DVD5="true" ;;		
+	--burn_only)	# only burn DVD, no conversion
+	    BURN_ONLY="true" ; BURN="true" ;;	
+	*)		error "Unknown command: $1"
+    esac
+    shift
+done
+
+for INDIR in $INDIRS ; do
+    # check few things before we start
+    if [ "$BURN_ONLY" = "true" ] ; then OUTDIR=$INDIR ; INDIR=$OUTDIR/VIDEO_TS ; fi
+    debug "===== $INDIR ====="
+    x=`ls $INDIR/*.VOB 2>/dev/null`
+    test -z "$x" && {
+        warning "Cannot run on: $INDIR"
+        continue
+    }
+    test "$DVD5" = "true" && {
+	check_dvd5 $INDIR
+	test "$?" = "1" && { 
+	    warning "Movi is too big for a 4.7G disk!"
+	    unset OUTDIR
+	    continue
+	}
+    }
+    if [ "$BURN_ONLY" != "true" ] ; then
+        get_dir_size $INDIR
+        get_free_space $OUTDIR
+        debug "FREE_SPACE="[$FREE_SPACE]
+        debug "DIR_SIZE="[$DIR_SIZE]
+        test "$FREE_SPACE" -le "$DIR_SIZE" && error "Not enough free space!"
+        debug "Movi size and free space OK. Generating IFO files..."
+
+        # check if outdir is OK and clear it out
+        test -z "$OUTDIR" &&  OUTDIR="$INDIR/dvd"
+        debug "Clearing output directory: $OUTDIR"
+        rm -r -f $OUTDIR/*
+        test "$?" = "1" && error "Cannot clear output directory: $OUTDIR!"
+        mkdir -p $OUTDIR/VIDEO_TS $OUTDIR/AUDIO_TS
+        test "$?" = "1" && error "Cannot create output directories!"
+
+        # make ifo files
+        y_ifogen
+        test "$?" = "1" && error "Generating IFO files"
+        debug "IFO file generated."
+
+        #make toc files
+        y_tocgen
+        test "$?" = "1" && error "Generating TOC file"
+        debug "TOC file generated."
+    fi
+    # burn dvd
+    if [ "$BURN" = "true" ] ; then
+	y_burndvd
+	test "$?" = "1" && error "Burning DVD"
+	debug "DVD burnt OK"
+	test "$CLEAN" = "true" && rm -r -f $OUTDIR
+    fi
+    unset OUTDIR
+done

@@ -1,0 +1,101 @@
+#!/usr/bin/python
+
+# gentoo based desktop admin tool
+# Copyright (C) 2012 ddr-consulting.com, Jeno Varga
+# jeno.varga at ddr-consulting dot com
+# This is python learning project, so do not expect nice solutions
+# TODO:
+#   - add built-in defaults function
+#   - add a simple config definition where command line, config file and defaults
+#   are defined in a nice structure; add this to ypylib as a common func.
+
+
+# add this to the tool!
+# emerge -pvuDN --exclude='wine libreoffice gcc chromium' world
+# module-rebuild - utility to help rebuild kernel moduls like nvidia-drivers
+# glsa-check -p affected - to check security updates
+
+import os
+import sys
+import pprint
+import subprocess
+import ConfigParser
+import argparse
+import ypylib
+
+from ypylib import check_root,os_run,os_runr,os_xrun,os_xrunr,\
+        set_cmd_options,set_cfgfile_options,get_cfgfile_options
+from ypylib import msg,msg_err,msg_warn,msg_bug,msg_info,msg_ok
+#from ypylib import *
+
+# debug defs
+BUG_ALL     = 'x'
+BUG_CFGRD   = '' + BUG_ALL
+BUG_PAR     = 'x' + BUG_ALL
+BUG_SETOPT  = 'x' + BUG_ALL
+BUG_COLOR   = '' + BUG_ALL
+BUG_CFGDEF  = '' + BUG_ALL
+
+# Global defaults
+    
+
+# functions
+def kernel(path):
+    """ Build the kernel """
+
+    if not path:
+        msg_err('Kernel path not defined')
+        return -1
+    if not os.access(path,os.X_OK):
+        msg_err('Invalid kernel path! ',path)
+        return -1
+    msg_info('Build kernel at: ',path)
+    os.chdir(path)
+    os_xrunr('mount -o remount,rw /boot')
+    if args.kernel_backup:
+        os_xrunr('cp /boot/vmlinuz /boot/vmlinuz.safe')
+    os_xrunr('make bzlilo modules modules_install')
+    os_xrunr('mount -o remount,ro /boot')
+
+# main section
+ypylib.init()
+
+set_cmd_options()
+ypylib.init()
+
+#args = parser.parse_args()
+ypylib.quiet    = args.quiet
+ypylib.verbose  = args.verbose
+ypylib.debug    = args.debug
+ypylib.color    = args.color
+ypylib.init()
+
+if BUG_PAR: msg_bug(str(args))
+
+if os.access(args.config,os.R_OK): 
+    cfg = get_cfgfile_options(args.config)
+else:
+    msg_warn('Invalid config file: ',args.config,' ignored!')
+
+if args.quiet   or cfg.getboolean('global','quiet'):
+    ypylib.quiet = 1
+if args.pretend or cfg.getboolean('global','pretend'):
+    ypylib.pretend = 1
+
+set_cfgfile_options()
+if BUG_SETOPT: msg_bug(str(args))
+
+# do the job
+kernel(args.kernel_source)
+
+
+if BUG_COLOR:
+    ypylib.FULL_COLOR = 0
+    ypylib.init()
+    msg_err('Test error')
+    msg_warn('Test warning')
+    msg_info('Test info')
+    msg_bug('Test debug')
+    msg_ok('Test OK')
+    msg('Test message')
+

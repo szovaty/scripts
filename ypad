@@ -1,0 +1,6 @@
+#!/bin/bash
+
+x=`xinput | grep ALPS`
+x=${x##*id=}
+id=${x%%[*}
+xinput --set-prop $id 141 $1
