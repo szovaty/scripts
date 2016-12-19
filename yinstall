@@ -4,21 +4,34 @@
 #   user needs to set partitions mounting points and fs type
 #   user needs to select usual items for the install (like language,...)
 #
-Y_VER="0.94"
+Y_VER="0.95"
+MODE_NEWSYS="new_system"
+MODE_MIG="migrate"
 
 # configuration
+Y_MODE=$MODE_NEWSYS
 Y_DEV="/dev/sda"
 
-Y_BOOT_SIZE="200"
+Y_BOOT_SIZE="400"
 Y_SWAP_SIZE="8200"
 
 Y_ROOT_NAME="root"
 Y_ROOT_PASSWD="csolnok"
 
+Y_ORIG_ROOT="/dev/mapper/root"
+Y_ORIG_MOUNT="/boot"
+Y_ORIG_MNT="/mnt"
+Y_BKP_SRV="bp-nas"
+Y_BKP_USER="jenov"
+Y_BKP_PATH="/volume1/backup/tmp"
+
 # input 
 while [ -n "$1" ]; do
     case $1 in
         --help|-h)  echo "Usage: $0 [-d] [-n] [-l] [-h]"; exit 0;;
+        --migrate|-m)  Y_MODE="$MODE_MIG";;
+        --o_root)   test -n "$2" && Y_ORIG_ROOT="$2"; shift;;
+        --b_user)   test -n "$2" && Y_BKP_USER="$2"; shift;;
         --debug|-d) Y_DEBUG="true";;
         --dry|-n)   Y_DRY_RUN="true";;
         --log|-l)   test -n "$2" && Y_LOG="$2"; shift;;
@@ -41,12 +54,32 @@ yrun () {
     fi
     test -z "$Y_DRY_RUN" && {
         test -n "$FOUT" && OUT=$FOUT
-        $* >>$OUT 2>>$Y_LOG
+        if [ -n "$NOREDIR" ]; then
+            $* 2>>$Y_LOG
+        else
+            $* >>$OUT 2>>$Y_LOG
+        fi
         test "$?" = "0" || { echo "FATAL ERROR" | tee -a $Y_LOG; exit 1; }
     }
     return 0
 }
 
+
+# backup system before migration
+test "$Y_MODE" = "$MODE_MIG" && {
+    yrun sudo mount $Y_ORIG_ROOT $Y_ORIG_MNT
+    yrun sudo mount --bind /dev $Y_ORIG_MNT/dev
+    for i in $Y_ORIG_MOUNT; do
+        yrun sudo chroot $Y_ORIG_MNT mount $i
+    done
+
+    yrun sudo umount $Y_ORIG_MNT/dev
+
+    NOREDIR="true"
+    yrun "tar -c $Y_ORIG_MNT | ssh $Y_BKP_USER@$Y_BKP_SRV Y_BKP_PATH=$Y_BKP_PATH 'cat > ${Y_BKP_PATH}/test.tar'"
+    NOREDIR=""
+}
+exit 1
 # setup partitions
 #Y_LABEL="gpt"
 Y_LABEL="msdos"
@@ -77,14 +110,22 @@ echo $Y_ROOT_PASSWD | yrun sudo cryptsetup luksOpen ${Y_DEV}$Y_ROOT $Y_ROOT_NAME
 yrun sudo cryptsetup -v status $Y_ROOT_NAME
 yrun sudo mkfs.ext4 -F /dev/mapper/$Y_ROOT_NAME
 
-# run GUI based installation
-echo "NOTE: Select 'Continue Testing' after installation finished!"
-yrun ubiquity
+test "$Y_MODE" = "$MODE_NEWSYS" && {
+    # run GUI based installation
+    echo "NOTE: Select 'Continue Testing' after installation finished!"
+    yrun ubiquity -d
+}
 
 # fix up installed image
 yrun sudo mount /dev/mapper/$Y_ROOT_NAME /mnt
 yrun cd /mnt
 yrun sudo mount ${Y_DEV}$Y_BOOT boot
+
+test "$Y_MODE" = "$MODE_MIG" && {
+    # restore system from backup
+    yrun "ssh $Y_BKP_USER@Y_BKP_SRV 'cat $Y_BKP_PATH/test.tar | tar -x -C /'" 
+}
+
 yrun sudo mount --bind /dev dev
 yrun sudo mount --bind /sys sys
 yrun sudo mount -t proc proc proc
