@@ -1,10 +1,13 @@
 #/bin/bash
-# script creates an encrypted root partioned mint installation semi-automatically
+# script has two modes
+#   new_system mode: creates an encrypted installation of install media 
+#   migrate mode: backups up current system, repartition disk and reinstalls it
 #  Limitations: 
 #   user needs to set partitions mounting points and fs type
 #   user needs to select usual items for the install (like language,...)
 #
-Y_VER="0.95"
+
+Y_VER="0.96"
 MODE_NEWSYS="new_system"
 MODE_MIG="migrate"
 
@@ -19,30 +22,40 @@ Y_ROOT_NAME="root"
 Y_ROOT_PASSWD="csolnok"
 
 Y_ORIG_ROOT="/dev/mapper/root"
-Y_ORIG_MOUNT="/boot"
+Y_ORIG_MOUNT=""
 Y_ORIG_MNT="/mnt"
 Y_BKP_SRV="bp-nas"
 Y_BKP_USER="jenov"
 Y_BKP_PATH="/volume1/backup/tmp"
+Y_FILENAME="test"
 
-# input 
+# ============================================================================
+
+# command line inputs 
 while [ -n "$1" ]; do
     case $1 in
-        --help|-h)  echo "Usage: $0 [-d] [-n] [-l] [-h]"; exit 0;;
-        --migrate|-m)  Y_MODE="$MODE_MIG";;
-        --o_root)   test -n "$2" && Y_ORIG_ROOT="$2"; shift;;
-        --b_user)   test -n "$2" && Y_BKP_USER="$2"; shift;;
-        --debug|-d) Y_DEBUG="true";;
-        --dry|-n)   Y_DRY_RUN="true";;
-        --log|-l)   test -n "$2" && Y_LOG="$2"; shift;;
+        --help|-h)      echo "Usage: $0 [-d] [-n] [-l] [-h]"; exit 0;;
+        --migrate|-m)   Y_MODE="$MODE_MIG";;
+        --dev|-d)       test -n "$2" && Y_DEV="$2"; shift;;
+        --o_root|-o)    test -n "$2" && Y_ORIG_ROOT="$2"; shift;;
+        --o_mount|-M)   test -n "$2" && Y_ORIG_MOUNT="$2"; shift;;
+        --b_user|-u)    test -n "$2" && Y_BKP_USER="$2"; shift;;
+        --filename|-f)  test -n "$2" && Y_FILENAME=$2; shift;;
+        --debug|-D)     Y_DEBUG="true";;
+        --dry|-R)       Y_DRY_RUN="true";;
+        --log|-l)       test -n "$2" && Y_LOG="$2"; shift;;
     esac
     shift
 done
 
+# set log file
 test "${Y_LOG}x" = "x" && export Y_LOG="$0.log"
 
-echo VER=$Y_VER, DEBUG=$Y_DEBUG, LOG=$Y_LOG, DRY_RUN=$Y_DRY_RUN | tee -a $Y_LOG
+# for the record
+echo VER=$Y_VER, DEBUG=$Y_DEBUG, \
+MODE=$Y_MODE, LOG=$Y_LOG, DRY_RUN=$Y_DRY_RUN | tee -a $Y_LOG
 
+# help funtion(s)
 # run function that checks sucessful command exit status and breaks if not
 yrun () {
     if [ "$Y_DEBUG" = "true" ] ; then {
@@ -64,25 +77,45 @@ yrun () {
     return 0
 }
 
+# ----------------------------------------------------------------------------
+# internal variables
+Y_BOOT="1"
+Y_SWAP="2"
+Y_ROOT="3"
+Y_LABEL="msdos"
 
 # backup system before migration
-test "$Y_MODE" = "$MODE_MIG" && {
+test "$Y_MODE_" = "$MODE_MIG" && {
     yrun sudo mount $Y_ORIG_ROOT $Y_ORIG_MNT
     yrun sudo mount --bind /dev $Y_ORIG_MNT/dev
+    UMOUNT="$Y_ORIG_MNT"
     for i in $Y_ORIG_MOUNT; do
         yrun sudo chroot $Y_ORIG_MNT mount $i
+        UMOUNT="$UMOUNT$i $UMOUNT"
     done
 
     yrun sudo umount $Y_ORIG_MNT/dev
 
-    NOREDIR="true"
-    yrun "tar -c $Y_ORIG_MNT | ssh $Y_BKP_USER@$Y_BKP_SRV Y_BKP_PATH=$Y_BKP_PATH 'cat > ${Y_BKP_PATH}/test.tar'"
-    NOREDIR=""
+    # FIXME: 
+    #   dry run can not work in this complex command 
+    #   so I added this workaround
+    test "$Y_DEBUG" = "true" &&
+        echo "DEBUG: sudo tar -c $Y_ORIG_MNT | \
+        ssh $Y_BKP_USER@$Y_BKP_SRV FILE=$Y_FILENAME VAR=$Y_BKP_PATH \
+        'X=\$VAR; Y=\$FILE; cat > \${X}/\${Y}.tar'" | tee -a $Y_LOG
+
+    test -z "$Y_DRY_RUN" &&
+        sudo tar -c $Y_ORIG_MNT 2>>$Y_LOG | \
+        ssh $Y_BKP_USER@$Y_BKP_SRV FILE=$Y_FILENAME VAR=$Y_BKP_PATH \
+        'X=$VAR; Y=$FILE; cat > ${X}/${Y}.tar'
+    
+    # FIXME verify backup
+
+    yrun sudo umount $UMOUNT
 }
-exit 1
-# setup partitions
-#Y_LABEL="gpt"
-Y_LABEL="msdos"
+
+# -----------------------------------------------------------------------------
+# setup new partitions on system disk
 
 yrun sudo parted --script $Y_DEV mklabel $Y_LABEL
 
@@ -96,10 +129,6 @@ yrun sudo parted --script $Y_DEV mkpart primary linux-swap $Y_START $Y_END
 Y_START=$Y_END; Y_END="100%"
 yrun sudo parted --script $Y_DEV mkpart primary ext2  $Y_START $Y_END
 
-Y_BOOT="1"
-Y_SWAP="2"
-Y_ROOT="3"
-
 yrun sudo parted --script $Y_DEV set $Y_BOOT "boot" on 
 
 # setup filesystems
@@ -110,20 +139,35 @@ echo $Y_ROOT_PASSWD | yrun sudo cryptsetup luksOpen ${Y_DEV}$Y_ROOT $Y_ROOT_NAME
 yrun sudo cryptsetup -v status $Y_ROOT_NAME
 yrun sudo mkfs.ext4 -F /dev/mapper/$Y_ROOT_NAME
 
+# run GUI based installation for new system setup
 test "$Y_MODE" = "$MODE_NEWSYS" && {
-    # run GUI based installation
     echo "NOTE: Select 'Continue Testing' after installation finished!"
     yrun ubiquity -d
 }
 
-# fix up installed image
-yrun sudo mount /dev/mapper/$Y_ROOT_NAME /mnt
-yrun cd /mnt
+# restore or fix up installed image
+yrun sudo mount /dev/mapper/$Y_ROOT_NAME $Y_ORIG_MNT
+yrun cd $Y_ORIG_MNT
+yrun sudo mkdir boot
 yrun sudo mount ${Y_DEV}$Y_BOOT boot
 
 test "$Y_MODE" = "$MODE_MIG" && {
+    # default filename for debugging
+    test -z "$FILENAME" && FILENAME="test"
+
     # restore system from backup
-    yrun "ssh $Y_BKP_USER@Y_BKP_SRV 'cat $Y_BKP_PATH/test.tar | tar -x -C /'" 
+    # FIXME: 
+    #   dry run can not work in this complex command 
+    #   so I added this workaround
+    test "$Y_DEBUG" = "true" &&
+        echo "DEBUG: 
+        ssh $Y_BKP_USER@$Y_BKP_SRV FILE=$Y_FILENAME VAR=$Y_BKP_PATH \
+        'X=\$VAR; Y=\$FILE; cat \${X}/\${Y}.tar' | \
+        sudo tar -x -C /" | tee -a $Y_LOG
+
+    test -z "$Y_DRY_RUN" &&
+        ssh $Y_BKP_USER@$Y_BKP_SRV FILE=$Y_FILENAME VAR=$Y_BKP_PATH \
+        'X=$VAR; Y=$FILE; cat ${X}/${Y}.tar' | sudo tar -x -C / 
 }
 
 yrun sudo mount --bind /dev dev
@@ -131,20 +175,29 @@ yrun sudo mount --bind /sys sys
 yrun sudo mount -t proc proc proc
 
 TMP="/tmp/ydev"
+yrun rm -f $TMP
 FOUT=$TMP
 yrun blkid -o export ${Y_DEV}$Y_ROOT
 FOUT=""
 
 test -e $TMP || sleep 1
 yrun source $TMP
-
+yrun rm -f $TMP
 FOUT=$TMP
 yrun echo root UUID=$UUID none luks
 FOUT=""
 
 yrun sudo cp $TMP /mnt/etc/crypttab
 
-yrun sudo chroot /mnt update-initramfs -u -k all
+# make sure we have all essentials
+yrun sudo cp /etc/resolv.conf $Y_ORIG_MNT/etc
+yrun sudo chroot $Y_ORIG_MNT apt-get install --yes cryptsetup
+yrun sudo chroot $Y_ORIG_MNT apt-get install --yes grub2
+
+# update system
+yrun sudo chroot $Y_ORIG_MNT update-initramfs -u -k all
+yrun sudo chroot $Y_ORIG_MNT update-grub
+yrun sudo chroot $Y_ORIG_MNT grub-install $Y_DEV
 
 echo All should be DONE, reboot: `date`
 #sudo init 0
