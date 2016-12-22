@@ -42,7 +42,7 @@ while [ -n "$1" ]; do
         --b_user|-u)    test -n "$2" && Y_BKP_USER="$2"; shift;;
         --filename|-f)  test -n "$2" && Y_FILENAME=$2; shift;;
         --debug|-D)     Y_DEBUG="true";;
-        --dry|-R)       Y_DRY_RUN="true";;
+        --dry|-N)       Y_DRY_RUN="true";;
         --log|-l)       test -n "$2" && Y_LOG="$2"; shift;;
     esac
     shift
@@ -102,12 +102,12 @@ test "$Y_MODE_" = "$MODE_MIG" && {
     test "$Y_DEBUG" = "true" &&
         echo "DEBUG: sudo tar -c $Y_ORIG_MNT | \
         ssh $Y_BKP_USER@$Y_BKP_SRV FILE=$Y_FILENAME VAR=$Y_BKP_PATH \
-        'X=\$VAR; Y=\$FILE; cat > \${X}/\${Y}.tar'" | tee -a $Y_LOG
+        'X=\$VAR; Y=\$FILE; cat > \${X}/\${Y}'" | tee -a $Y_LOG
 
     test -z "$Y_DRY_RUN" &&
         sudo tar -c $Y_ORIG_MNT 2>>$Y_LOG | \
         ssh $Y_BKP_USER@$Y_BKP_SRV FILE=$Y_FILENAME VAR=$Y_BKP_PATH \
-        'X=$VAR; Y=$FILE; cat > ${X}/${Y}.tar'
+        'X=$VAR; Y=$FILE; cat > ${X}/${Y}'
     
     # FIXME verify backup
 
@@ -162,12 +162,12 @@ test "$Y_MODE" = "$MODE_MIG" && {
     test "$Y_DEBUG" = "true" &&
         echo "DEBUG: 
         ssh $Y_BKP_USER@$Y_BKP_SRV FILE=$Y_FILENAME VAR=$Y_BKP_PATH \
-        'X=\$VAR; Y=\$FILE; cat \${X}/\${Y}.tar' | \
+        'X=\$VAR; Y=\$FILE; cat \${X}/\${Y}' | \
         sudo tar -x -C /" | tee -a $Y_LOG
 
     test -z "$Y_DRY_RUN" &&
         ssh $Y_BKP_USER@$Y_BKP_SRV FILE=$Y_FILENAME VAR=$Y_BKP_PATH \
-        'X=$VAR; Y=$FILE; cat ${X}/${Y}.tar' | sudo tar -x -C / 
+        'X=$VAR; Y=$FILE; cat ${X}/${Y}' | sudo tar -x -C / 
 }
 
 yrun sudo mount --bind /dev dev
@@ -182,11 +182,13 @@ FOUT=""
 
 test -e $TMP || sleep 1
 yrun source $TMP
+yrun cat $TMP
 yrun rm -f $TMP
 FOUT=$TMP
 yrun echo root UUID=$UUID none luks
 FOUT=""
 
+yrun cat $TMP
 yrun sudo cp $TMP /mnt/etc/crypttab
 
 # make sure we have all essentials
@@ -195,6 +197,15 @@ yrun sudo chroot $Y_ORIG_MNT apt-get install --yes cryptsetup
 yrun sudo chroot $Y_ORIG_MNT apt-get install --yes grub2
 
 # update system
+yrun rm -f $TMP
+FOUT=$TMP
+yrun echo $Y_ORIG_ROOT  /     ext4 errors=remount-ro 0 1
+yrun echo $Y_DEV$Y_BOOT /boot ext2 defaults 0 2
+yrun echo $Y_DEV$Y_SWAP none  sw 0 0
+FOUT=""
+yrun sudo cp $TMP $Y_ORIG_MNT/etc/fstab
+
+yrun sudo chroot $Y_ORIG_MNT update-grub
 yrun sudo chroot $Y_ORIG_MNT update-initramfs -u -k all
 yrun sudo chroot $Y_ORIG_MNT update-grub
 yrun sudo chroot $Y_ORIG_MNT grub-install $Y_DEV
