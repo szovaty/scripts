@@ -6,8 +6,14 @@
 #   user needs to set partitions mounting points and fs type
 #   user needs to select usual items for the install (like language,...)
 #
+# TODO Y_ORIG_ROOT used in backup and new system setup as well, 
+#   need to be separated, so different device can be defind
+# TODO verify backup and restore
+# TODO create checksums
+# TODO need to release block devide before repartition 
+#   when original and new system is on the same device
 
-Y_VER="0.97"
+Y_VER="0.98"
 MODE_NEWSYS="new_system"
 MODE_MIG="migrate"
 
@@ -82,6 +88,7 @@ yrun () {
 
 # ----------------------------------------------------------------------------
 # internal variables
+TMP="/tmp/ytmp"
 Y_BOOT="1"
 Y_SWAP="2"
 Y_ROOT="3"
@@ -134,7 +141,7 @@ yrun sudo parted --script $Y_DEV mkpart primary ext2  $Y_START $Y_END
 
 yrun sudo parted --script $Y_DEV set $Y_BOOT "boot" on 
 
-# setup filesystems
+# setup new filesystems
 yrun sudo mkfs.${Y_FS_BOOT} -F ${Y_DEV}$Y_BOOT
 yrun sudo mkswap -f ${Y_DEV}$Y_SWAP
 echo $Y_ROOT_PASSWD | yrun sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat ${Y_DEV}$Y_ROOT
@@ -155,9 +162,6 @@ yrun sudo mkdir boot
 yrun sudo mount ${Y_DEV}$Y_BOOT boot
 
 test "$Y_MODE" = "$MODE_MIG" && {
-    # default filename for debugging
-    test -z "$FILENAME" && FILENAME="test"
-
     # restore system from backup
     # FIXME: 
     #   dry run can not work in this complex command 
@@ -177,44 +181,32 @@ yrun sudo mount --bind /dev dev
 yrun sudo mount --bind /sys sys
 yrun sudo mount -t proc proc proc
 
-TMP="/tmp/ytmp"
-
 FOUT=$TMP
-yrun sudo blkid -o export ${Y_DEV}$Y_ROOT
-
-#while [ ! -s "$TMP" -a -z "$Y_DRY_RUN" ] ; do 
-#    echo DEBUG: waiting...; 
-#    sleep 1; 
-#done
-#test -z "$Y_DRY_RUN" && {
-#    echo "DEBUG: cat $TMP"
-#    cat $TMP 
-#}
-yrun source $TMP
-test -z "$Y_DRY_RUN" -a -z "$UUID" && { 
-    echo "FATAL ERROR: UUID is empty" | tee -a $Y_LOG
-#    echo "DEBUG: TMP=$TMP; FOUT=$FOUT"
-    cat $TMP | tee -a $Y_LOG
-    exit 1
-}
-yrun rm -f $TMP
-yrun echo root UUID=${UUID} none luks
+    yrun sudo blkid -o export ${Y_DEV}$Y_ROOT
+    yrun source $TMP
+    test -z "$Y_DRY_RUN" -a -z "$UUID" && { 
+        echo "FATAL ERROR: UUID is empty" | tee -a $Y_LOG
+        cat $TMP | tee -a $Y_LOG
+        exit 1
+    }
+    yrun rm -f $TMP
+    yrun echo root UUID=${UUID} none luks
 FOUT=""
 
 yrun cat $TMP
-yrun sudo cp $TMP /mnt/etc/crypttab
+yrun sudo cp $TMP $Y_ORIG_MNT/etc/crypttab
 
 # make sure we have all essentials
 yrun sudo cp /etc/resolv.conf $Y_ORIG_MNT/etc
 yrun sudo chroot $Y_ORIG_MNT apt-get install --yes cryptsetup
-#yrun sudo chroot $Y_ORIG_MNT apt-get install --yes grub2
 
 # update system
 yrun rm -f $TMP
+
 FOUT="$TMP"
-yrun echo $Y_ORIG_ROOT  /     $Y_FS_ROOT errors=remount-ro 0 1
-yrun echo $Y_DEV$Y_BOOT /boot $Y_FS_BOOT defaults 0 2
-yrun echo $Y_DEV$Y_SWAP none  sw 0 0
+    yrun echo $Y_ORIG_ROOT  /     $Y_FS_ROOT errors=remount-ro 0 1
+    yrun echo $Y_DEV$Y_BOOT /boot $Y_FS_BOOT defaults 0 2
+    yrun echo $Y_DEV$Y_SWAP none  sw 0 0
 FOUT=""
 
 yrun sudo cp $TMP $Y_ORIG_MNT/etc/fstab
