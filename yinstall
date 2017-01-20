@@ -6,10 +6,6 @@
 #   user needs to set partitions mounting points and fs type
 #   user needs to select usual items for the install (like language,...)
 #
-# TODO add backup and restore verification
-# TODO create and store checksums
-# TODO need to release block devide before repartition 
-#   when original and new system is on the same device
 
 Y_VER="0.99"
 MODE_NEWSYS="new_system"
@@ -41,16 +37,46 @@ Y_ERROR_CONSOLE="true"
 Y_EPS1="\[\033[01;31m\]FIXME#\[\033[00m\] " 
 # ============================================================================
 
+# self documenting program options from the source
+# return opts as a string with commants for source
+y_help_opt () {
+    local HELPMSG MSG DEF i j k x
+    IFS=$'\n'
+    for i in `cat $0 | grep -e '#;'` ; do
+        t=`echo $i | tr -d [:space:]`
+        test ${t:0:1} != '-' && continue
+        HELPMSG="${i##*'#;'}"
+        i=${i%)*} ; 
+        if [ "${i##*'#;'}" = "${HELPMSG}" ] ; then printf "%25s %s\n" ' ' $HELPMSG ; continue ; fi
+        IFS=$'|'
+        for j in $i ; do
+            if [ "${j%\$*}" = "$j" ] ; then k=$i ; break ; fi
+            eval x='$'${j#*\$}
+            if [ -z "$k" ] ; then k=$x ; else k="$k|$x" ; fi
+        done
+        k="${k}:"
+        IFS=$' \t\n' ; MSG="" ; DEF=""
+        for j in $HELPMSG ; do
+            if [ "${j#*[}" != "$j" ] ; then eval j='$'${j#*[} ; DEF="[${j}" ; continue ; fi
+            MSG="$MSG $j"
+        done
+        IFS=$'\n'
+        k=`echo $k | awk ' { print $1 }'`
+        printf "%25s %-40s %s\n" ${k} "$MSG" $DEF 
+        k=""
+    done
+    IFS=$' \t\n'
+}
+
 # command line inputs 
 while [ -n "$1" ]; do
     case $1 in
-        --help|-h)      echo "Usage: $0 [-D] [-N] [-l] [-f] [-h]";
-                        echo "see script for more options"; exit 0;;
-        --migrate|-m)   Y_MODE="$MODE_MIG";;
-        --dev|-d)       test -n "$2" && Y_DEV="$2"; shift;;
-        --o_root|-or)   test -n "$2" && Y_ORIG_ROOT="$2"; shift;;
-        --o_mount|-M)   test -n "$2" && Y_ORIG_MOUNT="$2"; shift;;
-        --n_root|-nr)   test -n "$2" && Y_NEW_ROOT="$2"; shift;;
+        --help|-h)      echo ${0##*/} usage help ;y_help_opt;exit 0;; #; Help
+        --migrate|-m)   Y_MODE="$MODE_MIG";; #; migration mode
+        --dev|-d)       test -n "$2" && Y_DEV="$2"; shift;; #; device [Y_DEV]
+        --o_root|-or)   test -n "$2" && Y_ORIG_ROOT="$2"; shift;; #; source root [Y_ORIG_ROOT]
+        --o_mount|-M)   test -n "$2" && Y_ORIG_MOUNT="$2"; shift;; #; what to mount for backup [Y_ORIG_MOUNT]
+        --n_root|-nr)   test -n "$2" && Y_NEW_ROOT="$2"; shift;; #; where to mount new root FS [Y_NEW_ROOT]
         --b_user|-u)    test -n "$2" && Y_BKP_USER="$2"; shift;;
         --filename|-f)  test -n "$2" && Y_FILENAME=$2; shift;;
         --debug|-D)     Y_DEBUG="true";;
@@ -124,15 +150,17 @@ test "$Y_MODE" = "$MODE_MIG" && {
     # FIXME: 
     #   dry run can not work in this complex command 
     #   so I added this workaround
+
     test "$Y_DEBUG" = "true" &&
         echo "DEBUG: sudo tar -c $Y_ORIG_MNT | \
         ssh $Y_BKP_USER@$Y_BKP_SRV FILE=$Y_FILENAME VAR=$Y_BKP_PATH \
         'X=\$VAR; Y=\$FILE; cat > \${X}/\${Y}'" | tee -a $Y_LOG
-
+    echo "Backup system"
     test -z "$Y_DRY_RUN" &&
         sudo tar -c $Y_ORIG_MNT 2>>$Y_LOG | \
         ssh $Y_BKP_USER@$Y_BKP_SRV FILE=$Y_FILENAME VAR=$Y_BKP_PATH \
         'X=$VAR; Y=$FILE; cat > ${X}/${Y}'
+    echo "Computing checksum and store"
     test -z "$Y_DRY_RUN" &&
         ssh $Y_BKP_USER@$Y_BKP_SRV FILE=$Y_FILENAME VAR=$Y_BKP_PATH \
         'X=$VAR; Y=$FILE; md5sum ${X}/${Y} > ${X}/${Y}.md5sum'
@@ -143,8 +171,13 @@ test "$Y_MODE" = "$MODE_MIG" && {
 # -----------------------------------------------------------------------------
 # setup new partitions on system disk
 
-yrun sudo umount -l -A $Y_ORIG_MNT
-#yrun sudo dd if=/dev/zero of=$Y_DEV count=1M
+grep $Y_ORIG_MNT /etc/mtab 1>/dev/null
+test "$?" = "0" && yrun sudo umount -l -A $Y_ORIG_MNT
+
+# only works with single swap partition on target device
+X=`sudo swapon -s | grep $Y_DEV`
+X=${X%%' '*}
+test -n "$X" && yrun sudo swapoff $X
 
 yrun sudo parted --script $Y_DEV mklabel $Y_LABEL
 
@@ -191,6 +224,7 @@ test "$Y_MODE" = "$MODE_MIG" && {
         'X=\$VAR; Y=\$FILE; cat \${X}/\${Y}' | \
         sudo tar -x -C /" | tee -a $Y_LOG
 
+    echo "Restore system from archive"
     test -z "$Y_DRY_RUN" &&
         ssh $Y_BKP_USER@$Y_BKP_SRV FILE=$Y_FILENAME VAR=$Y_BKP_PATH \
         'X=$VAR; Y=$FILE; cat ${X}/${Y}' | sudo tar -x -C / 
