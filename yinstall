@@ -1,15 +1,16 @@
+# vim:set ts=4:
 #/bin/bash
 # script has two modes
-#   new_system mode: creates an encrypted installation of install media 
-        #   migrate mode: backups up current system, repartition disk and reinstalls it
+#       new sys mode: creates an encrypted installation of install media 
+#       migrate mode: backups up current system, repartition disk and reinstalls
 #  Limitations: 
-#   user needs to set partitions mounting points and fs type
-#   user needs to select usual items for the install (like language,...)
-#
+#       user needs to set partitions mounting points and fs type
+#       user needs to select usual items for the install (like language,...)
 
-Y_VER="0.99"
-MODE_NEWSYS="new_system"
+Y_VER="1.0-rc1"
+MODE_NEWSYS="new_sys"
 MODE_MIG="migrate"
+#Y_DEBUG="true"
 
 # configuration
 Y_MODE=$MODE_NEWSYS
@@ -21,10 +22,10 @@ Y_SWAP_SIZE="8200"
 Y_ROOT_NAME="root"
 Y_ROOT_PASSWD="csolnok"
 
-Y_ORIG_ROOT="/dev/mapper/root"
+Y_ORIG_ROOT="/dev/sda1"
 Y_ORIG_MOUNT=""
 Y_ORIG_MNT="/mnt"
-Y_NEW_ROOT="/dev/mapper/root"
+Y_NEW_ROOT="/dev/mapper/$Y_ROOT_NAME"
 Y_BKP_SRV="bp-nas"
 Y_BKP_USER="jenov"
 Y_BKP_PATH="/volume1/backup/tmp"
@@ -32,9 +33,10 @@ Y_FILENAME="test.tar"
 
 Y_FS_ROOT="ext4"
 Y_FS_BOOT="ext2"
-
 Y_ERROR_CONSOLE="true"
 Y_EPS1="\[\033[01;31m\]FIXME#\[\033[00m\] " 
+Y_LOG="${0}.log"
+
 # ============================================================================
 
 # self documenting program options from the source
@@ -57,47 +59,38 @@ y_help_opt () {
         k="${k}:"
         IFS=$' \t\n' ; MSG="" ; DEF=""
         for j in $HELPMSG ; do
-            if [ "${j#*[}" != "$j" ] ; then eval j='$'${j#*[} ; DEF="[${j}" ; continue ; fi
+            if [ "${j#*[}" != "$j" ] ; then j=${j%*]}; eval j='$'${j#*[} ; DEF="[${j}]"; continue ; fi
             MSG="$MSG $j"
         done
         IFS=$'\n'
         k=`echo $k | awk ' { print $1 }'`
-        printf "%25s %-40s %s\n" ${k} "$MSG" $DEF 
+        printf "%20s %-40s %s\n" "$k" "$MSG" "$DEF" 
         k=""
     done
     IFS=$' \t\n'
 }
-
-# command line inputs 
+        
+# command line inputs
 while [ -n "$1" ]; do
     case $1 in
-        --help|-h)      echo ${0##*/} usage help ;y_help_opt;exit 0;; #; Help
-        --migrate|-m)   Y_MODE="$MODE_MIG";; #; migration mode
-        --dev|-d)       test -n "$2" && Y_DEV="$2"; shift;; #; device [Y_DEV]
-        --o_root|-or)   test -n "$2" && Y_ORIG_ROOT="$2"; shift;; #; source root [Y_ORIG_ROOT]
-        --o_mount|-M)   test -n "$2" && Y_ORIG_MOUNT="$2"; shift;; #; what to mount for backup [Y_ORIG_MOUNT]
-        --n_root|-nr)   test -n "$2" && Y_NEW_ROOT="$2"; shift;; #; where to mount new root FS [Y_NEW_ROOT]
-        --b_user|-u)    test -n "$2" && Y_BKP_USER="$2"; shift;;
-        --filename|-f)  test -n "$2" && Y_FILENAME=$2; shift;;
-        --debug|-D)     Y_DEBUG="true";;
-        --dry|-N)       Y_DRY_RUN="true";;
-        --log|-l)       test -n "$2" && Y_LOG="$2"; shift;;
+        --help|-h)      echo ${0##*/} usage help screen ;y_help_opt;exit 0;; #; Display help (this screen)
+        --migrate|-m)   Y_MODE="$MODE_MIG";;                    #; Set migration mode [Y_MODE]
+        --dev|-d)       test -n "$2" && Y_DEV="$2"; shift;;     #; Block device to use [Y_DEV]
+        --o_root|-o)    test -n "$2" && Y_ORIG_ROOT="$2"; shift;; #; Set source root [Y_ORIG_ROOT]
+        --o_mount|-M)   test -n "$2" && Y_ORIG_MOUNT="$2"; shift;; #; Set what to mount for backup [Y_ORIG_MOUNT]
+        --n_root|-r)    test -n "$2" && Y_NEW_ROOT="$2"; shift;; #; Set where to mount new root FS [Y_NEW_ROOT]
+        --b_user|-u)    test -n "$2" && Y_BKP_USER="$2"; shift;; #; Set user name for backup and restore [Y_BKP_USER]
+        --filename|-f)  test -n "$2" && Y_FILENAME="$2"; shift;; #; Set backup file name [Y_FILENAME]
+        --debug|-D)     Y_DEBUG="true";;                        #; Enable debug mode [Y_DEBUG]
+        --dry|-N)       Y_DRY_RUN="true";;                      #; Enable dry run mode [Y_DRY_RUN]
+        --log|-l)       test -n "$2" && Y_LOG="$2"; shift;;     #; Set log file [Y_LOG]
     esac
     shift
 done
 
-# set log file
-test "${Y_LOG}x" = "x" && export Y_LOG="$0.log"
-
-# for the record
+# echo some parameters for the record
 echo VER=$Y_VER, DEBUG=$Y_DEBUG, \
 MODE=$Y_MODE, LOG=$Y_LOG, DRY_RUN=$Y_DRY_RUN | tee -a $Y_LOG
-
-# help funtion(s)
-y_error_console(){
-    echo E#
-    return 1
-}
 
 # run function that checks sucessful command exit status and breaks if not
 yrun () {
