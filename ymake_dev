@@ -1,0 +1,84 @@
+#!/bin/bash
+# Based on template.src version 1.2 last modified 2006.09.29 by y
+# Add your description here of the program here!
+
+y_start(){ :; }
+y_exit(){ :; }
+y_help(){ :; }
+
+trap y_exit TERM HUP INT
+
+# Uncomment this to allow colors on the console
+#USE_COLOR="yes"
+
+# This will enable positioning of a text to the end (-8 char) 
+# of a line independent of window size
+USE_POS="yes"
+
+# Enable bell for warnings and errors
+USE_BELL="yes"
+
+# Source the function library
+FUNCTIONS="/bin/y_functions.sh"
+test -r ${FUNCTIONS} && source ${FUNCTIONS}
+
+# define the following to match the program current state
+PROGRAM_NAME="Make new desktop for testing"
+VERSION="0.0"
+LAST_MOD="2017.01.24"
+
+# Define log file here
+LOG="/tmp/${0##*/}.log"
+
+# Uncomment this if you need debug enabled
+#Y_DEBUG="true"
+
+# use these to set cleanup on exit
+#MOUNTED=""		# y_exit will unmount them
+#DELETE_ON_EXIT=""	# y_exit will delete them
+#LAST_CMD=""		# y_exit will run it just before exit
+
+# -------------- configuration defaults -----------------------
+Y_DEV_DEV="/dev/sdb3"
+Y_DEV_MNT="/xy"
+
+y_start
+# ===================================================================================
+
+# read command line parameters
+while [ -n "$1" ] ; do
+	case $1 in
+		--help|-h)	y_help "[Options]"; y_exit;;		    #; Help
+        --dev|-d)   Y_DEV_DEV="$2"; shift;;                 #; Set device [Y_DEV_DEV]
+        --mnt|-M)   Y_DEV_MNT="$2"; shift;;
+        --dry|-N)   Y_DRY_RUN="true"; shift;;               #; Enable dry run
+        --deb|-D)   Y_DEBUG="true"; shift;;                 #; Enable debug mode
+	esac
+	shift
+done
+
+test "x" = "xx" && {
+# sync dev to current
+y_run1 mount $Y_DEV_MNT
+test -z "$Y_DRY_RUN" && MOUNTED="Y_DEV_MNT"
+y_run yrsync_xos -x $Y_DEV_MNT
+}
+
+# mount system on DEV
+y_run cd $Y_DEV_MNT
+y_run mount --bind /dev dev
+test -z "$Y_DRY_RUN" && MOUNTED="$Y_DEV_MNT/dev"
+
+# update build system on DEV: emerge --sync
+# check if it would build: emerge -pvuDN world
+# build system on DEV: emerge -qubDN world
+# update lilo to boot new DEV
+# unmount DEV
+# test new build after hibernate current
+#   to test: X, video, audio, hibernate, ...
+# update system based on DEV bin packages
+
+
+# ===================================================================================
+# Leave this as the last line
+y_exit

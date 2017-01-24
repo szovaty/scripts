@@ -1,7 +1,7 @@
 #!/bin/bash
 # Linux generic function script by http://www.DDr.hu
-Y_FUNC_VER="0.5"
-Y_FUNC_LASTMOD="2010.09.14"
+Y_FUNC_VER="0.6"
+Y_FUNC_LASTMOD="2017.01.24"
 
 # terminal color settings
 #USE_COLOR="yes" ; set this before sourcing this file!
@@ -117,7 +117,7 @@ y_help_opt () {
 	done
 	IFS=$'\n'
 	k=`echo $k | awk ' { print $1 }'`
-	printf "%25s %-40s %s\n" ${k} "$MSG" $DEF 
+	printf "%25s %-40s %s\n" "${k}" "$MSG" "$DEF" 
 	k=""
     done
     IFS=$' \t\n'

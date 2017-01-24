@@ -1,10 +1,10 @@
 #!/bin/bash
-# Based on template.src version 1.2 last modified 2006.09.29 by y
+# Based on template.src version 1.3 last modified 2017.01.24 by y
 # Add your description here of the program here!
 
-y_start(){:;}
-y_exit(){:;}
-y_help(){:;}
+y_start(){ :; }
+y_exit(){ :; }
+y_help(){ :; }
 
 trap y_exit TERM HUP INT
 
