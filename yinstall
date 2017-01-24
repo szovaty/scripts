@@ -26,7 +26,7 @@ Y_ROOT_PASSWD="csolnok"
 
 Y_ORIG_ROOT="/dev/sda1"
 Y_ORIG_MOUNT=""
-Y_ORIG_MNT="/mnti"
+Y_ORIG_MNT="/mnt"
 Y_NEW_ROOT="/dev/mapper/$Y_ROOT_NAME"
 Y_BKP_SRV="bp-nas"
 Y_BKP_USER="jenov"
