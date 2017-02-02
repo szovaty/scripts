@@ -1,3 +1,4 @@
+# vim: ts=4:sw=4
 #!/bin/bash
 # Based on template.src version 1.2 last modified 2006.09.29 by y
 # Add your description here of the program here!
@@ -9,7 +10,7 @@ y_help(){ :; }
 trap y_exit TERM HUP INT
 
 # Uncomment this to allow colors on the console
-#USE_COLOR="yes"
+USE_COLOR="yes"
 
 # This will enable positioning of a text to the end (-8 char) 
 # of a line independent of window size
@@ -24,8 +25,8 @@ test -r ${FUNCTIONS} && source ${FUNCTIONS}
 
 # define the following to match the program current state
 PROGRAM_NAME="Make new desktop for testing"
-VERSION="0.0"
-LAST_MOD="2017.01.24"
+VERSION="0.1"
+LAST_MOD="2017.02.02"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -34,51 +35,95 @@ LOG="/tmp/${0##*/}.log"
 #Y_DEBUG="true"
 
 # use these to set cleanup on exit
-#MOUNTED=""		# y_exit will unmount them
-#DELETE_ON_EXIT=""	# y_exit will delete them
-#LAST_CMD=""		# y_exit will run it just before exit
+#MOUNTED=""        # y_exit will unmount them
+#DELETE_ON_EXIT=""    # y_exit will delete them
+#LAST_CMD=""        # y_exit will run it just before exit
 
 # -------------- configuration defaults -----------------------
 Y_DEV_DEV="/dev/sdb3"
 Y_DEV_MNT="/xy"
 
+y_mount(){
+    y_run mount "$*"
+    test -z "$Y_DRY_RUN" && {
+        MOUNTED_CC="${@: -1} $MOUNTED_CC"
+        test -z "$Y_NOCLEAN" && MOUNTED=$MOUNTED_CC
+    }
+} 
+
 y_start
-# ===================================================================================
+# ==============================================================================
+QUIET="true"; y_init_screen; QUIET=""
 
 # read command line parameters
 while [ -n "$1" ] ; do
-	case $1 in
-		--help|-h)	y_help "[Options]"; y_exit;;		    #; Help
-        --dev|-d)   Y_DEV_DEV="$2"; shift;;                 #; Set device [Y_DEV_DEV]
-        --mnt|-M)   Y_DEV_MNT="$2"; shift;;
-        --dry|-N)   Y_DRY_RUN="true"; shift;;               #; Enable dry run
-        --deb|-D)   Y_DEBUG="true"; shift;;                 #; Enable debug mode
-	esac
-	shift
+    case $1 in
+        --help|-h)  y_help "[Options]"; y_exit;;    #; Help
+        --dev|-d)   Y_DEV_DEV="$2"; shift;;         #; Set device [Y_DEV_DEV]
+        --mnt|-M)   Y_DEV_MNT="$2"; shift;;         #; Set DEV root [Y_DEV_MNT]
+        --nomount)  Y_NOMOUNT="true";;              #; Do not mount DEV FS
+        --nocl|-n)  Y_NOCLEAN="true";;              #; Do not clean up [Y_NOCLEAN]
+        --dry|-N)   Y_DRY_RUN="true";;              #; Enable dry run
+        --deb|-D)   Y_DEBUG="true";;                #; Enable debug mode
+        --quiet|-q) Y_QUIET="true";;                #; Minimal messages
+        --version|-V) y_version; y_exit;;           #; Display version and exit
+    esac
+    shift
 done
-
-test "x" = "xx" && {
+test "xx" = "xx" && {
 # sync dev to current
-y_run1 mount $Y_DEV_MNT
-test -z "$Y_DRY_RUN" && MOUNTED="Y_DEV_MNT"
-y_run yrsync_xos -x $Y_DEV_MNT
+y_progress "Sync DEV system to current..."
+
+test -z "$Y_NOMOUNT" && {
+    y_mount "$Y_DEV_MNT"
 }
+#y_run yrsync_xos -x "$Y_DEV_MNT"
+
+y_progress_end 0
 
 # mount system on DEV
-y_run cd $Y_DEV_MNT
-y_run mount --bind /dev dev
-test -z "$Y_DRY_RUN" && MOUNTED="$Y_DEV_MNT/dev"
+
+test -z "$Y_NOMOUNT" && {
+    y_progress "Mount development system on $Y_DEV_MNT/ ..."
+
+    y_mount --bind /dev "$Y_DEV_MNT"/dev
+    y_mount -t proc proc "$Y_DEV_MNT"/proc
+    y_mount --bind /gentoo "$Y_DEV_MNT"/gentoo
+
+    y_progress_end 0
+}
 
 # update build system on DEV: emerge --sync
+y_progress "Update gentoo build cache..."
+#y_run chroot $Y_DEV_MNT emerge --sync
+y_progress_end 0
+
 # check if it would build: emerge -pvuDN world
+y_progress "Check build..."
+y_run chroot $Y_DEV_MNT emerge -pvuDN world
+y_progress_end 0
+}
 # build system on DEV: emerge -qubDN world
-# update lilo to boot new DEV
+y_progress "Build/update DEV system..."
+y_run chroot $Y_DEV_MNT emerge -qbuDN world
+y_progress_end 0
+
+# update bootloader to boot new DEV
+
 # unmount DEV
+
 # test new build after hibernate current
 #   to test: X, video, audio, hibernate, ...
+y_progress "Test new system..."
+
+y_progress_end 0
+
 # update system based on DEV bin packages
+y_progress "Update system..."
+#y_run emerge -qukDN world
+y_progress_end 0
 
-
-# ===================================================================================
+MOUNTED="$MOUNTED_CC"
+# ==============================================================================
 # Leave this as the last line
 y_exit
