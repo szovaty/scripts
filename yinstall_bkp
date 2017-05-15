@@ -19,7 +19,6 @@ MODE_COPY="copy"
 # configuration
 Y_MODE=$MODE_NEWSYS
 Y_DEV="/dev/sda"
-Y_DEV_DEST="/dev/sdb"
 
 Y_BOOT_SIZE="400"
 Y_SWAP_SIZE="8200"
@@ -27,13 +26,10 @@ Y_SWAP_SIZE="8200"
 Y_ROOT_NAME="root"
 Y_ROOT_PASSWD="csolnok"
 
-Y_SRC_ROOT="/dev/sda1"
-Y_SRC_MOUNT=""
-Y_SRC_MNT="/mnt"
-Y_DEST_ROOT="/dev/sdb1"
-Y_DEST_MOUNT=""
-Y_DEST_MNT="/tmp/dest_mnt"
-Y_DEST_ROOT="/dev/mapper/$Y_ROOT_NAME"
+Y_ORIG_ROOT="/dev/sda1"
+Y_ORIG_MOUNT=""
+Y_ORIG_MNT="/mnt"
+Y_NEW_ROOT="/dev/mapper/$Y_ROOT_NAME"
 Y_BKP_SRV="bp-nas"
 Y_BKP_USER="jenov"
 Y_BKP_PATH="/volume1/backup/tmp"
@@ -94,13 +90,12 @@ while [ -n "$1" ]; do
         --new|-n)       Y_MODE="$MODE_NEWSYS";;                 #; New system mode [Y_MODE] /default/
         --migrate|-m)   Y_MODE="$MODE_MIG";;                    #; Migration mode
         --copy|-c)      Y_MODE="$MODE_COPY";;                   #; Copy mode
-        --dev|-d)       test -n "$2" && Y_DEV="$2"; shift;;         #; Set block device to use [Y_DEV]
-        --dev_dest)     test -n "$2" && Y_DEV_DEST="$2"; shift;;    #; Set destination block device [Y_DEV_DEST]
-        --o_root|-o)    test -n "$2" && Y_SRC_ROOT="$2"; shift;;    #; Set source root [Y_SRC_ROOT]
-        --o_mount|-M)   test -n "$2" && Y_SRC_MOUNT="$2"; shift;;   #; Set what to mount for backup [Y_SRC_MOUNT]
-        --n_root|-r)    test -n "$2" && Y_DEST_ROOT="$2"; shift;;   #; Set where to mount new root FS [Y_DEST_ROOT]
-        --b_user|-u)    test -n "$2" && Y_BKP_USER="$2"; shift;;    #; Set user name for backup and restore [Y_BKP_USER]
-        --filename|-f)  test -n "$2" && Y_FILENAME="$2"; shift;;    #; Set backup file name [Y_FILENAME]
+        --dev|-d)       test -n "$2" && Y_DEV="$2"; shift;;     #; Set block device to use [Y_DEV]
+        --o_root|-o)    test -n "$2" && Y_ORIG_ROOT="$2"; shift;; #; Set source root [Y_ORIG_ROOT]
+        --o_mount|-M)   test -n "$2" && Y_ORIG_MOUNT="$2"; shift;; #; Set what to mount for backup [Y_ORIG_MOUNT]
+        --n_root|-r)    test -n "$2" && Y_NEW_ROOT="$2"; shift;; #; Set where to mount new root FS [Y_NEW_ROOT]
+        --b_user|-u)    test -n "$2" && Y_BKP_USER="$2"; shift;; #; Set user name for backup and restore [Y_BKP_USER]
+        --filename|-f)  test -n "$2" && Y_FILENAME="$2"; shift;; #; Set backup file name [Y_FILENAME]
         --debug|-D)     Y_DEBUG="true";;                        #; Enable debug mode [Y_DEBUG]
         --dry|-N)       Y_DRY_RUN="true";;                      #; Enable dry run mode [Y_DRY_RUN]
         --log|-l)       test -n "$2" && Y_LOG="$2"; shift;;     #; Set log file [Y_LOG]
@@ -156,15 +151,15 @@ Y_LABEL="msdos"
 
 # backup system before migration
 test "$Y_MODE" = "$MODE_MIG" && {
-    yrun sudo mount $Y_SRC_ROOT $Y_SRC_MNT
-    yrun sudo mount --bind /dev $Y_SRC_MNT/dev
-    UMOUNT="$Y_SRC_MNT"
-    for i in $Y_SRC_MOUNT; do
-        yrun sudo chroot $Y_SRC_MNT mount $i
+    yrun sudo mount $Y_ORIG_ROOT $Y_ORIG_MNT
+    yrun sudo mount --bind /dev $Y_ORIG_MNT/dev
+    UMOUNT="$Y_ORIG_MNT"
+    for i in $Y_ORIG_MOUNT; do
+        yrun sudo chroot $Y_ORIG_MNT mount $i
         UMOUNT="$UMOUNT$i $UMOUNT"
     done
 
-    yrun sudo umount $Y_SRC_MNT/dev
+    yrun sudo umount $Y_ORIG_MNT/dev
 
     # FIXME: 
     #   dry run can not work in this complex command 
@@ -172,11 +167,11 @@ test "$Y_MODE" = "$MODE_MIG" && {
 
     echo "INFO: Backup system"
     test "$Y_DEBUG" = "true" &&
-        echo "DEBUG: sudo tar -c $Y_SRC_MNT | \
+        echo "DEBUG: sudo tar -c $Y_ORIG_MNT | \
         ssh $Y_BKP_USER@$Y_BKP_SRV FILE=$Y_FILENAME VAR=$Y_BKP_PATH \
         'X=\$VAR; Y=\$FILE; cat > \${X}/\${Y}'" | tee -a $Y_LOG
     test -z "$Y_DRY_RUN" &&
-        sudo tar -c $Y_SRC_MNT 2>>$Y_LOG | \
+        sudo tar -c $Y_ORIG_MNT 2>>$Y_LOG | \
         ssh $Y_BKP_USER@$Y_BKP_SRV FILE=$Y_FILENAME VAR=$Y_BKP_PATH \
         'X=$VAR; Y=$FILE; cat > ${X}/${Y}'
     echo "INFO: Computing checksum"
@@ -188,10 +183,10 @@ test "$Y_MODE" = "$MODE_MIG" && {
 }
 
 # -----------------------------------------------------------------------------
-# setup new partitions on destination system disk
+# setup new partitions on system disk
 
-grep $Y_DEST_MNT /etc/mtab 1>/dev/null
-test "$?" = "0" && yrun sudo umount -l -A $Y_DEST_MNT
+grep $Y_ORIG_MNT /etc/mtab 1>/dev/null
+test "$?" = "0" && yrun sudo umount -l -A $Y_ORIG_MNT
 
 # TODO only works with single swap partition on target device
 FOUT="$TMP"
@@ -208,21 +203,21 @@ yrun sudo parted --script $Y_DEV mklabel $Y_LABEL
 
 # Make sure Y_START>0 to leave space for the boot code
 Y_START=1; Y_END=$Y_BOOT_SIZE
-yrun sudo parted --script $Y_DEV_DEST mkpart primary ext2 $Y_START $Y_END
+yrun sudo parted --script $Y_DEV mkpart primary ext2 $Y_START $Y_END
 
 Y_START=$Y_END; Y_END=$(($Y_START+$Y_SWAP_SIZE))
-yrun sudo parted --script $Y_DEV_DEST mkpart primary linux-swap $Y_START $Y_END
+yrun sudo parted --script $Y_DEV mkpart primary linux-swap $Y_START $Y_END
 
 Y_START=$Y_END; Y_END="100%"
-yrun sudo parted --script $Y_DEV_DEST mkpart primary ext2  $Y_START $Y_END
+yrun sudo parted --script $Y_DEV mkpart primary ext2  $Y_START $Y_END
 
-yrun sudo parted --script $Y_DEV_DEST set $Y_BOOT "boot" on 
+yrun sudo parted --script $Y_DEV set $Y_BOOT "boot" on 
 
 # setup new filesystems
-yrun sudo mkfs.${Y_FS_BOOT} -F ${Y_DEV_DEST}$Y_BOOT
-yrun sudo mkswap -f ${Y_DEV_DESY}$Y_SWAP
-echo $Y_ROOT_PASSWD | yrun sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat ${Y_DEV_DEST}$Y_ROOT
-echo $Y_ROOT_PASSWD | yrun sudo cryptsetup luksOpen ${Y_DEV_DEST}$Y_ROOT $Y_ROOT_NAME
+yrun sudo mkfs.${Y_FS_BOOT} -F ${Y_DEV}$Y_BOOT
+yrun sudo mkswap -f ${Y_DEV}$Y_SWAP
+echo $Y_ROOT_PASSWD | yrun sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat ${Y_DEV}$Y_ROOT
+echo $Y_ROOT_PASSWD | yrun sudo cryptsetup luksOpen ${Y_DEV}$Y_ROOT $Y_ROOT_NAME
 yrun sudo cryptsetup -v status $Y_ROOT_NAME
 yrun sudo mkfs.${Y_FS_ROOT} -F /dev/mapper/$Y_ROOT_NAME
 
@@ -233,11 +228,10 @@ test "$Y_MODE" = "$MODE_NEWSYS" && {
 }
 
 # restore or fix up installed image
-yrun sudo mkdir -p $Y_DEST_MNT
-yrun sudo mount /dev/mapper/$Y_ROOT_NAME $Y_DEST_MNT
-yrun cd $Y_DEST_MNT
+yrun sudo mount /dev/mapper/$Y_ROOT_NAME $Y_ORIG_MNT
+yrun cd $Y_ORIG_MNT
 yrun sudo mkdir -p boot
-yrun sudo mount ${Y_DEV_DEST}$Y_BOOT boot
+yrun sudo mount ${Y_DEV}$Y_BOOT boot
 
 test "$Y_MODE" = "$MODE_MIG" && {
     # restore system from backup
@@ -274,27 +268,27 @@ FOUT=$TMP
 FOUT=""
 
 yrun cat $TMP
-yrun sudo cp $TMP $Y_SRC_MNT/etc/crypttab
+yrun sudo cp $TMP $Y_ORIG_MNT/etc/crypttab
 
 # make sure we have all essentials
-yrun sudo cp /etc/resolv.conf $Y_SRC_MNT/etc
-yrun sudo chroot $Y_SRC_MNT apt-get install --yes cryptsetup
+yrun sudo cp /etc/resolv.conf $Y_ORIG_MNT/etc
+yrun sudo chroot $Y_ORIG_MNT apt-get install --yes cryptsetup
 
 # update system
 yrun rm -f $TMP
 
 FOUT="$TMP"
-    yrun echo $Y_DEST_ROOT  /     $Y_FS_ROOT errors=remount-ro 0 1
+    yrun echo $Y_NEW_ROOT  /     $Y_FS_ROOT errors=remount-ro 0 1
     yrun echo $Y_DEV$Y_BOOT /boot $Y_FS_BOOT defaults 0 2
     yrun echo $Y_DEV$Y_SWAP none  sw 0 0
 FOUT=""
 
-yrun sudo cp $TMP $Y_SRC_MNT/etc/fstab
+yrun sudo cp $TMP $Y_ORIG_MNT/etc/fstab
 
-yrun sudo chroot $Y_SRC_MNT update-grub
-yrun sudo chroot $Y_SRC_MNT update-initramfs -u -k all
-yrun sudo chroot $Y_SRC_MNT update-grub
-yrun sudo chroot $Y_SRC_MNT grub-install $Y_DEV
+yrun sudo chroot $Y_ORIG_MNT update-grub
+yrun sudo chroot $Y_ORIG_MNT update-initramfs -u -k all
+yrun sudo chroot $Y_ORIG_MNT update-grub
+yrun sudo chroot $Y_ORIG_MNT grub-install $Y_DEV
 
 echo All should be DONE, reboot: `date`
 #sudo init 0

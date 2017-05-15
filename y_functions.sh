@@ -1,7 +1,7 @@
 #!/bin/bash
 # Linux generic function script by http://www.DDr.hu
-Y_FUNC_VER="0.6"
-Y_FUNC_LASTMOD="2017.01.24"
+Y_FUNC_VER="0.7"
+Y_FUNC_LASTMOD="2017.05.15"
 
 # terminal color settings
 #USE_COLOR="yes" ; set this before sourcing this file!
@@ -206,7 +206,7 @@ y_version () { echo "Version: V$VERSION ; Last Mod. $LAST_MOD" ; }
 # ask user if OK to continue
 y_get_confirm () {
     local X
-    test -n "$QUIET" && return
+    test -z "$Y_CONFIRM" && return
     echo -n $*" " ; read X
     test "$X" != "$YES" && y_exit
 }
@@ -320,7 +320,9 @@ y_run () {
     test -z "$1" && return
     y_debug 1 "call: $*"
     if [ -n "$Y_DEBUG" ] ; then OUT=${LOG} ; else OUT=/dev/null ; fi
-    test -z "${Y_DRY_RUN}" && { eval $* >>$OUT  2>>$LOG ; y_check_exec $? "$*" ; }
+    test -z "${Y_DRY_RUN}" && 
+        { eval $* >>$OUT  2>>$LOG ; y_check_exec $? "$*" ; }
+    return 0
 }
 
 y_run1 () { 
@@ -328,6 +330,7 @@ y_run1 () {
     y_debug 1 "call: $*"
     if [ -n "$Y_DEBUG" ] ; then OUT=${LOG} ; else OUT=/dev/null ; fi
     test -z "${Y_DRY_RUN}" && { eval $* >>$OUT 2>>$LOG ; return "$?" ; }
+    return 0
 }
 
 y_run2 () { 

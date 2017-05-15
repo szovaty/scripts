@@ -7,7 +7,7 @@ y_start(){ :; }
 y_exit(){ :; }
 y_help(){ :; }
 
-trap y_exit TERM HUP INT
+trap y_exit TERM HUP INT EXIT
 
 # Uncomment this to allow colors on the console
 USE_COLOR="yes"
@@ -25,12 +25,11 @@ test -r ${FUNCTIONS} && source ${FUNCTIONS}
 
 # define the following to match the program current state
 PROGRAM_NAME="Make new desktop for testing"
-VERSION="0.1"
-LAST_MOD="2017.02.02"
+VERSION="0.2-rc0"
+LAST_MOD="2017.05.15"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
-Y_LOG="$LOG"
 
 # Uncomment this if you need debug enabled
 #Y_DEBUG="true"
@@ -47,19 +46,31 @@ Y_EPS1="\[\033[01;31m\]FIXME#\[\033[00m\] "
 Y_ERROR_CONSOLE="true"
 
 # run function that checks sucessful command exit status and breaks if not
+y_debug_console_help (){
+    echo "----------------------------------------"
+    echo "Debug console options:"
+    echo "  exit  : skip"
+    echo "  exit 1: retry"
+    echo "  exit 2: exit"
+    echo "-----------------------------------------"
+}
+
 y_run_ (){
-    while true; do
-        y_run $*
+    CLOOP=""
+    RET=""
+    while [ "$RET" != "0" ]; do
+        y_run1 $*
         RET="$?"
-        test "$RET" = "0" || {
+        test "$RET" != "0" && {
             y_info "'$*' command returned: $RET"
             if [ "$Y_ERROR_CONSOLE" = "true" ] ; then
+                test -z "$CLOOP" && { y_debug_console_help; CLOOP="x"; }
                 bash --rcfile <(echo "PS1='$Y_EPS1'") -i
                 RET="$?"
                 case "$RET" in
                     0) echo SKIP: "$*"; return;;
                     1) echo RETRY: "$*"; continue;;
-                    2) echo EXIT on ERROR; exit "$RET";;
+                    2) exit "$RET";;
                 esac
             else
                 exit "$RET"
@@ -77,10 +88,7 @@ y_mount(){
     }
 } 
 
-y_start
 # ==============================================================================
-QUIET="true"; y_init_screen; QUIET=""
-
 # read command line parameters
 while [ -n "$1" ] ; do
     case $1 in
@@ -89,49 +97,71 @@ while [ -n "$1" ] ; do
         --mnt|-M)   Y_DEV_MNT="$2"; shift;;         #; Set DEV root [Y_DEV_MNT]
         --nomount)  Y_NOMOUNT="true";;              #; Do not mount DEV FS
         --nocl|-n)  Y_NOCLEAN="true";;              #; Do not clean up [Y_NOCLEAN]
-        --dry|-N)   Y_DRY_RUN="true";;              #; Enable dry run
-        --deb|-D)   Y_DEBUG="true";;                #; Enable debug mode
-        --quiet|-q) Y_QUIET="true";;                #; Minimal messages
+        --nosync)   Y_NOSYNC="true";;               #; Do not sync system [Y_NOSYNC]
+        --noupdate) Y_NOUPDATE="true";;             #; Do not update Gentoo [Y_NOUPDATE]
+        --nocheck)  Y_NOCHECK="true";;              #; Do not pre-check [Y_NOCHECK]
+        --nobuild)  Y_NOBUILD="true";;              #; Do not build [Y_NOBUILD]
+        --notest)   Y_NOTEST="true";;               #; Do not test build [Y_NOTEST]
+        --nomerge)  Y_NOMERGE="true";;              #; Do not merge [Y_NOMERGE]
+        --dry|-N)   export Y_DRY_RUN="true";;       #; Enable dry run
+        --deb|-D)   export Y_DEBUG="true";;         #; Enable debug mode
+        --quiet|-q) export Y_QUIET="true";;         #; Minimal messages
+        --log|-L)   export LOG="$2"; shift;;        #; Set LOG [LOG]
         --version|-V) y_version; y_exit;;           #; Display version and exit
     esac
     shift
 done
+
+test -r ${FUNCTIONS} && source ${FUNCTIONS}
+y_start
+y_init_screen
+
 # sync dev to current
-y_progress "Sync DEV system to current..."
 
 test -z "$Y_NOMOUNT" && {
     y_mount "$Y_DEV_MNT"
 }
-#y_run yrsync_xos -x "$Y_DEV_MNT"
 
-y_progress_end 0
+test -z "$Y_NOSYNC" && {
+    y_progress "Sync DEV system..."
+    y_run_ yrsync_xos -x "$Y_DEV_MNT" -f /etc/fstab.2
+    y_progress_end 0
+}  
 
 # mount system on DEV
 
 test -z "$Y_NOMOUNT" && {
     y_progress "Mount development system on $Y_DEV_MNT/ ..."
-
-    y_mount --bind /dev "$Y_DEV_MNT"/dev
+    y_mount --bind /dev $Y_DEV_MNT/dev
+    y_mount --bind /dev/pts $Y_DEV_MNT/dev/pts
+    y_mount --bind /dev/shm $Y_DEV_MNT/dev/shm
     y_mount -t proc proc "$Y_DEV_MNT"/proc
     y_mount --bind /gentoo "$Y_DEV_MNT"/gentoo
-
+    y_run_ PORTAGE_TMP=`emerge --info | grep PORTAGE_TMPDIR`
+    y_run_ mkdir -p $Y_DEV_MNT${PORTAGE_TMP##*PORTAGE_TMPDIR=}
     y_progress_end 0
 }
 
 # update build system on DEV: emerge --sync
-y_progress "Update gentoo build cache..."
-#y_run_ chroot $Y_DEV_MNT emerge --sync
-y_progress_end 0
+test -z "$Y_NOUPDATE" && {
+    y_progress "Update gentoo build cache..."
+    y_run_ chroot $Y_DEV_MNT emerge --sync
+    y_progress_end 0
+}
 
 # check if it would build: emerge -pvuDN world
-y_progress "Check build..."
-y_run_ chroot $Y_DEV_MNT emerge -pvuDN world
-y_progress_end 0
+test -z "$Y_NOCHECK" && {
+    y_progress "Pre-Check build..."
+    y_run_ chroot $Y_DEV_MNT emerge -pvuDN --verbose-conflicts world
+    y_progress_end 0
+}
 
 # build system on DEV: emerge -qubDN world
-y_progress "Build/update DEV system..."
-y_run_ chroot $Y_DEV_MNT emerge -qbuDN world
-y_progress_end 0
+test -z "$Y_NOBUILD" && {
+    y_progress "Build/update DEV system..."
+    y_run_ chroot $Y_DEV_MNT emerge -qbuDN world
+    y_progress_end 0
+}
 
 # update bootloader to boot new DEV
 
@@ -139,16 +169,20 @@ y_progress_end 0
 
 # test new build after hibernate current
 #   to test: X, video, audio, hibernate, ...
-y_progress "Test new system..."
+test -z "$Y_NOTEST" && {
+    y_progress "Test new system..."
 
-y_progress_end 0
+    y_progress_end 0
+}
 
-# update system based on DEV bin packages
-y_progress "Update system..."
-#y_run emerge -qukDN world
-y_progress_end 0
+# merge new build to main based on DEV bin packages
+test -z "$Y_NOMERGE" && {
+    y_progress "Update system..."
+    #y_run emerge -qukDN world
+    y_progress_end 0
+}
 
 MOUNTED="$MOUNTED_CC"
 # ==============================================================================
 # Leave this as the last line
-y_exit
+#y_exit

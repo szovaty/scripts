@@ -1,0 +1,1028 @@
+VER=1.0, DEBUG=, MODE=new_sys, LOG=./yinstall.log, DRY_RUN=true
+VER=1.0, DEBUG=true, MODE=new_sys, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sda mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sda set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: ubiquity -d
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.0, DEBUG=true, MODE=new_sys, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sda mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sda set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: ubiquity -d
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sda mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sda set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.0, DEBUG=true, MODE=migrate, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: sudo mount /dev/sda1 /mnt
+DEBUG: sudo mount --bind /dev /mnt/dev
+DEBUG: sudo umount /mnt/dev
+DEBUG: sudo tar -c /mnt |         ssh jenov@bp-nas FILE=test.tar VAR=/volume1/backup/tmp         'X=$VAR; Y=$FILE; cat > ${X}/${Y}'
+DEBUG: sudo umount /mnt
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sda mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sda set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: 
+        ssh jenov@bp-nas FILE=test.tar VAR=/volume1/backup/tmp         'X=$VAR; Y=$FILE; cat ${X}/${Y}' |         sudo tar -x -C /
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.0, DEBUG=true, MODE=new_sys, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sda mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sda set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: ubiquity -d
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sda mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sda set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sda mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sda set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sda mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sda set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: sudo swapon -s
+DEBUG: sudo swapoff
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sda mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sda set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: touch /tmp/ytmp
+DEBUG: sudo swapon -s
+DEBUG: sudo swapoff
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sda mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sda set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: sudo swapon -s
+DEBUG: sudo swapoff
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sda mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sda set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: sudo swapon -s
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: sudo swapon -s
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: sudo swapon -s
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: sudo swapon -s
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sda mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sda set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: sudo swapon -s
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sda mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sda set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: touch /tmp/ytmp
+DEBUG: sudo swapon -s
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sda mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sda set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: touch /tmp/ytmp
+DEBUG: sudo swapon -s
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sda mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sda set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: touch /tmp/ytmp
+DEBUG: sudo swapon -s
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sda mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sda set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: touch /tmp/ytmp
+DEBUG: sudo swapon -s
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sda mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sda set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: touch /tmp/ytmp
+DEBUG: sudo swapon -s
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sda mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sda set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: touch /tmp/ytmp
+DEBUG: sudo swapon -s
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sda mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sda set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: touch /tmp/ytmp
+DEBUG: sudo swapon -s
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sda mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sda set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: touch /tmp/ytmp
+DEBUG: sudo swapon -s
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sda mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sda set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: touch /tmp/ytmp
+DEBUG: sudo swapon -s
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sda mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sda mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sda set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: touch /tmp/ytmp
+DEBUG: sudo swapon -s
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sdb mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sdb mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sdb mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sdb set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sda1
+DEBUG: sudo mkswap -f /dev/sda2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sda3
+DEBUG: sudo cryptsetup luksOpen /dev/sda3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: touch /tmp/ytmp
+DEBUG: sudo swapon -s
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sdb mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sdb mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sdb mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sdb set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sdb1
+DEBUG: sudo mkswap -f 2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sdb3
+DEBUG: sudo cryptsetup luksOpen /dev/sdb3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mount /dev/mapper/root /mnt
+DEBUG: cd /mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sda1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: touch /tmp/ytmp
+DEBUG: sudo swapon -s
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sdb mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sdb mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sdb mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sdb set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sdb1
+DEBUG: sudo mkswap -f 2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sdb3
+DEBUG: sudo cryptsetup luksOpen /dev/sdb3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mount /dev/mapper/root /tmp/dest
+DEBUG: cd /tmp/dest
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sdb1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: touch /tmp/ytmp
+DEBUG: sudo swapon -s
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sdb mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sdb mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sdb mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sdb set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sdb1
+DEBUG: sudo mkswap -f 2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sdb3
+DEBUG: sudo cryptsetup luksOpen /dev/sdb3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mkdir -p /tmp/dest
+DEBUG: sudo mount /dev/mapper/root /tmp/dest
+DEBUG: cd /tmp/dest
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sdb1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
+VER=1.1-rc0, DEBUG=true, MODE=copy, LOG=./yinstall.log, DRY_RUN=true
+DEBUG: touch /tmp/ytmp
+DEBUG: sudo swapon -s
+DEBUG: sudo parted --script /dev/sda mklabel msdos
+DEBUG: sudo parted --script /dev/sdb mkpart primary ext2 1 400
+DEBUG: sudo parted --script /dev/sdb mkpart primary linux-swap 400 8600
+DEBUG: sudo parted --script /dev/sdb mkpart primary ext2 8600 100%
+DEBUG: sudo parted --script /dev/sdb set 1 boot on
+DEBUG: sudo mkfs.ext2 -F /dev/sdb1
+DEBUG: sudo mkswap -f 2
+DEBUG: sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat /dev/sdb3
+DEBUG: sudo cryptsetup luksOpen /dev/sdb3 root
+DEBUG: sudo cryptsetup -v status root
+DEBUG: sudo mkfs.ext4 -F /dev/mapper/root
+DEBUG: sudo mkdir -p /tmp/dest_mnt
+DEBUG: sudo mount /dev/mapper/root /tmp/dest_mnt
+DEBUG: cd /tmp/dest_mnt
+DEBUG: sudo mkdir -p boot
+DEBUG: sudo mount /dev/sdb1 boot
+DEBUG: sudo mount --bind /dev dev
+DEBUG: sudo mount --bind /sys sys
+DEBUG: sudo mount -t proc proc proc
+DEBUG: sudo blkid -o export /dev/sda3
+DEBUG: source /tmp/ytmp
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo root UUID= none luks
+DEBUG: cat /tmp/ytmp
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/crypttab
+DEBUG: sudo cp /etc/resolv.conf /mnt/etc
+DEBUG: sudo chroot /mnt apt-get install --yes cryptsetup
+DEBUG: rm -f /tmp/ytmp
+DEBUG: echo /dev/mapper/root / ext4 errors=remount-ro 0 1
+DEBUG: echo /dev/sda1 /boot ext2 defaults 0 2
+DEBUG: echo /dev/sda2 none sw 0 0
+DEBUG: sudo cp /tmp/ytmp /mnt/etc/fstab
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt update-initramfs -u -k all
+DEBUG: sudo chroot /mnt update-grub
+DEBUG: sudo chroot /mnt grub-install /dev/sda
