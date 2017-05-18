@@ -1,7 +1,7 @@
 #!/bin/bash
 # vim: ts=4:sw=4
 # Based on template.src version 1.2 last modified 2006.09.29 by y
-# Add your description here of the program here!
+# Build a new Gentoo based system and install it
 
 y_start(){ :; }
 y_exit(){ :; }
@@ -24,9 +24,9 @@ FUNCTIONS="/bin/y_functions.sh"
 test -r ${FUNCTIONS} && source ${FUNCTIONS}
 
 # define the following to match the program current state
-PROGRAM_NAME="Make new desktop for testing"
-VERSION="0.2-rc0"
-LAST_MOD="2017.05.15"
+PROGRAM_NAME="Make new desktop for testing based on Gentoo"
+VERSION="0.2-rc2"
+LAST_MOD="2017.05.18"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -43,7 +43,23 @@ LOG="/tmp/${0##*/}.log"
 Y_DEV_DEV="/dev/sdb3"
 Y_DEV_MNT="/xy"
 Y_EPS1="\[\033[01;31m\]FIXME#\[\033[00m\] "
-Y_ERROR_CONSOLE="true"
+Y_EPS2="\[\033[00;34m\]\w#\[\033[00m\] "
+#Y_ERROR_CONSOLE="true"
+
+# set defaults
+#Y_NOMOUNT="true"
+#Y_NOCLEAN="true"
+Y_NOSYNC="true"
+Y_NOUPDATE="true"
+Y_NOCHECK="true"
+Y_NOBUILD="true"
+Y_NOTEST="true"
+Y_NOMERGE="true"
+#Y_KLINK="true"
+#Y_KERNEL="true"
+Y_REBUILD="true"
+#Y_LILO="true"
+#Y_CGENTOO="true"
 
 # run function that checks sucessful command exit status and breaks if not
 y_debug_console_help (){
@@ -56,16 +72,17 @@ y_debug_console_help (){
 }
 
 y_run_ (){
+    test -n "$Y_DRY_RUN" && { y_run $@; return;} 
     CLOOP=""
     RET=""
     while [ "$RET" != "0" ]; do
         y_run1 $*
         RET="$?"
         test "$RET" != "0" && {
-            y_info "'$*' command returned: $RET"
+            #y_info "'$*' command returned: $RET"
             if [ "$Y_ERROR_CONSOLE" = "true" ] ; then
                 test -z "$CLOOP" && { y_debug_console_help; CLOOP="x"; }
-                bash --rcfile <(echo "PS1='$Y_EPS1'") -i
+                chroot $Y_DEV_MNT bash --rcfile /tmp/PS1 -i
                 RET="$?"
                 case "$RET" in
                     0) echo SKIP: "$*"; return;;
@@ -81,12 +98,33 @@ y_run_ (){
 
 # mount and store for cleanup
 y_mount(){
+    test -n "$Y_DRY_RUN" && { y_run y_mount $@; return;} 
     y_run_ mount "$*"
     test -z "$Y_DRY_RUN" && {
         MOUNTED_CC="${@: -1} $MOUNTED_CC"
-        test -z "$Y_NOCLEAN" && MOUNTED=$MOUNTED_CC
+        test -n "$Y_NOCLEAN" || MOUNTED=$MOUNTED_CC
     }
 } 
+
+# chroot with cd feature
+# y_chroot new_dir root_dir command
+#   new_dir is relative to root_dir
+y_chroot(){
+    test -n "$Y_DRY_RUN" && { y_run y_chroot $@; return;} 
+    if [ $# -le 2 ]; then exit 1; fi
+    _ROOT="$2"
+    test -z "$Y_DRY_RUN" && {
+        _TMP=`mktemp`
+        echo -e "cd $1;" > $_TMP
+        shift 
+        shift
+        echo "$@" >> $_TMP
+    }
+    y_run_ mv $_TMP $_ROOT/$_TMP
+    y_run_ chmod +x $_ROOT/$_TMP
+    y_run_ chroot $_ROOT $_TMP
+    test -z "$Y_DRY_RUN" && rm $_ROOT/$_TMP
+}
 
 # ==============================================================================
 # read command line parameters
@@ -96,13 +134,16 @@ while [ -n "$1" ] ; do
         --dev|-d)   Y_DEV_DEV="$2"; shift;;         #; Set device [Y_DEV_DEV]
         --mnt|-M)   Y_DEV_MNT="$2"; shift;;         #; Set DEV root [Y_DEV_MNT]
         --nomount)  Y_NOMOUNT="true";;              #; Do not mount DEV FS
-        --nocl|-n)  Y_NOCLEAN="true";;              #; Do not clean up [Y_NOCLEAN]
+        --noclean)  Y_NOCLEAN="true";;              #; Do not clean on exit [Y_NOCLEAN]
         --nosync)   Y_NOSYNC="true";;               #; Do not sync system [Y_NOSYNC]
         --noupdate) Y_NOUPDATE="true";;             #; Do not update Gentoo [Y_NOUPDATE]
         --nocheck)  Y_NOCHECK="true";;              #; Do not pre-check [Y_NOCHECK]
         --nobuild)  Y_NOBUILD="true";;              #; Do not build [Y_NOBUILD]
         --notest)   Y_NOTEST="true";;               #; Do not test build [Y_NOTEST]
         --nomerge)  Y_NOMERGE="true";;              #; Do not merge [Y_NOMERGE]
+        --kernel)   Y_KERNEL="true";;               #; Build kernel [Y_KERNEL]
+        --lilo)     Y_LILO="true";;                 #; Update bootloader [Y_LILO]
+        --cgentoo)  Y_CGENTOO="true";;              #; Clean Gentoo [Y_CGENTOO]
         --dry|-N)   export Y_DRY_RUN="true";;       #; Enable dry run
         --deb|-D)   export Y_DEBUG="true";;         #; Enable debug mode
         --quiet|-q) export Y_QUIET="true";;         #; Minimal messages
@@ -119,8 +160,12 @@ y_init_screen
 # sync dev to current
 
 test -z "$Y_NOMOUNT" && {
+    y_progress "Mount DEV root..."
     y_mount "$Y_DEV_MNT"
+    y_progress_end 0
 }
+
+echo PS1=\"$Y_EPS1\" > "$Y_DEV_MNT"/tmp/PS1
 
 test -z "$Y_NOSYNC" && {
     y_progress "Sync DEV system..."
@@ -134,11 +179,19 @@ test -z "$Y_NOMOUNT" && {
     y_progress "Mount development system on $Y_DEV_MNT/ ..."
     y_mount --bind /dev $Y_DEV_MNT/dev
     y_mount --bind /dev/pts $Y_DEV_MNT/dev/pts
-    y_mount --bind /dev/shm $Y_DEV_MNT/dev/shm
+    #y_mount --bind /dev/shm $Y_DEV_MNT/dev/shm
     y_mount -t proc proc "$Y_DEV_MNT"/proc
     y_mount --bind /gentoo "$Y_DEV_MNT"/gentoo
     y_run_ PORTAGE_TMP=`emerge --info | grep PORTAGE_TMPDIR`
     y_run_ mkdir -p $Y_DEV_MNT${PORTAGE_TMP##*PORTAGE_TMPDIR=}
+    y_progress_end 0
+}
+
+# clean up gentoo files: packages and distfiles
+test -n "$Y_CGENTOO" && {
+    y_progress "Clear Gentoo build files...."
+    y_run_ eclean-dist
+    y_run_ eclean-pkg
     y_progress_end 0
 }
 
@@ -159,11 +212,50 @@ test -z "$Y_NOCHECK" && {
 # build system on DEV: emerge -qubDN world
 test -z "$Y_NOBUILD" && {
     y_progress "Build/update DEV system..."
-    y_run_ chroot $Y_DEV_MNT emerge -qbuDN world
+    y_run_ chroot $Y_DEV_MNT emerge -quDN world
+    y_progress_end 0
+}
+
+# update kernel link
+test -n "$Y_KLINK" && {
+    y_progress "Update kernel link..."
+    cd $Y_DEV_MNT/usr/src; bash --rcfile <(echo "PS1='$Y_EPS2'") -i
+    y_progress_end 0
+}    
+
+
+# build new kernel
+test -n "$Y_KERNEL" && {
+    y_progress "Build kernel..."
+    y_chroot /usr/src/linux $Y_DEV_MNT make bzImage modules modules_install
+    y_progress_end 0
+}
+
+# rebuild/clean-up system after new kernel
+test -n "$Y_REBUILD" && {
+    y_progress "Remove unused packages - depclean..."
+    y_run_ chroot $Y_DEV_MNT emerge --depclean
+    y_progress "Chech build integrity..."
+    y_run_ chroot $Y_DEV_MNT emerge -quDN world
+    y_progress "Rebuild preserved packages..."
+    y_run_ chroot $Y_DEV_MNT emerge @preserved-rebuild
+    y_progress "Rebuild X11 modules..."
+    #y_run_ chroot $Y_DEV_MNT emerge @x11-module-rebuild
+    y_progress "Rebuild other modules..."
+    #y_run_ chroot $Y_DEV_MNT emerge @module-rebuild
+    y_progress "Rebuild system after new kernel..."
     y_progress_end 0
 }
 
 # update bootloader to boot new DEV
+test -n "$Y_LILO" && {
+    y_progress "Update bootloader..."
+    y_run_ mount -o remount,rw /boot
+    y_run_ cp $Y_DEV_MNT/usr/src/linux/arch/x86/boot/bzImage /boot/vmlinuz.dev
+    y_run_ lilo
+    y_run_ mount -o remount,ro /boot
+    y_progress_end 0
+}    
 
 # unmount DEV
 
@@ -182,7 +274,8 @@ test -z "$Y_NOMERGE" && {
     y_progress_end 0
 }
 
-MOUNTED="$MOUNTED_CC"
+#echo MOUNTED=["$MOUNTED"]
+
 # ==============================================================================
 # Leave this as the last line
 #y_exit

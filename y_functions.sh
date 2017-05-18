@@ -183,7 +183,7 @@ y_exit () {
 	test -n "$1" && EXIT_STAT=$1
 	if [ -n "$MOUNTED" ] ; then
 		for i in $MOUNTED ; do
-			`umount $i > /dev/null`
+			`umount -l $i > /dev/null`
 			test "$?" = "1" && y_error 2 "umount $i"
 		done
 	fi
