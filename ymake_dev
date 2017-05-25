@@ -1,5 +1,5 @@
 #!/bin/bash
-# vim: ts=4:sw=4
+# vim: ts=4 sw=4 tw=80:
 # Based on template.src version 1.2 last modified 2006.09.29 by y
 # Build a new Gentoo based system and install it
 
@@ -44,7 +44,7 @@ Y_DEV_DEV="/dev/sdb3"
 Y_DEV_MNT="/xy"
 Y_EPS1="\[\033[01;31m\]FIXME#\[\033[00m\] "
 Y_EPS2="\[\033[00;34m\]\w#\[\033[00m\] "
-#Y_ERROR_CONSOLE="true"
+Y_ERROR_CONSOLE="true"
 
 # set defaults
 #Y_NOMOUNT="true"
@@ -52,13 +52,13 @@ Y_EPS2="\[\033[00;34m\]\w#\[\033[00m\] "
 Y_NOSYNC="true"
 Y_NOUPDATE="true"
 Y_NOCHECK="true"
-Y_NOBUILD="true"
+#Y_NOBUILD="true"
 Y_NOTEST="true"
 Y_NOMERGE="true"
 #Y_KLINK="true"
-#Y_KERNEL="true"
+Y_KERNEL="true"
 Y_REBUILD="true"
-#Y_LILO="true"
+Y_LILO="true"
 #Y_CGENTOO="true"
 
 # run function that checks sucessful command exit status and breaks if not
@@ -165,7 +165,10 @@ test -z "$Y_NOMOUNT" && {
     y_progress_end 0
 }
 
-echo PS1=\"$Y_EPS1\" > "$Y_DEV_MNT"/tmp/PS1
+test -N "$Y_DRY_RUN" && {
+    echo PS1=\"$Y_EPS1\" > "$Y_DEV_MNT"/tmp/PS1
+    echo PS1=\"$Y_EPS2\" > "$Y_DEV_MNT"/tmp/PS2
+}
 
 test -z "$Y_NOSYNC" && {
     y_progress "Sync DEV system..."
@@ -219,10 +222,10 @@ test -z "$Y_NOBUILD" && {
 # update kernel link
 test -n "$Y_KLINK" && {
     y_progress "Update kernel link..."
-    cd $Y_DEV_MNT/usr/src; bash --rcfile <(echo "PS1='$Y_EPS2'") -i
+    y_run_ cd $Y_DEV_MNT/usr/src
+    y_run_ chroot $Y_DEV_MNT bash --rcfile /tmp/PS2 -i
     y_progress_end 0
 }    
-
 
 # build new kernel
 test -n "$Y_KERNEL" && {
@@ -240,9 +243,10 @@ test -n "$Y_REBUILD" && {
     y_progress "Rebuild preserved packages..."
     y_run_ chroot $Y_DEV_MNT emerge @preserved-rebuild
     y_progress "Rebuild X11 modules..."
-    #y_run_ chroot $Y_DEV_MNT emerge @x11-module-rebuild
+    y_run_ chroot $Y_DEV_MNT emerge @x11-module-rebuild
     y_progress "Rebuild other modules..."
-    #y_run_ chroot $Y_DEV_MNT emerge @module-rebuild
+    y_run_ chroot $Y_DEV_MNT emerge @module-rebuild
+    y_run_ chroot $Y_DEV_MNT emerge -q1 udev
     y_progress "Rebuild system after new kernel..."
     y_progress_end 0
 }
@@ -251,6 +255,7 @@ test -n "$Y_REBUILD" && {
 test -n "$Y_LILO" && {
     y_progress "Update bootloader..."
     y_run_ mount -o remount,rw /boot
+    y_run_ cp /boot/vmlinuz.dev /boot/vmlinuz.dev_old
     y_run_ cp $Y_DEV_MNT/usr/src/linux/arch/x86/boot/bzImage /boot/vmlinuz.dev
     y_run_ lilo
     y_run_ mount -o remount,ro /boot
