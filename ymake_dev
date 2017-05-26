@@ -51,11 +51,11 @@ Y_ERROR_CONSOLE="true"
 #Y_NOCLEAN="true"
 Y_NOSYNC="true"
 Y_NOUPDATE="true"
-Y_NOCHECK="true"
+#Y_NOCHECK="true"
 #Y_NOBUILD="true"
 Y_NOTEST="true"
 Y_NOMERGE="true"
-#Y_KLINK="true"
+Y_KLINK="true"
 Y_KERNEL="true"
 Y_REBUILD="true"
 Y_LILO="true"
@@ -222,8 +222,7 @@ test -z "$Y_NOBUILD" && {
 # update kernel link
 test -n "$Y_KLINK" && {
     y_progress "Update kernel link..."
-    y_run_ cd $Y_DEV_MNT/usr/src
-    y_run_ chroot $Y_DEV_MNT bash --rcfile /tmp/PS2 -i
+    test -n "$Y_DRY_RUN" && { cd $Y_DEV_MNT/usr/src; bash --rcfile /tmp/PS2 -i; }
     y_progress_end 0
 }    
 
@@ -233,6 +232,17 @@ test -n "$Y_KERNEL" && {
     y_chroot /usr/src/linux $Y_DEV_MNT make bzImage modules modules_install
     y_progress_end 0
 }
+
+# update bootloader to boot new DEV
+test -n "$Y_LILO" && {
+    y_progress "Update bootloader..."
+    y_run_ mount -o remount,rw /boot
+    y_run_ cp /boot/vmlinuz.dev /boot/vmlinuz.dev_old
+    y_run_ cp $Y_DEV_MNT/usr/src/linux/arch/x86/boot/bzImage /boot/vmlinuz.dev
+    y_run_ lilo
+    y_run_ mount -o remount,ro /boot
+    y_progress_end 0
+}    
 
 # rebuild/clean-up system after new kernel
 test -n "$Y_REBUILD" && {
@@ -251,19 +261,6 @@ test -n "$Y_REBUILD" && {
     y_progress_end 0
 }
 
-# update bootloader to boot new DEV
-test -n "$Y_LILO" && {
-    y_progress "Update bootloader..."
-    y_run_ mount -o remount,rw /boot
-    y_run_ cp /boot/vmlinuz.dev /boot/vmlinuz.dev_old
-    y_run_ cp $Y_DEV_MNT/usr/src/linux/arch/x86/boot/bzImage /boot/vmlinuz.dev
-    y_run_ lilo
-    y_run_ mount -o remount,ro /boot
-    y_progress_end 0
-}    
-
-# unmount DEV
-
 # test new build after hibernate current
 #   to test: X, video, audio, hibernate, ...
 test -z "$Y_NOTEST" && {
@@ -278,8 +275,6 @@ test -z "$Y_NOMERGE" && {
     #y_run emerge -qukDN world
     y_progress_end 0
 }
-
-#echo MOUNTED=["$MOUNTED"]
 
 # ==============================================================================
 # Leave this as the last line
