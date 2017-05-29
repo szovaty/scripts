@@ -25,8 +25,8 @@ test -r ${FUNCTIONS} && source ${FUNCTIONS}
 
 # define the following to match the program current state
 PROGRAM_NAME="Make new desktop for testing based on Gentoo"
-VERSION="0.2-rc2"
-LAST_MOD="2017.05.18"
+VERSION="0.2-rc3"
+LAST_MOD="2017.05.29"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -51,13 +51,14 @@ Y_ERROR_CONSOLE="true"
 #Y_NOCLEAN="true"
 Y_NOSYNC="true"
 Y_NOUPDATE="true"
-#Y_NOCHECK="true"
-#Y_NOBUILD="true"
+Y_NOCHECK="true"
+Y_NOBUILD="true"
 Y_NOTEST="true"
 Y_NOMERGE="true"
-Y_KLINK="true"
+#Y_KLINK="true"
+Y_RECONFIG_KERNEL="true"
 Y_KERNEL="true"
-Y_REBUILD="true"
+#Y_REBUILD="true"
 Y_LILO="true"
 #Y_CGENTOO="true"
 
@@ -165,7 +166,7 @@ test -z "$Y_NOMOUNT" && {
     y_progress_end 0
 }
 
-test -N "$Y_DRY_RUN" && {
+test -z "$Y_DRY_RUN" && {
     echo PS1=\"$Y_EPS1\" > "$Y_DEV_MNT"/tmp/PS1
     echo PS1=\"$Y_EPS2\" > "$Y_DEV_MNT"/tmp/PS2
 }
@@ -222,13 +223,16 @@ test -z "$Y_NOBUILD" && {
 # update kernel link
 test -n "$Y_KLINK" && {
     y_progress "Update kernel link..."
-    test -n "$Y_DRY_RUN" && { cd $Y_DEV_MNT/usr/src; bash --rcfile /tmp/PS2 -i; }
+    test -z "$Y_DRY_RUN" && { cd $Y_DEV_MNT/usr/src/linux; bash --rcfile /tmp/PS2 -i; }
     y_progress_end 0
 }    
 
 # build new kernel
 test -n "$Y_KERNEL" && {
     y_progress "Build kernel..."
+    test -n "$Y_RECONFIG_KERNEL" -a -z "$Y_DRY_RUN" && { 
+        cd $Y_DEV_MNT/usr/src; bash --rcfile $Y_DEV_MNT/tmp/PS2 -i; 
+    }
     y_chroot /usr/src/linux $Y_DEV_MNT make bzImage modules modules_install
     y_progress_end 0
 }
