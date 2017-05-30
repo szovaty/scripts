@@ -1,0 +1,8 @@
+PROJ="/proj/jenov/scripts/ymake_dev"
+LIB="/proj/jenov/scripts/y_functions.sh"
+DEST1="/usr/local/bin"
+DEST2="/bin"
+cp $PROJ $DEST1
+cp $LIB $DEST2
+$DEST1/ymake_dev $*
+fsck -p /dev/sdb3 2>&1 >> /var/log/ymake_dev.log

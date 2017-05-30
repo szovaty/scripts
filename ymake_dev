@@ -1,5 +1,5 @@
 #!/bin/bash
-# vim: ts=4 sw=4 tw=80:
+# vim: ts=4 sw=4:
 # Based on template.src version 1.2 last modified 2006.09.29 by y
 # Build a new Gentoo based system and install it
 
@@ -25,11 +25,12 @@ test -r ${FUNCTIONS} && source ${FUNCTIONS}
 
 # define the following to match the program current state
 PROGRAM_NAME="Make new desktop for testing based on Gentoo"
-VERSION="0.2-rc3"
-LAST_MOD="2017.05.29"
+VERSION="0.2-rc4"
+LAST_MOD="2017.05.30"
 
 # Define log file here
-LOG="/tmp/${0##*/}.log"
+#LOG="/tmp/${0##*/}.log"
+LOG="/var/log/ymake_dev.log"
 
 # Uncomment this if you need debug enabled
 #Y_DEBUG="true"
@@ -55,9 +56,9 @@ Y_NOCHECK="true"
 Y_NOBUILD="true"
 Y_NOTEST="true"
 Y_NOMERGE="true"
-#Y_KLINK="true"
-Y_RECONFIG_KERNEL="true"
-Y_KERNEL="true"
+#Y_LINK_KERNEL="true"
+#Y_CONFIG_KERNEL="true"
+Y_BUILD_KERNEL="true"
 #Y_REBUILD="true"
 Y_LILO="true"
 #Y_CGENTOO="true"
@@ -124,7 +125,8 @@ y_chroot(){
     y_run_ mv $_TMP $_ROOT/$_TMP
     y_run_ chmod +x $_ROOT/$_TMP
     y_run_ chroot $_ROOT $_TMP
-    test -z "$Y_DRY_RUN" && rm $_ROOT/$_TMP
+    #test -z "$Y_DRY_RUN" && rm $_ROOT/$_TMP
+    y_run_ rm $_ROOT/$_TMP
 }
 
 # ==============================================================================
@@ -134,7 +136,7 @@ while [ -n "$1" ] ; do
         --help|-h)  y_help "[Options]"; y_exit;;    #; Help
         --dev|-d)   Y_DEV_DEV="$2"; shift;;         #; Set device [Y_DEV_DEV]
         --mnt|-M)   Y_DEV_MNT="$2"; shift;;         #; Set DEV root [Y_DEV_MNT]
-        --nomount)  Y_NOMOUNT="true";;              #; Do not mount DEV FS
+        --nomount)  Y_NOMOUNT="true";;              #; Do not mount DEV FS [Y_NOMOUNT]
         --noclean)  Y_NOCLEAN="true";;              #; Do not clean on exit [Y_NOCLEAN]
         --nosync)   Y_NOSYNC="true";;               #; Do not sync system [Y_NOSYNC]
         --noupdate) Y_NOUPDATE="true";;             #; Do not update Gentoo [Y_NOUPDATE]
@@ -142,12 +144,14 @@ while [ -n "$1" ] ; do
         --nobuild)  Y_NOBUILD="true";;              #; Do not build [Y_NOBUILD]
         --notest)   Y_NOTEST="true";;               #; Do not test build [Y_NOTEST]
         --nomerge)  Y_NOMERGE="true";;              #; Do not merge [Y_NOMERGE]
-        --kernel)   Y_KERNEL="true";;               #; Build kernel [Y_KERNEL]
+        --lkernel)  Y_LINK_KERNEL="true";;          #; Link kernel [Y_LINK_KERNEL]
+        --ckernel)  Y_CONFIG_KERNEL="true";;        #; Config kernel [Y_CONFIG_KERNEL]
+        --bkernel)  Y_BUILD_KERNEL="true";;         #; Build kernel [Y_BUILD_KERNEL]
         --lilo)     Y_LILO="true";;                 #; Update bootloader [Y_LILO]
         --cgentoo)  Y_CGENTOO="true";;              #; Clean Gentoo [Y_CGENTOO]
-        --dry|-N)   export Y_DRY_RUN="true";;       #; Enable dry run
-        --deb|-D)   export Y_DEBUG="true";;         #; Enable debug mode
-        --quiet|-q) export Y_QUIET="true";;         #; Minimal messages
+        --dry|-N)   export Y_DRY_RUN="true";;       #; Enable dry run [Y_DRY_RUN]
+        --deb|-D)   export Y_DEBUG="true";;         #; Enable debug mode [Y_DEBUG]
+        --quiet|-q) export Y_QUIET="true";;         #; Minimal messages [Y_QUIET]
         --log|-L)   export LOG="$2"; shift;;        #; Set LOG [LOG]
         --version|-V) y_version; y_exit;;           #; Display version and exit
     esac
@@ -162,6 +166,7 @@ y_init_screen
 
 test -z "$Y_NOMOUNT" && {
     y_progress "Mount DEV root..."
+    test -z "$Y_DRY_RUN" && fsck -p "$Y_DEV_DEV" 2>&1 > $LOG
     y_mount "$Y_DEV_MNT"
     y_progress_end 0
 }
@@ -183,7 +188,6 @@ test -z "$Y_NOMOUNT" && {
     y_progress "Mount development system on $Y_DEV_MNT/ ..."
     y_mount --bind /dev $Y_DEV_MNT/dev
     y_mount --bind /dev/pts $Y_DEV_MNT/dev/pts
-    #y_mount --bind /dev/shm $Y_DEV_MNT/dev/shm
     y_mount -t proc proc "$Y_DEV_MNT"/proc
     y_mount --bind /gentoo "$Y_DEV_MNT"/gentoo
     y_run_ PORTAGE_TMP=`emerge --info | grep PORTAGE_TMPDIR`
@@ -221,16 +225,16 @@ test -z "$Y_NOBUILD" && {
 }
 
 # update kernel link
-test -n "$Y_KLINK" && {
+test -n "$Y_LINK_KERNEL" && {
     y_progress "Update kernel link..."
     test -z "$Y_DRY_RUN" && { cd $Y_DEV_MNT/usr/src/linux; bash --rcfile /tmp/PS2 -i; }
     y_progress_end 0
 }    
 
 # build new kernel
-test -n "$Y_KERNEL" && {
+test -n "$Y_BUILD_KERNEL" && {
     y_progress "Build kernel..."
-    test -n "$Y_RECONFIG_KERNEL" -a -z "$Y_DRY_RUN" && { 
+    test -n "$Y_CONFIG_KERNEL" -a -z "$Y_DRY_RUN" && { 
         cd $Y_DEV_MNT/usr/src; bash --rcfile $Y_DEV_MNT/tmp/PS2 -i; 
     }
     y_chroot /usr/src/linux $Y_DEV_MNT make bzImage modules modules_install

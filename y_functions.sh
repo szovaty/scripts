@@ -93,8 +93,9 @@ y_init_screen () {
 }
 
 # self documenting program options from the source
-# return opts as a string with commants for source
-# add #; at the begin of a line that you want to show up on the help screen
+# return opts as a string with comments
+# add #; at the begin that you want to show up on the help screen
+# comments needs to be inline with the comment option!
 y_help_opt () {
     local HELPMSG MSG DEF i j k x
     IFS=$'\n'
@@ -102,7 +103,10 @@ y_help_opt () {
 	HELPMSG="${i##*'#;'}"
 	#i=${i#*[' ',$'\t']}
 	i=${i%)*} ; 
-	if [ "${i##*'#;'}" = "${HELPMSG}" ] ; then printf "%25s %s\n" ' ' $HELPMSG ; continue ; fi
+	if [ "${i##*'#;'}" = "${HELPMSG}" ] ; then 
+        printf "%20s %s\n" ' ' $HELPMSG
+        continue 
+    fi
 	IFS=$'|'
 	for j in $i ; do
 	    if [ "${j%\$*}" = "$j" ] ; then k=$i ; break ; fi
@@ -112,12 +116,16 @@ y_help_opt () {
 	k="${k}:"
 	IFS=$' \t\n' ; MSG="" ; DEF=""
 	for j in $HELPMSG ; do
-	    if [ "${j#*[}" != "$j" ] ; then eval j='$'${j#*[} ; DEF="[${j}" ; continue ; fi
+	    if [ "${j#*[}" != "$j" ] ; then 
+            eval j='$'${j#*[} ; 
+            DEF="[${j}" ; 
+            continue ; 
+        fi
 	    MSG="$MSG $j"
 	done
 	IFS=$'\n'
 	k=`echo $k | awk ' { print $1 }'`
-	printf "%25s %-40s %s\n" "${k}" "$MSG" "$DEF" 
+	printf "%20s %-40s %s\n" "${k}" "$MSG" "$DEF" 
 	k=""
     done
     IFS=$' \t\n'

@@ -1,4 +1,5 @@
 #!/bin/bash
+# vim: set ts=4: 
 # v.1.2:
 # v1.3: fix last backup file not been overwritten
 # v2.0: make more generic for archive any part of the filesystem
@@ -195,40 +196,40 @@ make_exclude $EXCLUDE
 # do the actual task now
 case $CMD in
     $TARUPDATE)
-	CMD="$TARFULL" ; test -f $FILE && CMD="$TARUPDATE" 
-	y_run_cmd "tar $TARPARMS $CMD -C $SOURCE -X $EXCLUDE_FILE  -f $FILE$EXT ."
-    ;;
+        CMD="$TARFULL" ; test -f $FILE && CMD="$TARUPDATE" 
+        y_run_cmd "tar $TARPARMS $CMD -C $SOURCE -X $EXCLUDE_FILE  -f $FILE$EXT ."
+        ;;
     $TARFULL)
-	y_run_cmd "tar $TARPARMS $CMD -C $SOURCE -X $EXCLUDE_FILE -f $FILE$EXT.tmp ."
-	test "$?" = "1" && error "Tar exited with error!"
-	rotate_archive
-	test -f $FILE && {
-	    y_run_cmd "mv -f $FILE$EXT $FILE.0$EXT"
-	}
-	y_run_cmd "mv -f $FILE$EXT.tmp $FILE$EXT"
-    ;;
+        y_run_cmd "tar $TARPARMS $CMD -C $SOURCE -X $EXCLUDE_FILE -f $FILE$EXT.tmp ."
+        test "$?" = "1" && error "Tar exited with error!"
+        rotate_archive
+        test -f $FILE && {
+            y_run_cmd "mv -f $FILE$EXT $FILE.0$EXT"
+        }
+        y_run_cmd "mv -f $FILE$EXT.tmp $FILE$EXT"
+        ;;
     $TARSNAP)
-	y_run_cmd "tar $TARPARAMS -c -C $SOURCE -X $EXCLUDE_FILE -f $FILE$EXT ."
-	test "$?" = "1" && error "Tar exited with error!"
-	rotate_archive
-	test -f "$FILE$EXT" && {
-	    y_run_cmd "mv -f $FILE$EXT $FILE.0$EXT"
-	}
-    ;;
-    
+        y_run_cmd "tar $TARPARAMS -c -C $SOURCE -X $EXCLUDE_FILE -f $FILE$EXT ."
+        test "$?" = "1" && error "Tar exited with error!"
+        rotate_archive
+        test -f "$FILE$EXT" && {
+            y_run_cmd "mv -f $FILE$EXT $FILE.0$EXT"
+        }
+        ;;
+        
     $COPY)
-	test -f "$FILE.0$EXT" && y_run_cmd "cp $FILE.0$EXT $FILE.`date +%Y%m`$EXT"
-    ;;
+        test -f "$FILE.0$EXT" && y_run_cmd "cp $FILE.0$EXT $FILE.`date +%Y%m`$EXT"
+        ;;
     $BCOPY)
-	test -f "$FILE.0$EXT" && y_run_cmd "cp -a $FILE.0$EXT $BCOPY_DEST/$FILE.`date +%Y%m`$EXT"
-    ;;
-    $CCOPY)
-	test -f "$FILE.0$EXT" && y_run_cmd "cp -a $FILE.0$EXT $BCOPY_DEST"
-    ;;
+        test -f "$FILE.0$EXT" && y_run_cmd "cp -a $FILE.0$EXT $BCOPY_DEST/$FILE.`date +%Y%m`$EXT"
+        ;;
+        $CCOPY)
+        test -f "$FILE.0$EXT" && y_run_cmd "cp -a $FILE.0$EXT $BCOPY_DEST"
+        ;;
 
     *)
-	echo "ERROR: [$CMD] Unknown option!" >> $LOG
-    ;;
+        echo "ERROR: [$CMD] Unknown option!" >> $LOG
+        ;;
 esac
 
 y_exit
