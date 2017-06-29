@@ -43,24 +43,25 @@ LOG="/var/log/ymake_dev.log"
 # -------------- configuration defaults -----------------------
 Y_DEV_DEV="/dev/sdb3"
 Y_DEV_MNT="/xy"
+Y_TODO="/proj/jenov/scripts/ymake_dev_TODO"
 Y_EPS1="\[\033[01;31m\]FIXME#\[\033[00m\] "
-Y_EPS2="\[\033[00;34m\]\w#\[\033[00m\] "
+Y_EPS2="\[\033[00;34m\]DEV#\[\033[00m\] "
 Y_ERROR_CONSOLE="true"
 
 # set defaults
 #Y_NOMOUNT="true"
 #Y_NOCLEAN="true"
-Y_NOSYNC="true"
-Y_NOUPDATE="true"
-Y_NOCHECK="true"
-Y_NOBUILD="true"
-Y_NOTEST="true"
-Y_NOMERGE="true"
+#Y_NOSYNC="true"
+#Y_NOUPDATE="true"
+#Y_NOCHECK="true"
+#Y_NOBUILD="true"
+#Y_NOTEST="true"
+#Y_NOMERGE="true"
 #Y_LINK_KERNEL="true"
 #Y_CONFIG_KERNEL="true"
-Y_BUILD_KERNEL="true"
+#Y_BUILD_KERNEL="true"
 #Y_REBUILD="true"
-Y_LILO="true"
+#Y_LILO="true"
 #Y_CGENTOO="true"
 
 # run function that checks sucessful command exit status and breaks if not
@@ -125,7 +126,6 @@ y_chroot(){
     y_run_ mv $_TMP $_ROOT/$_TMP
     y_run_ chmod +x $_ROOT/$_TMP
     y_run_ chroot $_ROOT $_TMP
-    #test -z "$Y_DRY_RUN" && rm $_ROOT/$_TMP
     y_run_ rm $_ROOT/$_TMP
 }
 
@@ -148,6 +148,7 @@ while [ -n "$1" ] ; do
         --ckernel)  Y_CONFIG_KERNEL="true";;        #; Config kernel [Y_CONFIG_KERNEL]
         --bkernel)  Y_BUILD_KERNEL="true";;         #; Build kernel [Y_BUILD_KERNEL]
         --lilo)     Y_LILO="true";;                 #; Update bootloader [Y_LILO]
+        --rebuild)  Y_REBUILD="true";;              #; Rebuild system after new kernel
         --cgentoo)  Y_CGENTOO="true";;              #; Clean Gentoo [Y_CGENTOO]
         --dry|-N)   export Y_DRY_RUN="true";;       #; Enable dry run [Y_DRY_RUN]
         --deb|-D)   export Y_DEBUG="true";;         #; Enable debug mode [Y_DEBUG]
@@ -174,6 +175,7 @@ test -z "$Y_NOMOUNT" && {
 test -z "$Y_DRY_RUN" && {
     echo PS1=\"$Y_EPS1\" > "$Y_DEV_MNT"/tmp/PS1
     echo PS1=\"$Y_EPS2\" > "$Y_DEV_MNT"/tmp/PS2
+    echo "test -s ~/.alias && . ~/.alias" >> "$Y_DEV_MNT"/tmp/PS2
 }
 
 test -z "$Y_NOSYNC" && {
@@ -206,7 +208,9 @@ test -n "$Y_CGENTOO" && {
 # update build system on DEV: emerge --sync
 test -z "$Y_NOUPDATE" && {
     y_progress "Update gentoo build cache..."
-    y_run_ chroot $Y_DEV_MNT emerge --sync
+    #y_run_ chroot $Y_DEV_MNT emerge --sync
+    y_run_ chroot $Y_DEV_MNT emaint -a sync
+    y_run_ chroot $Y_DEV_MNT emerge -1q portage
     y_progress_end 0
 }
 
@@ -221,21 +225,24 @@ test -z "$Y_NOCHECK" && {
 test -z "$Y_NOBUILD" && {
     y_progress "Build/update DEV system..."
     y_run_ chroot $Y_DEV_MNT emerge -quDN world
+    y_run_ chroot $Y_DEV_MNT etc-update
     y_progress_end 0
 }
 
 # update kernel link
 test -n "$Y_LINK_KERNEL" && {
     y_progress "Update kernel link..."
-    test -z "$Y_DRY_RUN" && { cd $Y_DEV_MNT/usr/src/linux; bash --rcfile /tmp/PS2 -i; }
+    y_info "Change kernel symlink to select active kernel"
+    test -z "$Y_DRY_RUN" && { cd $Y_DEV_MNT/usr/src; bash --rcfile /tmp/PS2 -i; }
     y_progress_end 0
 }    
 
 # build new kernel
 test -n "$Y_BUILD_KERNEL" && {
     y_progress "Build kernel..."
-    test -n "$Y_CONFIG_KERNEL" -a -z "$Y_DRY_RUN" && { 
-        cd $Y_DEV_MNT/usr/src; bash --rcfile $Y_DEV_MNT/tmp/PS2 -i; 
+    test -n "$Y_CONFIG_KERNEL" -a -z "$Y_DRY_RUN" && {
+        y_info "Change the kernel configuration"
+        cd $Y_DEV_MNT/usr/src/linux; bash --rcfile $Y_DEV_MNT/tmp/PS2 -i; 
     }
     y_chroot /usr/src/linux $Y_DEV_MNT make bzImage modules modules_install
     y_progress_end 0
@@ -274,6 +281,8 @@ test -n "$Y_REBUILD" && {
 test -z "$Y_NOTEST" && {
     y_progress "Test new system..."
 
+    test -z "$Y_DRY_RUN" && chroot $Y_DEV_MNT bash --rcfile /tmp/PS2 -i
+
     y_progress_end 0
 }
 
@@ -284,6 +293,7 @@ test -z "$Y_NOMERGE" && {
     y_progress_end 0
 }
 
+test -f $Y_TODO && y_run_ cp $Y_TODO $Y_DEV_MNT/__TODO__
 # ==============================================================================
 # Leave this as the last line
 #y_exit
