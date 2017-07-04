@@ -25,8 +25,8 @@ test -r ${FUNCTIONS} && source ${FUNCTIONS}
 
 # define the following to match the program current state
 PROGRAM_NAME="Make new desktop for testing based on Gentoo"
-VERSION="0.2-rc4"
-LAST_MOD="2017.05.30"
+VERSION="0.2-rc5"
+LAST_MOD="2017.06.30"
 
 # Define log file here
 #LOG="/tmp/${0##*/}.log"
@@ -49,19 +49,21 @@ Y_EPS2="\[\033[00;34m\]DEV#\[\033[00m\] "
 Y_ERROR_CONSOLE="true"
 
 # set defaults
+Y_CONFIRM="true"
 #Y_NOMOUNT="true"
 #Y_NOCLEAN="true"
 #Y_NOSYNC="true"
 #Y_NOUPDATE="true"
 #Y_NOCHECK="true"
 #Y_NOBUILD="true"
-#Y_NOTEST="true"
 #Y_NOMERGE="true"
 #Y_LINK_KERNEL="true"
 #Y_CONFIG_KERNEL="true"
 #Y_BUILD_KERNEL="true"
 #Y_REBUILD="true"
 #Y_LILO="true"
+#Y_QTEST="true"
+#Y_SYSTEST="true"
 #Y_CGENTOO="true"
 
 # run function that checks sucessful command exit status and breaks if not
@@ -129,6 +131,21 @@ y_chroot(){
     y_run_ rm $_ROOT/$_TMP
 }
 
+y_umount(){
+    if [ -n "$MOUNTED" ] ; then
+        for i in $MOUNTED ; do
+            `umount -l $i > /dev/null`
+            test "$?" = "1" && y_error 2 "umount $i"
+        done
+    fi
+    MOUNTED=""
+}
+
+y_hibernate(){
+    sed -i s/HIBERNATE_MODE=\".*\"/HIBERNATE_MODE=\"$1\"/ /etc/pm/config.d/config
+}
+
+
 # ==============================================================================
 # read command line parameters
 while [ -n "$1" ] ; do
@@ -142,14 +159,15 @@ while [ -n "$1" ] ; do
         --noupdate) Y_NOUPDATE="true";;             #; Do not update Gentoo [Y_NOUPDATE]
         --nocheck)  Y_NOCHECK="true";;              #; Do not pre-check [Y_NOCHECK]
         --nobuild)  Y_NOBUILD="true";;              #; Do not build [Y_NOBUILD]
-        --notest)   Y_NOTEST="true";;               #; Do not test build [Y_NOTEST]
-        --nomerge)  Y_NOMERGE="true";;              #; Do not merge [Y_NOMERGE]
+        --sysmerge) Y_SYSMERGE="true";;             #; Merge DEV to HOST [Y_SYSMERGE]
         --lkernel)  Y_LINK_KERNEL="true";;          #; Link kernel [Y_LINK_KERNEL]
         --ckernel)  Y_CONFIG_KERNEL="true";;        #; Config kernel [Y_CONFIG_KERNEL]
         --bkernel)  Y_BUILD_KERNEL="true";;         #; Build kernel [Y_BUILD_KERNEL]
         --lilo)     Y_LILO="true";;                 #; Update bootloader [Y_LILO]
         --rebuild)  Y_REBUILD="true";;              #; Rebuild system after new kernel
         --cgentoo)  Y_CGENTOO="true";;              #; Clean Gentoo [Y_CGENTOO]
+        --qtest)    Y_QUICKTEST="true";;            #; Test new sys by chroot [Y_QUICKTEST]
+        --systest)  Y_SYSTEST="true";;              #; Test by reboot into DEV [Y_SYSTEST]
         --dry|-N)   export Y_DRY_RUN="true";;       #; Enable dry run [Y_DRY_RUN]
         --deb|-D)   export Y_DEBUG="true";;         #; Enable debug mode [Y_DEBUG]
         --quiet|-q) export Y_QUIET="true";;         #; Minimal messages [Y_QUIET]
@@ -276,24 +294,36 @@ test -n "$Y_REBUILD" && {
     y_progress_end 0
 }
 
-# test new build after hibernate current
-#   to test: X, video, audio, hibernate, ...
-test -z "$Y_NOTEST" && {
-    y_progress "Test new system..."
-
+# quick test new install by chroot and command line
+test -n "$Y_QUICKTEST" && {
+    y_progress "Quick test new system..."
     test -z "$Y_DRY_RUN" && chroot $Y_DEV_MNT bash --rcfile /tmp/PS2 -i
+    y_progress_end 0
+}
 
+test -f "$Y_TODO" && y_run_ cp "$Y_TODO" "$Y_DEV_MNT"/__TODO__
+
+# Test new install by hibernating current version and boot into DEV
+test -n "$Y_SYSTEST" && {
+    y_progress "Hibernate current host and boot into DEV..."
+    y_run_ y_umount
+    y_run_ mount -o remount,rw /boot
+    y_run_ lilo -R DEV noresume
+    y_run_ mount -o remount,ro /boot
+    y_run_ y_hibernate reboot
+    y_run_ pm-hibernate
+    y_run_ y_hibernate shutdown
     y_progress_end 0
 }
 
 # merge new build to main based on DEV bin packages
-test -z "$Y_NOMERGE" && {
+test -n "$Y_SYSMERGE" && {
     y_progress "Update system..."
-    #y_run emerge -qukDN world
+    y_get_confirm " Are you sure! It will overwrite your HOST ($YES):" 
+    #TODO add rsync based install
     y_progress_end 0
 }
 
-test -f $Y_TODO && y_run_ cp $Y_TODO $Y_DEV_MNT/__TODO__
 # ==============================================================================
 # Leave this as the last line
 #y_exit

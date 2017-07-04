@@ -89,7 +89,7 @@ y_init_screen () {
     echo "For help exit now and start the program with --help option."
     echo -e "      Like this:   ${GOOD}${0##*/} --help${NORM}"
     echo
-    y_get_confirm "   Continue? ($YES):"
+    #y_get_confirm "   Continue? ($YES):"
 }
 
 # self documenting program options from the source
@@ -195,6 +195,7 @@ y_exit () {
 			test "$?" = "1" && y_error 2 "umount $i"
 		done
 	fi
+    MOUNTED=""
 	for i in "$DELETE_ON_EXIT" ; do
 		`rm -f -r $i > /dev/null`
 		test "$?" -ne 0 && y_error 2 "delete $i"

@@ -4,7 +4,7 @@ DEST1="/usr/local/bin"
 DEST2="/bin"
 
 #DEF1="--nosync --noupdate --nocheck --nobuild --notest --nomerge -D -N"
-DEF1="--nosync --noupdate --nocheck --nobuild -notest --nomerge -lkernel -ckernel -bkernel -lilo -rebuild -cgentoo -D"
+DEF1="--nosync --noupdate --nocheck --nobuild -sysmerge -lkernel -ckernel -bkernel -lilo -rebuild -qtest --systest -cgentoo -D"
 
 cp $PROJ $DEST1
 cp $LIB $DEST2
