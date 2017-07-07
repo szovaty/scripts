@@ -1,0 +1,106 @@
+#!/bin/bash
+# Based on template.src version 1.1 last modified 2006.08.07 by y
+# sync a filesystem with another one
+
+trap y_exit TERM HUP INT
+
+# Uncomment this to allow colors on the console
+USE_COLOR="yes"
+
+# This will enable positioning of a text to the end (-8 char) 
+# of a line independent of window size
+USE_POS="yes"
+
+# Source the function library
+FUNCTIONS="/bin/y_functions.sh"
+test -r ${FUNCTIONS} && source ${FUNCTIONS}
+
+# define the following to match the program current state
+PROGRAM_NAME="yrsync_dev"
+VERSION="0.1"
+LAST_MOD="2017.07.04"
+
+# Define log file here
+LOG="/var/log/${0##*/}.log"
+
+# Uncomment this if you need debug enabled
+Y_DEBUG="true"
+
+# define backup system mount point
+XOS_DIR="/xos"
+
+# define filesystems to sync
+DIR_LIST="/ /opt"
+
+# define rsync command
+RSYNC_OPT="-arx --delete"
+
+# other definitions
+FSTAB="fstab.test"
+DEV=""
+MOUNT="yes"
+
+# use these to set cleanup on exit
+#MOUNTED=""		# y_exit will unmount them
+#DELETE_ON_EXIT=""	# y_exit will delete them
+#LAST_CMD=""		# y_exit will run it just before exit
+
+y_start
+# ===================================================================================
+# there is a bug in y_functions around y_help, it can not display RSYNC_OPT well
+y_info "Default rsync options: $RSYNC_OPT"
+
+# read command line parameters
+while [ -n "$1" ] ; do
+    case $1 in
+	--help|-h)	    y_help "[Oprions]";y_exit;; #; Help
+	--xos|-x)	    XOS_DIR="$2"; shift ;;		#; Define xos_dir [XOS_DIR]
+	--dirs|-d)	    DIR_LIST="$2"; shift ;;		#; Define dirs to copy [DIR_LIST]
+    --excl|-e)      EXCL_DIRS="$2"; shift;;     #; Exclude dirs from sync [EXCL_DIRS]
+	--rsync|-r)	    RSYNC_OPT="$2"; shift ;;    #; Define rsync options [RSYNC_OPT]
+	--nocolor|-C)   USE_COLOR="no";;			#; Color display [USE_COLOR]
+	--nomount|-m)	MOUNT="no";;				#; Mount target dir [MOUNT]
+	--fstab|-f)     FSTAB="$2"; shift ;;    	#; Define fstab [FSTAB]
+    --dry_run|-N)   Y_DRY_RUN="true";;          #; Enable dry run [Y_DRY_RUN]
+    esac
+    shift
+done
+
+RSYNC="rsync $RSYNC_OPT"
+
+test -n "$FSTAB" && { 
+	test -r "$FSTAB"  || y_fatal_error "Invalid fstab defined [$FSTAB]"
+}
+
+test "$MOUNT" = "yes" && {
+    for i in $DIR_LIST ; do
+        x=`grep -E $i'($|\s)' $FSTAB`
+        M_DEV=`echo $x | awk '{print $1}'`
+        M_PATH=${XOS_DIR}`echo $x | awk '{print $2}'`
+        y_run_cmd "mkdir -p $M_PATH"
+        y_run_cmd "mount $M_DEV $M_PATH"
+        test -z "$Y_DRY_RUN" && MOUNTED="$M_PATH $MOUNTED"
+    done
+}
+
+# create exclude list
+for i in $EXCL_DIRS ; do
+    EXCLUDE="$EXCLUDE --exclude=$i"
+done
+
+# sync the filesystems
+for i in $DIR_LIST ; do
+    s=`printf "%-12s" $i`
+    y_progress "Sync $s -> ${XOS_DIR}${i} ..."
+    y_run_cmd "$RSYNC $EXCLUDE $i $XOS_DIR"
+    y_progress_end 0
+done
+
+# adjust backup system
+y_progress "Adjust filesystem..."
+#test -n "$FSTAB" && y_run_cmd "cp $XOS_DIR/$FSTAB $XOS_DIR/etc/fstab"
+y_progress_end 0
+
+# ===================================================================================
+# Leave this as the last line
+y_exit

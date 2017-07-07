@@ -1,0 +1,11 @@
+# vim:set ts=8:
+# NOTE: If your BOOT partition is ReiserFS, add the notail option to opts.
+tmpfs	        /tmp		tmpfs	        defaults	        0 0
+
+/dev/sdb6       /               ext3            defaults,noatime        0 1
+/dev/sdb7       /opt            ext3            defaults,noatime        0 2
+
+proc		/proc		proc		defaults		0 0
+tmpfs		/dev/shm	tmpfs		defaults		0 0
+tmpfs		/var/tmp	tmpfs		defaults		0 0
+

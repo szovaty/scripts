@@ -78,6 +78,7 @@ y_bell () {
 
 # init_screen function
 y_init_screen () {
+    test -n "$Y_QUIET" && return
     clear
     echo -e ${NORM}
     echo "======================================================================="
@@ -89,7 +90,7 @@ y_init_screen () {
     echo "For help exit now and start the program with --help option."
     echo -e "      Like this:   ${GOOD}${0##*/} --help${NORM}"
     echo
-    #y_get_confirm "   Continue? ($YES):"
+    y_get_confirm "   Continue? ($YES):"
 }
 
 # self documenting program options from the source
@@ -162,7 +163,7 @@ y_msg () {
 			DEBUG)	 MESG_COLOR=$NORM ; CALL_EXIT=$NO  ; MSG_OUT=$STD_OUT ;;
 			INFO)	 MESG_COLOR=$NORM ; CALL_EXIT=$NO  ; MSG_OUT=$STD_OUT ;;
 			USAGE)	 MESG_COLOR=$WARN ; CALL_EXIT=$YES ; MSG_OUT=$STD_ERR ;;
-			HELP)	 MESG_COLOR=$NORM ; CALL_EXIT=$NO ; MSG_OUT=$STD_OUT ;;
+			HELP)	 MESG_COLOR=$NORM ; CALL_EXIT=$NO  ; MSG_OUT=$STD_OUT ;;
 			*)       return $ERROR
     esac
 	MSG_OUT=$STD_ERR

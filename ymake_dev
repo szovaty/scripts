@@ -24,16 +24,16 @@ FUNCTIONS="/bin/y_functions.sh"
 test -r ${FUNCTIONS} && source ${FUNCTIONS}
 
 # define the following to match the program current state
-PROGRAM_NAME="Make new desktop for testing based on Gentoo"
-VERSION="0.2-rc5"
-LAST_MOD="2017.06.30"
+PROGRAM_NAME="Make new desktop for testing"
+VERSION="1.0-rc1"
+LAST_MOD="2017.07.07"
 
 # Define log file here
 #LOG="/tmp/${0##*/}.log"
 LOG="/var/log/ymake_dev.log"
 
 # Uncomment this if you need debug enabled
-#Y_DEBUG="true"
+Y_DEBUG="true"
 
 # use these to set cleanup on exit
 #MOUNTED=""        # y_exit will unmount them
@@ -48,25 +48,10 @@ Y_EPS1="\[\033[01;31m\]FIXME#\[\033[00m\] "
 Y_EPS2="\[\033[00;34m\]DEV#\[\033[00m\] "
 Y_ERROR_CONSOLE="true"
 
-# set defaults
-Y_CONFIRM="true"
-#Y_NOMOUNT="true"
-#Y_NOCLEAN="true"
-#Y_NOSYNC="true"
-#Y_NOUPDATE="true"
-#Y_NOCHECK="true"
-#Y_NOBUILD="true"
-#Y_NOMERGE="true"
-#Y_LINK_KERNEL="true"
-#Y_CONFIG_KERNEL="true"
-#Y_BUILD_KERNEL="true"
-#Y_REBUILD="true"
-#Y_LILO="true"
-#Y_QTEST="true"
-#Y_SYSTEST="true"
-#Y_CGENTOO="true"
+Y_CONFIRM=""
 
-# run function that checks sucessful command exit status and breaks if not
+# helping functions
+
 y_debug_console_help (){
     echo "----------------------------------------"
     echo "Debug console options:"
@@ -76,6 +61,7 @@ y_debug_console_help (){
     echo "-----------------------------------------"
 }
 
+# run function that checks sucessful command exit status and breaks if not
 y_run_ (){
     test -n "$Y_DRY_RUN" && { y_run $@; return;} 
     CLOOP=""
@@ -101,15 +87,25 @@ y_run_ (){
     done
 }
 
-# mount and store for cleanup
+# mount device and store it for cleanup
 y_mount(){
-    test -n "$Y_DRY_RUN" && { y_run y_mount $@; return;} 
     y_run_ mount "$*"
     test -z "$Y_DRY_RUN" && {
         MOUNTED_CC="${@: -1} $MOUNTED_CC"
         test -n "$Y_NOCLEAN" || MOUNTED=$MOUNTED_CC
     }
 } 
+
+# unmount dirs and remove them from mounted list
+y_umount(){
+    if [ -n "$MOUNTED" ] ; then
+        for i in $MOUNTED ; do
+            `umount -l $i > /dev/null`
+            test "$?" = "1" && y_error 2 "umount $i"
+        done
+    fi
+    MOUNTED=""
+}
 
 # chroot with cd feature
 # y_chroot new_dir root_dir command
@@ -131,34 +127,31 @@ y_chroot(){
     y_run_ rm $_ROOT/$_TMP
 }
 
-y_umount(){
-    if [ -n "$MOUNTED" ] ; then
-        for i in $MOUNTED ; do
-            `umount -l $i > /dev/null`
-            test "$?" = "1" && y_error 2 "umount $i"
-        done
-    fi
-    MOUNTED=""
-}
-
+# set pm_hibernate mode
+# valid options are in /sys/power/disk
 y_hibernate(){
-    sed -i s/HIBERNATE_MODE=\".*\"/HIBERNATE_MODE=\"$1\"/ /etc/pm/config.d/config
+    cat /sys/power/disk | grep $1 >/dev/null
+    if [ $? = "0" ] ; then
+        sed -i s/HIBERNATE_MODE=\".*\"/HIBERNATE_MODE=\"$1\"/ /etc/pm/config.d/config
+    else
+        y_fatal_error "Invalid hibarnate mode [$1]"
+    fi
 }
 
-
+y_start
 # ==============================================================================
 # read command line parameters
 while [ -n "$1" ] ; do
     case $1 in
-        --help|-h)  y_help "[Options]"; y_exit;;    #; Help
+        --help|-h)  y_help "[Options]"; exit;;      #; Help
         --dev|-d)   Y_DEV_DEV="$2"; shift;;         #; Set device [Y_DEV_DEV]
         --mnt|-M)   Y_DEV_MNT="$2"; shift;;         #; Set DEV root [Y_DEV_MNT]
-        --nomount)  Y_NOMOUNT="true";;              #; Do not mount DEV FS [Y_NOMOUNT]
+        --mountdev) Y_MOUNT_DEV="true";;            #; Mount DEV FS [Y_MOUNT_DEV]
         --noclean)  Y_NOCLEAN="true";;              #; Do not clean on exit [Y_NOCLEAN]
-        --nosync)   Y_NOSYNC="true";;               #; Do not sync system [Y_NOSYNC]
-        --noupdate) Y_NOUPDATE="true";;             #; Do not update Gentoo [Y_NOUPDATE]
-        --nocheck)  Y_NOCHECK="true";;              #; Do not pre-check [Y_NOCHECK]
-        --nobuild)  Y_NOBUILD="true";;              #; Do not build [Y_NOBUILD]
+        --sync)     Y_SYNC="true";;                 #; Sync gentoo files [Y_SYNC]
+        --update)   Y_UPDATE="true";;               #; Update Gentoo [Y_UPDATE]
+        --check)    Y_CHECK="true";;                #; Pre-check build [Y_CHECK]
+        --build)    Y_BUILD="true";;                #; Build/update DEV system [Y_BUILD]
         --sysmerge) Y_SYSMERGE="true";;             #; Merge DEV to HOST [Y_SYSMERGE]
         --lkernel)  Y_LINK_KERNEL="true";;          #; Link kernel [Y_LINK_KERNEL]
         --ckernel)  Y_CONFIG_KERNEL="true";;        #; Config kernel [Y_CONFIG_KERNEL]
@@ -178,34 +171,28 @@ while [ -n "$1" ] ; do
 done
 
 test -r ${FUNCTIONS} && source ${FUNCTIONS}
-y_start
+#y_start
 y_init_screen
 
-# sync dev to current
-
-test -z "$Y_NOMOUNT" && {
-    y_progress "Mount DEV root..."
+# mount DEV root
+test -n "$Y_MOUNT_DEV" && {
+    y_progress "Mount DEV root on $Y_DEV_MNT..."
     test -z "$Y_DRY_RUN" && fsck -p "$Y_DEV_DEV" 2>&1 > $LOG
     y_mount "$Y_DEV_MNT"
     y_progress_end 0
 }
 
+# set prompts to show correct mode for interaction
+# update useful config files on DEV system
 test -z "$Y_DRY_RUN" && {
     echo PS1=\"$Y_EPS1\" > "$Y_DEV_MNT"/tmp/PS1
     echo PS1=\"$Y_EPS2\" > "$Y_DEV_MNT"/tmp/PS2
     echo "test -s ~/.alias && . ~/.alias" >> "$Y_DEV_MNT"/tmp/PS2
 }
 
-test -z "$Y_NOSYNC" && {
-    y_progress "Sync DEV system..."
-    y_run_ yrsync_xos -x "$Y_DEV_MNT" -f /etc/fstab.2
-    y_progress_end 0
-}  
-
 # mount system on DEV
-
-test -z "$Y_NOMOUNT" && {
-    y_progress "Mount development system on $Y_DEV_MNT/ ..."
+test -n "$Y_MOUNT_DEV" && {
+    y_progress "Mount DEV system devices..."
     y_mount --bind /dev $Y_DEV_MNT/dev
     y_mount --bind /dev/pts $Y_DEV_MNT/dev/pts
     y_mount -t proc proc "$Y_DEV_MNT"/proc
@@ -214,6 +201,13 @@ test -z "$Y_NOMOUNT" && {
     y_run_ mkdir -p $Y_DEV_MNT${PORTAGE_TMP##*PORTAGE_TMPDIR=}
     y_progress_end 0
 }
+
+# sync dev to current
+test -n "$Y_SYNC" && {
+    y_progress "Sync DEV system with current install..."
+    y_run_ yrsync_xos -x "$Y_DEV_MNT" -f /etc/fstab.2
+    y_progress_end 0
+}  
 
 # clean up gentoo files: packages and distfiles
 test -n "$Y_CGENTOO" && {
@@ -224,7 +218,7 @@ test -n "$Y_CGENTOO" && {
 }
 
 # update build system on DEV: emerge --sync
-test -z "$Y_NOUPDATE" && {
+test -n "$Y_UPDATE" && {
     y_progress "Update gentoo build cache..."
     #y_run_ chroot $Y_DEV_MNT emerge --sync
     y_run_ chroot $Y_DEV_MNT emaint -a sync
@@ -233,14 +227,14 @@ test -z "$Y_NOUPDATE" && {
 }
 
 # check if it would build: emerge -pvuDN world
-test -z "$Y_NOCHECK" && {
+test -n "$Y_CHECK" && {
     y_progress "Pre-Check build..."
     y_run_ chroot $Y_DEV_MNT emerge -pvuDN --verbose-conflicts world
     y_progress_end 0
 }
 
 # build system on DEV: emerge -qubDN world
-test -z "$Y_NOBUILD" && {
+test -n "$Y_BUILD" && {
     y_progress "Build/update DEV system..."
     y_run_ chroot $Y_DEV_MNT emerge -quDN world
     y_run_ chroot $Y_DEV_MNT etc-update
@@ -250,7 +244,8 @@ test -z "$Y_NOBUILD" && {
 # update kernel link
 test -n "$Y_LINK_KERNEL" && {
     y_progress "Update kernel link..."
-    y_info "Change kernel symlink to select active kernel"
+    test -z "Y_DRY_RUN" &&
+        y_info "Change kernel symlink to select active kernel"
     test -z "$Y_DRY_RUN" && { cd $Y_DEV_MNT/usr/src; bash --rcfile /tmp/PS2 -i; }
     y_progress_end 0
 }    
@@ -306,22 +301,28 @@ test -f "$Y_TODO" && y_run_ cp "$Y_TODO" "$Y_DEV_MNT"/__TODO__
 # Test new install by hibernating current version and boot into DEV
 test -n "$Y_SYSTEST" && {
     y_progress "Hibernate current host and boot into DEV..."
+    y_run_ cp /proj/jenov/scripts/yrsync_dev $Y_DEV_MNT/sbin
     y_run_ y_umount
     y_run_ mount -o remount,rw /boot
     y_run_ lilo -R DEV noresume
     y_run_ mount -o remount,ro /boot
     y_run_ y_hibernate reboot
     y_run_ pm-hibernate
+    y_run_ mount -o remount,rw /boot
+    y_run_ lilo -R
+    y_run_ mount -o remount,ro /boot
     y_run_ y_hibernate shutdown
     y_progress_end 0
 }
 
 # merge new build to main based on DEV bin packages
 test -n "$Y_SYSMERGE" && {
-    y_progress "Update system..."
-    y_get_confirm " Are you sure! It will overwrite your HOST ($YES):" 
-    #TODO add rsync based install
+    y_progress "Update yrsync_dev utility..."
+    y_run_ cp /proj/jenov/scripts/yrsync_dev $Y_DEV_MNT/sbin
     y_progress_end 0
+    test -z "$Y_SYSTEST" && {
+        y_info "Use --systest and run yrsync_dev for host update!"
+    }
 }
 
 # ==============================================================================
