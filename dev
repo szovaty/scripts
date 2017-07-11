@@ -4,11 +4,11 @@ DEST1="/usr/local/bin"
 DEST2="/bin"
 
 #DEF1="--nosync --noupdate --nocheck --nobuild --notest --nomerge -D -N"
-DEF1="--nosync --noupdate --nocheck --nobuild -sysmerge -lkernel -ckernel -bkernel -lilo -rebuild -qtest -systest --sysmerge -cgentoo -D"
+DEF1="--mountdev -sync -update -check -build -sysmerge -lkernel -ckernel -bkernel -lilo -rebuild --qtest -systest -sysmerge -cgentoo -D"
 
-DEFALL="--mountdev --sync --update --check --build --sysmerge --lkernel --ckernel --bkernel --lilo --rebuild --qtest --systest --sysmerge --cgentoo -D"
+DEFALL="--mountdev -sync --update --check --build --sysmerge --lkernel --ckernel --bkernel --lilo --rebuild --qtest --systest --sysmerge --cgentoo -D"
 
 cp $PROJ $DEST1
 cp $LIB $DEST2
-$DEST1/ymake_dev $DEF1 $*
+$DEST1/ymake_dev $DEFALL $*
 fsck -p /dev/sdb3 2>&1 >> /var/log/ymake_dev.log

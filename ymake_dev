@@ -274,24 +274,26 @@ test -n "$Y_LILO" && {
 
 # rebuild/clean-up system after new kernel
 test -n "$Y_REBUILD" && {
-    y_progress "Remove unused packages - depclean..."
+    y_progress "Check, clean-up system..."
+    y_progress "  Remove unused packages '--depclean'..."
     y_run_ chroot $Y_DEV_MNT emerge --depclean
-    y_progress "Chech build integrity..."
+    y_progress "  Chech build integrity..."
     y_run_ chroot $Y_DEV_MNT emerge -quDN world
-    y_progress "Rebuild preserved packages..."
+    y_progress "  Rebuild preserved packages..."
     y_run_ chroot $Y_DEV_MNT emerge @preserved-rebuild
-    y_progress "Rebuild X11 modules..."
+    y_progress "  Rebuild X11 modules..."
     y_run_ chroot $Y_DEV_MNT emerge @x11-module-rebuild
-    y_progress "Rebuild other modules..."
+    y_progress "  Rebuild other modules..."
     y_run_ chroot $Y_DEV_MNT emerge @module-rebuild
     y_run_ chroot $Y_DEV_MNT emerge -q1 udev
-    y_progress "Rebuild system after new kernel..."
+    y_progress "Check, clean-up system"
     y_progress_end 0
 }
 
 # quick test new install by chroot and command line
 test -n "$Y_QUICKTEST" && {
     y_progress "Quick test new system..."
+    y_run_ cp /proj/jenov/scripts/yrsync_dev $Y_DEV_MNT/sbin
     test -z "$Y_DRY_RUN" && chroot $Y_DEV_MNT bash --rcfile /tmp/PS2 -i
     y_progress_end 0
 }
