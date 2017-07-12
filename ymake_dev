@@ -301,8 +301,9 @@ test -n "$Y_QUICKTEST" && {
 test -f "$Y_TODO" && y_run_ cp "$Y_TODO" "$Y_DEV_MNT"/__TODO__
 
 # Test new install by hibernating current version and boot into DEV
-test -n "$Y_SYSTEST" && {
-    y_progress "Hibernate current host and boot into DEV..."
+test -n "$Y_SYSTEST" -o -n "$Y_SYSMERGE" && {
+    y_progress "System test/merge..."
+    y_progress "  Hibernate current host and boot into DEV..."
     y_run_ cp /proj/jenov/scripts/yrsync_dev $Y_DEV_MNT/sbin
     y_run_ y_umount
     y_run_ mount -o remount,rw /boot
@@ -314,11 +315,12 @@ test -n "$Y_SYSTEST" && {
     y_run_ lilo -R
     y_run_ mount -o remount,ro /boot
     y_run_ y_hibernate shutdown
+    y_progress "All done"
     y_progress_end 0
 }
 
 # merge new build to main based on DEV bin packages
-test -n "$Y_SYSMERGE" && {
+test -n "$Y_SYSMERGE_" && {
     y_progress "Update yrsync_dev utility..."
     y_run_ cp /proj/jenov/scripts/yrsync_dev $Y_DEV_MNT/sbin
     y_progress_end 0

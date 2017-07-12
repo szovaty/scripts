@@ -17,8 +17,8 @@ test -r ${FUNCTIONS} && source ${FUNCTIONS}
 
 # define the following to match the program current state
 PROGRAM_NAME="yrsync_dev"
-VERSION="0.5"
-LAST_MOD="2017.07.10"
+VERSION="1.0-rc1"
+LAST_MOD="2017.07.11"
 
 # Define log file here
 LOG="/var/log/${0##*/}.log"
@@ -30,12 +30,14 @@ Y_DEBUG="true"
 DEST_ROOT="/mnt"
 
 # define filesystems to sync
-DIR_LIST="/ /usr /opt /var"
 
 # define rsync command
 RSYNC_OPT="-arxl --delete"
 
-# other definitions
+# usefull defaults
+DEST_MOUNT="/ /usr /opt /var"
+SRC_ROOT="/"
+SRC_DIRS="/"
 EXCL_DIRS="/etc/fstab /root /home /lost+found"
 FSTAB="/etc/fstab.test"
 DEV="yes"
@@ -55,12 +57,14 @@ y_info "Default rsync options: $RSYNC_OPT"
 while [ -n "$1" ] ; do
     case $1 in
 	--help|-h)	    y_help "[Oprions]";y_exit;; #; Help
-	--droot|-r)	    DEST_ROOT="$2"; shift ;;	#; Define destination root [DEST_ROOT]
-	--dirs|-d)	    DIR_LIST="$2"; shift ;;		#; Define dirs to copy [DIR_LIST]
+	--droot|-r)	    DEST_ROOT="$2"; shift;;	    #; Define destination root [DEST_ROOT]
+    --dmount|-m)    DEST_MOUNT="$2"; shift;;    #; Define dest. mounts [DEST_MOUNT]
+    --sroot|-s)     SRC_ROOT="$2"; shift;;      #; Define source root [SRC_ROOT]
+	--sdirs|-d)	    SRC_DIRS="$2"; shift ;;	    #; Define source dirs to copy [SRC_DIRS]
     --excl|-e)      EXCL_DIRS="$2"; shift;;     #; Exclude dirs from sync [EXCL_DIRS]
 	--rsync|-r)	    RSYNC_OPT="$2"; shift ;;    #; Define rsync options [RSYNC_OPT]
 	--nocolor|-C)   USE_COLOR="no";;			#; Color display [USE_COLOR]
-	--nomount|-m)	MOUNT="no";;				#; Mount target dir [MOUNT]
+	--nomount|-M)	MOUNT="no";;				#; Mount destination dirs [MOUNT]
 	--fstab|-f)     FSTAB="$2"; shift ;;    	#; Define fstab [FSTAB]
     --nodev|-D)	    DEV="no";;					#; Create core devices under /dev [DEV]
     --dry_run|-N)   Y_DRY_RUN="true";;          #; Enable dry run [Y_DRY_RUN]
@@ -75,7 +79,7 @@ test -n "$FSTAB" && {
 }
 
 test "$MOUNT" = "yes" && {
-    for i in $DIR_LIST ; do
+    for i in $DEST_MOUNT ; do
         x=`grep -E $i'($|\s)' $FSTAB`
         M_DEV=`echo $x | awk '{print $1}'`
         M_PATH=${DEST_ROOT}`echo $x | awk '{print $2}'`
@@ -91,7 +95,7 @@ for i in $EXCL_DIRS ; do
 done
 
 # sync the filesystems
-for i in "/" ; do
+for i in $SRC_DIRS ; do
     s=`printf "%-12s" $i`
     y_progress "Sync $s -> ${DEST_ROOT}${i} ..."
     y_run_cmd "$RSYNC $EXCLUDE $i $DEST_ROOT"
