@@ -1,4 +1,7 @@
 #!/bin/bash
+# vim: set ts=4:
+
+VER="2.0-rc1"
 
 # terminal command and its options
 CMD="xfce4-terminal"
@@ -9,37 +12,39 @@ G="--geometry"
 W="--working-directory"
 T="--tab"
 
-# reference position
-OX=1920
-OY=0
+# displays geometry
+ADM_X1=633
+ADM_X2=1208
+ADM_Y1=244
 
-# offsets
-X1=714
-Y1=245
-Y2=433
+DEV_X1=570
+DEV_X2=1240
+DEV_Y1=244
 
 MODE="dev"
 test -n "$1" && MODE=$1
 
-T1="$CMD $W=$DIR $T $G=182x12-$(($OX+0))+$(($OY+0))"
-T2="$CMD $W=$DIR $T $G=80x14-$(($OX+$X1))+$(($OY+$Y1))"
-T3="$CMD $W=$DIR $T $G=80x36-$(($OX+$X1))-$(($OY+0))"
-T4="$CMD $W=$DIR $T $G=100x54-$(($OX+0))-$(($OY+0))"
+T1="$CMD $W=$DIR $T $G=182x12+$ADM_X1+0"
+T2="$CMD $W=$DIR $T $G=80x14+$ADM_X1+$ADM_Y1"
+T3="$CMD $W=$DIR $T $G=80x36+$ADM_X1-0"
+T4="$CMD $W=$DIR $T $G=100x54+$ADM_X2-0"
 T5="$CMD $W=$DIR $T $G=89x21+0-0"
 
-D1="$CMD $W=$DIR $T $G=107x48+0+0"
-D2="$CMD $W=$DIR $T $G=107x18+0-0"
-D3="$CMD $W=$DIR $T $G=164x54-$(($OX+0))+0"
-D4="$CMD $W=$DIR $T $G=164x12-$(($OX+0))-0"
+D1="$CMD $W=$DIR $T $G=272x12+0+0"
+D2="$CMD $W=$DIR $T $G=80x21+0+$DEV_Y1"
+D3="$CMD $W=$DIR $T $G=80x29+0-0"
+D4="$CMD $W=$DIR $T $G=93x54+$DEV_X1-0"
+D5="$CMD $W=$DIR $T $G=96x54+$DEV_X2-0"
+
 
 
 case $MODE in
     test)
         echo adm; echo T1: $T1; echo T2: $T2; echo T3: $T3; echo T4: $T4; echo T5: $T5;
-        echo dev; echo D1: $D1; echo D2: $D2; echo D3: $D3; echo D4: $D4;
+        echo dev; echo D1: $D1; echo D2: $D2; echo D3: $D3; echo D4: $D4; echo D5: $D5;
         ;;
     adm)
         $T1; $T2; $T3; $T4; $T5;;
     dev)
-        $D1; $D2; $D3; $D4;;
+        $D1; $D2; $D3; $D4; $D5;;
 esac
