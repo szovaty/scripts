@@ -3,12 +3,12 @@ LIB="/proj/jenov/scripts/y_functions.sh"
 DEST1="/usr/local/bin"
 DEST2="/bin"
 
-#DEF1="--nosync --noupdate --nocheck --nobuild --notest --nomerge -D -N"
-DEF1="--mountdev -sync -update -check -build -sysmerge -lkernel -ckernel -bkernel -lilo -rebuild --qtest -systest -sysmerge -cgentoo -D"
+#DEF_BUILD="--mountdev --sync --cgentoo --update --check --build --lkernel --ckernel --bkernel --lilo --rebuild --qtest -systest -sysmerge -D"
+DEF_BUILD="--mountdev --sync --cgentoo --update --check --build --lkernel --ckernel --bkernel --lilo --rebuild --qtest -systest -sysmerge -D"
 
-DEFALL="--mountdev -sync --update --check --build --sysmerge --lkernel --ckernel --bkernel --lilo --rebuild --qtest --systest --sysmerge --cgentoo -D"
+DEF_ALL="--mountdev -sync --cgentoo --update --check --build --sysmerge --lkernel --ckernel --bkernel --lilo --rebuild --qtest --systest --sysmerge -D"
 
 cp $PROJ $DEST1
 cp $LIB $DEST2
-$DEST1/ymake_dev $DEFALL $*
+$DEST1/ymake_dev $DEF_BUILD $*
 fsck -p /dev/sdb3 2>&1 >> /var/log/ymake_dev.log

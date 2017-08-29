@@ -25,8 +25,8 @@ test -r ${FUNCTIONS} && source ${FUNCTIONS}
 
 # define the following to match the program current state
 PROGRAM_NAME="Make new desktop for testing"
-VERSION="1.0"
-LAST_MOD="2017.07.19"
+VERSION="1.0.2-rc1"
+LAST_MOD="2017.08.28"
 
 # Define log file here
 #LOG="/tmp/${0##*/}.log"
@@ -152,7 +152,6 @@ while [ -n "$1" ] ; do
         --update)   Y_UPDATE="true";;               #; Update Gentoo [Y_UPDATE]
         --check)    Y_CHECK="true";;                #; Pre-check build [Y_CHECK]
         --build)    Y_BUILD="true";;                #; Build/update DEV system [Y_BUILD]
-        --sysmerge) Y_SYSMERGE="true";;             #; Merge DEV to HOST [Y_SYSMERGE]
         --lkernel)  Y_LINK_KERNEL="true";;          #; Link kernel [Y_LINK_KERNEL]
         --ckernel)  Y_CONFIG_KERNEL="true";;        #; Config kernel [Y_CONFIG_KERNEL]
         --bkernel)  Y_BUILD_KERNEL="true";;         #; Build kernel [Y_BUILD_KERNEL]
@@ -174,45 +173,53 @@ test -r ${FUNCTIONS} && source ${FUNCTIONS}
 #y_start
 y_init_screen
 
+test -z "$Y_DRY_RUN" -a $(id -u) != 0 && y_fatal_error "Script should run as root!"
+
 # mount DEV root
 test -n "$Y_MOUNT_DEV" && {
     y_progress "Mount DEV root on $Y_DEV_MNT..."
     test -z "$Y_DRY_RUN" && fsck -p "$Y_DEV_DEV" 2>&1 > $LOG
+    y_run_ mkdir -p $Y_DEV_MNT
     y_mount "$Y_DEV_MNT"
     y_progress_end 0
 }
 
 # set prompts to show correct mode for interaction
 # update useful config files on DEV system
+y_run_ mkdir -p $Y_DEV_MNT/tmp
 test -z "$Y_DRY_RUN" && {
     echo PS1=\"$Y_EPS1\" > "$Y_DEV_MNT"/tmp/PS1
     echo PS1=\"$Y_EPS2\" > "$Y_DEV_MNT"/tmp/PS2
     echo "test -s ~/.alias && . ~/.alias" >> "$Y_DEV_MNT"/tmp/PS2
 }
 
+# sync dev to current
+test -n "$Y_SYNC" && {
+    y_progress "Sync DEV system with current install..."
+    y_run_ yrsync_xos -x "$Y_DEV_MNT" -f /etc/fstab.dev
+    y_progress_end 0
+}  
+
 # mount system on DEV
 test -n "$Y_MOUNT_DEV" && {
     y_progress "Mount DEV system devices..."
+    y_run_ mkdir -p $Y_DEV_MNT/dev
     y_mount --bind /dev $Y_DEV_MNT/dev
+    y_run_ mkdir -p $Y_DEV_MNT/dev/pts
     y_mount --bind /dev/pts $Y_DEV_MNT/dev/pts
+    y_run_ mkdir -p $Y_DEV_MNT/proc
     y_mount -t proc proc "$Y_DEV_MNT"/proc
+    y_run_ mkdir -p $Y_DEV_MNT/gentoo
     y_mount --bind /gentoo "$Y_DEV_MNT"/gentoo
     y_run_ PORTAGE_TMP=`emerge --info | grep PORTAGE_TMPDIR`
     y_run_ mkdir -p $Y_DEV_MNT${PORTAGE_TMP##*PORTAGE_TMPDIR=}
     y_progress_end 0
 }
 
-# sync dev to current
-test -n "$Y_SYNC" && {
-    y_progress "Sync DEV system with current install..."
-    y_run_ yrsync_xos -x "$Y_DEV_MNT" -f /etc/fstab.2
-    y_progress_end 0
-}  
-
 # clean up gentoo files: packages and distfiles
 test -n "$Y_CGENTOO" && {
     y_progress "Clear Gentoo build files...."
-    y_run_ eclean-dist
+    #y_run_ eclean-dist
     y_run_ eclean-pkg
     y_progress_end 0
 }
