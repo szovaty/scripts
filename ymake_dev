@@ -265,15 +265,17 @@ test -n "$Y_BUILD_KERNEL" && {
         cd $Y_DEV_MNT/usr/src/linux; bash --rcfile $Y_DEV_MNT/tmp/PS2 -i; 
     }
     y_chroot /usr/src/linux $Y_DEV_MNT make bzImage modules modules_install
-    y_progress_end 0
-}
-
-# update bootloader to boot new DEV
-test -n "$Y_LILO" && {
-    y_progress "Update bootloader..."
     y_run_ mount -o remount,rw /boot
     y_run_ cp /boot/vmlinuz.dev /boot/vmlinuz.dev_old
     y_run_ cp $Y_DEV_MNT/usr/src/linux/arch/x86/boot/bzImage /boot/vmlinuz.dev
+    y_run_ mount -o remount,ro /boot
+    y_progress_end 0
+}
+
+# update bootloader
+test -n "$Y_LILO" && {
+    y_progress "Update bootloader..."
+    y_run_ mount -o remount,rw /boot
     y_run_ lilo
     y_run_ mount -o remount,ro /boot
     y_progress_end 0
