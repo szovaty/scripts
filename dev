@@ -3,12 +3,18 @@ LIB="/proj/jenov/scripts/y_functions.sh"
 DEST1="/usr/local/bin"
 DEST2="/bin"
 
-#DEF_BUILD="--mountdev --sync --cgentoo --update --check --build --lkernel --ckernel --bkernel --lilo --rebuild --qtest -systest -sysmerge -D"
-DEF_BUILD="--mountdev --sync --cgentoo --update --check --build --lkernel --ckernel --bkernel --lilo --rebuild --qtest -systest -sysmerge -D"
+#DEF_BUILD="--mountdev --sync --cgentoo --update --check --build --lkernel --ckernel --bkernel --lilo --rebuild --qtest -systest -D"
+DEF_BUILD="--mountdev -sync --cgentoo --update --check --build -lkernel -ckernel -bkernel -lilo -rebuild -qtest -systest -D"
 
-DEF_ALL="--mountdev -sync --cgentoo --update --check --build --sysmerge --lkernel --ckernel --bkernel --lilo --rebuild --qtest --systest --sysmerge -D"
+#DEF_TEST="--mountdev -sync -cgentoo -update -check -build -sysmerge -lkernel -ckernel -bkernel -lilo -rebuild --qtest --systest -D"
+DEF_TEST="--mountdev -sync -cgentoo -update -check -build -sysmerge -lkernel -ckernel -bkernel -lilo -rebuild --qtest -systest -D"
+
+#DEF_ALL="--mountdev -sync --cgentoo --update --check --build --sysmerge --lkernel --ckernel --bkernel --lilo --rebuild --qtest --systest -D"
+DEF_ALL="--mountdev -sync --cgentoo --update --check --build --sysmerge --lkernel --ckernel --bkernel --lilo --rebuild --qtest --systest -D"
+
+CURRENT=$DEF_BUILD
 
 cp $PROJ $DEST1
 cp $LIB $DEST2
-$DEST1/ymake_dev $DEF_BUILD $*
+$DEST1/ymake_dev $CURRENT $*
 fsck -p /dev/sdb3 2>&1 >> /var/log/ymake_dev.log
