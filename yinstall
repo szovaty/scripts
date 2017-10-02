@@ -1,5 +1,5 @@
+#!/bin/bash
 # vim:set ts=4:
-#/bin/bash
 # script has two modes
 #       new sys mode: creates an encrypted installation from install media 
 #       migrate mode: backups up current system, repartition disk and reinstalls
@@ -11,7 +11,7 @@
 #       user needs to provide password each time accessing remote device
 #           you can setup ssh_key access to fix this
 
-Y_VER="1.1-rc0"
+Y_VER="1.1-rc2" # new mode is tested on vbox and ext.usb storage
 MODE_NEWSYS="new_sys"
 MODE_MIG="migrate"
 MODE_COPY="copy"
@@ -19,7 +19,7 @@ MODE_COPY="copy"
 # configuration
 Y_MODE=$MODE_NEWSYS
 Y_DEV="/dev/sda"
-Y_DEV_DEST="/dev/sdb"
+Y_DEV_DEST="/dev/sda"
 
 Y_BOOT_SIZE="400"
 Y_SWAP_SIZE="8200"
@@ -29,8 +29,8 @@ Y_ROOT_PASSWD="csolnok"
 
 Y_SRC_ROOT="/dev/sda1"
 Y_SRC_MOUNT=""
-Y_SRC_MNT="/mnt"
-Y_DEST_ROOT="/dev/sdb1"
+Y_SRC_MNT="/tmp/src_mnt"
+Y_DEST_ROOT="/dev/sda3"
 Y_DEST_MOUNT=""
 Y_DEST_MNT="/tmp/dest_mnt"
 Y_DEST_ROOT="/dev/mapper/$Y_ROOT_NAME"
@@ -43,7 +43,7 @@ Y_FS_ROOT="ext4"
 Y_FS_BOOT="ext2"
 Y_ERROR_CONSOLE="true"
 Y_EPS1="\[\033[01;31m\]FIXME#\[\033[00m\] " 
-Y_LOG="${0}.log"
+Y_LOG="/tmp/${0}.log"
 
 # ============================================================================
 
@@ -127,7 +127,7 @@ yrun () {
         else
             $* >>$OUT 2>>$Y_LOG
         fi
-        while "$?" != "0" ; do 
+        while [ "$?" != "0" ] ; do 
             echo "FATAL ERROR" | tee -a $Y_LOG
             if [ "$Y_ERROR_CONSOLE" = "true" ] ; then
                 bash --rcfile <(echo "PS1='$Y_EPS1'") -i
@@ -220,7 +220,7 @@ yrun sudo parted --script $Y_DEV_DEST set $Y_BOOT "boot" on
 
 # setup new filesystems
 yrun sudo mkfs.${Y_FS_BOOT} -F ${Y_DEV_DEST}$Y_BOOT
-yrun sudo mkswap -f ${Y_DEV_DESY}$Y_SWAP
+yrun sudo mkswap -f ${Y_DEV_DEST}$Y_SWAP
 echo $Y_ROOT_PASSWD | yrun sudo cryptsetup --cipher=aes-xts-plain --key-size=256 luksFormat ${Y_DEV_DEST}$Y_ROOT
 echo $Y_ROOT_PASSWD | yrun sudo cryptsetup luksOpen ${Y_DEV_DEST}$Y_ROOT $Y_ROOT_NAME
 yrun sudo cryptsetup -v status $Y_ROOT_NAME
@@ -274,11 +274,11 @@ FOUT=$TMP
 FOUT=""
 
 yrun cat $TMP
-yrun sudo cp $TMP $Y_SRC_MNT/etc/crypttab
+yrun sudo cp $TMP $Y_DEST_MNT/etc/crypttab
 
 # make sure we have all essentials
-yrun sudo cp /etc/resolv.conf $Y_SRC_MNT/etc
-yrun sudo chroot $Y_SRC_MNT apt-get install --yes cryptsetup
+yrun sudo cp /etc/resolv.conf $Y_DEST_MNT/etc
+yrun sudo chroot $Y_DEST_MNT apt-get install --yes cryptsetup
 
 # update system
 yrun rm -f $TMP
@@ -289,12 +289,12 @@ FOUT="$TMP"
     yrun echo $Y_DEV$Y_SWAP none  sw 0 0
 FOUT=""
 
-yrun sudo cp $TMP $Y_SRC_MNT/etc/fstab
+yrun sudo cp $TMP $Y_DEST_MNT/etc/fstab
 
-yrun sudo chroot $Y_SRC_MNT update-grub
-yrun sudo chroot $Y_SRC_MNT update-initramfs -u -k all
-yrun sudo chroot $Y_SRC_MNT update-grub
-yrun sudo chroot $Y_SRC_MNT grub-install $Y_DEV
+yrun sudo chroot $Y_DEST_MNT update-grub
+yrun sudo chroot $Y_DEST_MNT update-initramfs -u -k all
+yrun sudo chroot $Y_DEST_MNT update-grub
+yrun sudo chroot $Y_DEST_MNT grub-install $Y_DEV
 
 echo All should be DONE, reboot: `date`
 #sudo init 0

@@ -6,13 +6,16 @@ DEST2="/bin"
 #DEF_BUILD="--mountdev --sync --cgentoo --update --check --build --lkernel --ckernel --bkernel --lilo --rebuild --qtest -systest -D"
 DEF_BUILD="--mountdev -sync --cgentoo --update --check --build -lkernel -ckernel -bkernel -lilo -rebuild -qtest -systest -D"
 
+DEF_NEW_KERNEL="--mountdev -sync -cgentoo -update -check -build -lkernel --ckernel --bkernel --lilo --rebuild --qtest -systest -D"
+
 #DEF_TEST="--mountdev -sync -cgentoo -update -check -build -sysmerge -lkernel -ckernel -bkernel -lilo -rebuild --qtest --systest -D"
 DEF_TEST="--mountdev -sync -cgentoo -update -check -build -sysmerge -lkernel -ckernel -bkernel -lilo -rebuild --qtest -systest -D"
 
 #DEF_ALL="--mountdev -sync --cgentoo --update --check --build --sysmerge --lkernel --ckernel --bkernel --lilo --rebuild --qtest --systest -D"
 DEF_ALL="--mountdev -sync --cgentoo --update --check --build --sysmerge --lkernel --ckernel --bkernel --lilo --rebuild --qtest --systest -D"
 
-CURRENT=$DEF_BUILD
+CURRENT=$DEF_TEST
+#CURRENT=$DEF_NEW_KERNEL
 
 cp $PROJ $DEST1
 cp $LIB $DEST2
