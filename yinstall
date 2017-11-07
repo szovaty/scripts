@@ -43,7 +43,7 @@ Y_FS_ROOT="ext4"
 Y_FS_BOOT="ext2"
 Y_ERROR_CONSOLE="true"
 Y_EPS1="\[\033[01;31m\]FIXME#\[\033[00m\] " 
-Y_LOG="/tmp/${0}.log"
+Y_LOG="/tmp/yinstall.log"
 
 # ============================================================================
 

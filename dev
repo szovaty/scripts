@@ -1,21 +1,23 @@
+#!/bin/bash
+# vim: ts=4 sw=4:
+
 PROJ="/proj/jenov/scripts/ymake_dev"
 LIB="/proj/jenov/scripts/y_functions.sh"
 DEST1="/usr/local/bin"
 DEST2="/bin"
 
-#DEF_BUILD="--mountdev --sync --cgentoo --update --check --build --lkernel --ckernel --bkernel --lilo --rebuild --qtest -systest -D"
-DEF_BUILD="--mountdev -sync --cgentoo --update --check --build -lkernel -ckernel -bkernel -lilo -rebuild -qtest -systest -D"
+export DEF_CHECK="     --mountdev  -sync  -cgentoo --update --check  -build  -lkernel  -ckernel  -bkernel  -lilo  -rebuild  -qtest -systest -D"
+export DEF_BUILD="     --mountdev  -sync  -cgentoo --update --check --build  -lkernel  -ckernel  -bkernel  -lilo  -rebuild  -qtest -systest -D"
+export DEF_NEW_KERNEL="--mountdev  -sync  -cgentoo  -update  -check  -build --lkernel --ckernel --bkernel --lilo --rebuild --qtest -systest -D"
+export DEF_TEST="      --mountdev  -sync  -cgentoo  -update  -check  -build  -lkernel  -ckernel  -bkernel  -lilo  -rebuild --qtest -systest -D"
+export DEF_ALL="       --mountdev  -sync  -cgentoo --update --check --build --lkernel --ckernel --bkernel --lilo --rebuild --qtest -systest -D"
 
-DEF_NEW_KERNEL="--mountdev -sync -cgentoo -update -check -build -lkernel --ckernel --bkernel --lilo --rebuild --qtest -systest -D"
-
-#DEF_TEST="--mountdev -sync -cgentoo -update -check -build -sysmerge -lkernel -ckernel -bkernel -lilo -rebuild --qtest --systest -D"
-DEF_TEST="--mountdev -sync -cgentoo -update -check -build -sysmerge -lkernel -ckernel -bkernel -lilo -rebuild --qtest -systest -D"
-
-#DEF_ALL="--mountdev -sync --cgentoo --update --check --build --sysmerge --lkernel --ckernel --bkernel --lilo --rebuild --qtest --systest -D"
-DEF_ALL="--mountdev -sync --cgentoo --update --check --build --sysmerge --lkernel --ckernel --bkernel --lilo --rebuild --qtest --systest -D"
-
-CURRENT=$DEF_TEST
-#CURRENT=$DEF_NEW_KERNEL
+test -n "$1" && eval CURRENT='$'"DEF_"$1
+test -z "$CURRENT" -o "$CURRENT" = "$1" && { 
+    echo MISSING mode definition
+    env | grep DEF_
+    exit 1; 
+}
 
 cp $PROJ $DEST1
 cp $LIB $DEST2
