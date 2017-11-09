@@ -18,8 +18,8 @@ test -r ${FUNCTIONS} && source ${FUNCTIONS}
 
 # define the following to match the program current state
 PROGRAM_NAME="yrsync_dev"
-VERSION="1.0-rc6"
-LAST_MOD="2017.11.03"
+VERSION="1.0"
+LAST_MOD="2017.11.09"
 
 # Define log file here
 LOG="/var/log/${0##*/}.log"
@@ -44,6 +44,7 @@ FSTAB="/etc/fstab"
 DEV="yes"
 MOUNT="yes"
 LILO="yes"
+DELETE_LIST="/usr /var"
 
 FSTAB_DEST="/etc/fstab.main"
 BOOT_DIR="/boot"
@@ -72,6 +73,7 @@ while [ -n "$1" ] ; do
 	--sdirs|-d)	    SRC_DIRS="$2"; shift ;;	    #; Define source dirs to copy [SRC_DIRS]
     --excl|-e)      EXCL_DIRS="$2"; shift;;     #; Exclude dirs from sync [EXCL_DIRS]
 	--rsync|-r)	    RSYNC_OPT="$2"; shift ;;    #; Define rsync options [RSYNC_OPT]
+    --delete|-D)    DELETE_LIST="$2"; shift;;   #; Delete [DELETE_LIST] before rsync run
 	--nocolor|-C)   USE_COLOR="no";;			#; Color display [USE_COLOR]
 	--nomount|-M)	MOUNT="no";;				#; Mount destination dirs [MOUNT]
 	--dfstab|-f)    FSTAB_DEST="$2"; shift ;;  	#; Define dest_fstab [FSTAB_DEST]
@@ -105,6 +107,12 @@ test "$MOUNT" = "yes" && {
 # create exclude list
 for i in $EXCL_DIRS ; do
     EXCLUDE="$EXCLUDE --exclude=$i"
+done
+
+for i in $DELETE_LIST ; do
+    y_progress "Delete ${DEST_ROOT}${i}/ ..."
+    y_run_cmd "rm -r -f --one-file-system ${DEST_ROOT}${i}/*"
+    y_progress_end 0
 done
 
 # sync the filesystems
