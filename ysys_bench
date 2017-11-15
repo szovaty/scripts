@@ -1,0 +1,42 @@
+#!/bin/bash
+# script to measure desktop performance
+# and compare it to previous results
+
+VERSION="V0.0"
+RC=0
+DATE="date +%Y-%m-%d"
+START="#======================================#"
+  END="#--------------------------------------#"
+
+# tools
+
+Y_TOOL_CMD[0]="dbench -D /gentoo/tmp -t 10 9"
+Y_RES_GREP[0]="Throughput "
+Y_RES_PREP[0]=${Y_RES_GREP[0]}
+Y_RES_POST[0]="[0-9] clients"
+
+Y_TOOL_CMD[1]="gtkperf -a -c 10"
+Y_RES_GREP[1]="Total"
+Y_RES_PREP[1]=" time:"
+Y_RES_POST[1]=""
+
+# other settings
+Y_LOG="/var/log/ysys_bench.log"
+Y_RESULT="/var/log/ysys_bench_res.log"
+
+echo >> $Y_LOG
+echo $START >> $Y_LOG
+echo ${0##*/} $VERSION >> $Y_LOG
+echo Date `$DATE` >> $Y_LOG
+
+for i in 0 1  ; do
+    CMD="${Y_TOOL_CMD[$i]}"
+    RES=`${Y_TOOL_CMD[$i]} &> >(tee -a $Y_LOG) | grep ${Y_RES_GREP[$i]}`
+    test -n "${Y_RES_POST[$i]}" && RES=${RES%%${Y_RES_POST[$i]}*}
+    test -n "${Y_RES_PREP[$i]}" && RES=${RES#*${Y_RES_PREP[$i]}}
+    RESULT="===> $RES <=== [ $CMD ]"
+    echo "$RESULT [ ${0##*/} $VERSION ; `$DATE` ]" >> $Y_RESULT 
+done
+
+echo $END >> $Y_LOG
+echo >> $Y_LOG
