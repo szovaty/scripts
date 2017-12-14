@@ -39,6 +39,7 @@ Y_DEBUG="true"
 #LAST_CMD=""		# y_exit will run it just before exit
 
 PORT="22250"
+PORT="2222"
 LOCAL_HOSTS="$HOME/.hosts"
 
 y_start
@@ -62,6 +63,8 @@ IP=${x%' '*}
 y_debug 1 "IP=[$IP]"
 
 y_debug 2 "ssh $USER@$IP -p $PORT"
+
+ssh $USER@$IP -p $PORT
 
 # ===================================================================================
 # Leave this as the last line
