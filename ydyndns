@@ -1,0 +1,93 @@
+#!/bin/bash
+# Based on template.src version 1.3 last modified 2017.01.24 by y
+# Add your description here of the program here!
+
+y_start(){ :; }
+y_exit(){ :; }
+y_help(){ :; }
+
+trap y_exit TERM HUP INT
+
+# Uncomment this to allow colors on the console
+USE_COLOR="yes"
+
+# This will enable positioning of a text to the end (-8 char) 
+# of a line independent of window size
+USE_POS="yes"
+
+# Enable bell for warnings and errors
+USE_BELL="yes"
+
+# Source the function library
+FUNCTIONS="/bin/y_functions.sh"
+test -r ${FUNCTIONS} && source ${FUNCTIONS}
+
+# define the following to match the program current state
+PROGRAM_NAME="ydyndns"
+VERSION="0.0"
+LAST_MOD="2017.12.14"
+
+# Define log file here
+LOG="/tmp/${0##*/}.log"
+
+# Uncomment this if you need debug enabled
+#Y_DEBUG="true"
+
+# use these to set cleanup on exit
+#MOUNTED=""		# y_exit will unmount them
+#DELETE_ON_EXIT=""	# y_exit will delete them
+#LAST_CMD=""		# y_exit will run it just before exit
+
+
+# -------------- configuration defaults -----------------------
+SERVER_NAME="cfs"
+SERVER_LOGFILE="/var/log/messages"
+PATT_1="Invalid user"
+PATT_2="_ydyndns"
+LOCAL_HOSTS="$HOME/.hosts"
+VARGALAK="vargalak"
+
+
+y_start
+# ===================================================================================
+
+# read command line parameters
+while [ -n "$1" ] ; do
+	case $1 in
+		--help|-h)	y_help "[Options]"; y_exit;;		#; Help
+        --debug|-D) export Y_DEBUG="true";;             #; Enable debug mode [Y_DEBUG]
+        --color|-C) export USE_COLOR="";;               #; Disable color mode [USE_COLOR]
+	esac
+	shift
+done
+
+# re-source help functions to apply settings from command line
+test -r ${FUNCTIONS} && source ${FUNCTIONS}
+
+# read remote log message and filter for last entry
+
+SLOG=`ssh "$SERVER_NAME" cat "$SERVER_LOGFILE" | grep "$PATT_2" | grep "$PATT_1"`
+y_debug 1 "SLOG=$SLOG"
+
+test -z "$SLOG" && y_fatal_error 2 "Failed to get message log!"
+
+x=${SLOG##*$PATT_1}
+y_debug 1 "x=$x"
+
+SLOG_USER=${x%%from*}
+y_debug 1 "SLOG_USER=$SLOG_USER"
+
+x=${x##*from}
+y_debug 1 "x=$x"
+
+SLOG_IP=${x%%port*}
+y_debug 1 "SLOG_IP=$SLOG_IP"
+
+# overwrite local host name
+test -r $LOCAL_HOSTS || touch $LOCAL_HOSTS
+echo $SLOG_IP $VARGALAK > $LOCAL_HOSTS
+
+
+# ===================================================================================
+# Leave this as the last line
+y_exit

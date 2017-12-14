@@ -24,77 +24,46 @@ test -r ${FUNCTIONS} && source ${FUNCTIONS}
 
 # define the following to match the program current state
 PROGRAM_NAME="yssh"
-VERSION="0.3"
-LAST_MOD="2014.12.04"
+VERSION="0.5"
+LAST_MOD="2017.12.14"
 
 # Define log file here
-#LOG="/tmp/${0##*/}.log"
+LOG="/tmp/${0##*/}.log"
 
 # Uncomment this if you need debug enabled
-#Y_DEBUG="true"
+Y_DEBUG="true"
 
 # use these to set cleanup on exit
 #MOUNTED=""		# y_exit will unmount them
 #DELETE_ON_EXIT=""	# y_exit will delete them
 #LAST_CMD=""		# y_exit will run it just before exit
 
-IF_NAME="ppp0"
-DNS_SRV="178.79.133.133"
-DNS_PORT="22250"
-FILENAME=`hostname`
-SRV_PORT="2222"
-HPATH="/tmp"
-USERNAME="ddrguest"
-VERBOSE=""
-NOLOGIN=""
-
-ysrv_set (){
-    IP=`ifconfig $IF_NAME | grep inet`
-    IP=${IP%%netmask*}
-    IP=${IP#*inet}
-
-    test -n $VERBOSE && echo Server IP $IP
-    test -n $VERBOSE && echo IP file location: $HPATH/$FILENAME
-
-    ssh -l $USERNAME -p $DNS_PORT $DNS_SRV "echo $IP > $HPATH/$FILENAME"
-}
-
-ysrv_login (){
-    test -n $2 && USER="-l $2"
-    echo "Enter ddrguest password on DNS server"
-    IP=`ssh -l $USERNAME -p $DNS_PORT $DNS_SRV cat $1`
-    if [ -z "$NOLOGIN" ] ; then
-        ssh ${USER} -p $SRV_PORT -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $IP
-    else
-        echo "Server IP: $IP" 
-    fi
-}
-
+PORT="22250"
+LOCAL_HOSTS="$HOME/.hosts"
 
 y_start
 # ===================================================================================
 
-# read command line parameters
-while [ -n "$1" ] ; do
-	case $1 in
-		--help|-h)	y_help "[Options]"; exit;;  #; Help
-        --server|-s) ysrv_set; exit;;           #; Server mode
-        --login|-i) SERVER=$2;;                 #; Login to remote server
-        --user|-u)  USER=$2;;                   #; Define username
-        --verbose|-v) VERBOSE="1";;             #; Enable verbose mode
-        --ip|-p)    NOLOGIN="1";;               #; Only print server IP
-    esac
-	shift
-done
+USER="$LOGNAME"
+test -z "$1" && { y_help username@hostname; y_exit; }
+
+HOST="$1"
+x=`echo $1 | grep "@"`
+y_debug 1 "$@"
+if [ "$?" = "0" ] ; then
+    USER=${1%@*}
+    HOST=${1#*@}
+fi
+y_debug 1 "USER@HOST=$USER@$HOST"
+
+x=`cat $LOCAL_HOSTS | grep "$HOST"`
+y_debug 1 "x=$x"
+IP=${x%' '*}
+y_debug 1 "IP=[$IP]"
+
+y_debug 2 "ssh $USER@$IP -p $PORT"
 
 # ===================================================================================
 # Leave this as the last line
-
-test -z $SERVER && {
-    echo "Usage: $0 -i server_name [-u user_name]"
-    exit
-}
-ysrv_login /$HPATH/$SERVER $USER
-
 y_exit
 
