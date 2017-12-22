@@ -1,0 +1,31 @@
+#!/bin/bash
+ 
+#./arch/x86/boot/install.sh 4.12.14-gentoo arch/x86/boot/bzImage System.map "/boot"
+# $0                        $1             $2                    $3         $4
+
+VERSION="$1"
+IMAGE="$2"
+SYSMAP="$3"
+BOOTP="$4"
+
+NAME="vmlinuz"
+LATEST="$NAME-latest"
+DEST_NAME=$NAME-$VERSION
+CONFIG=".config"
+CONFIG1="config"
+OLD="old"
+
+rm -f $BOOTP/$LATEST
+rm -f $BOOTP/*.$OLD
+
+cp_old () { test -r $1 && cp $1 $1.$OLD; }
+cp_old $BOOTP/$DEST_NAME 
+cp_old $BOOTP/$CONFIG1-$VERSION
+cp_old $BOOTP/$SYSMAP-$VERSION
+
+cp $IMAGE $BOOTP/$DEST_NAME
+cp $CONFIG $BOOTP/$CONFIG1-$VERSION
+cp $SYSMAP $BOOTP/$SYSMAP-$VERSION
+
+cd $BOOTP
+ln -s $DEST_NAME $LATEST
