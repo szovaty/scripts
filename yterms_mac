@@ -1,0 +1,51 @@
+#!/bin/bash
+# vim: set ts=4:
+
+VER="2.0-rc2"
+
+# terminal command and its options
+CMD="xfce4-terminal --hide-borders"
+#CMD="lxterminal"
+DIR=`pwd`
+H=`hostname`
+G="--geometry"
+W="--working-directory"
+T="--tab"
+
+# displays geometry
+ADM_X1=727
+ADM_X2=1700
+ADM_Y1=323
+
+DEV_X1=570
+DEV_X2=1700
+DEV_Y1=244
+
+MODE="dev"
+test -n "$1" && MODE=$1
+
+T1="$CMD $W=$DIR $T $G=166x12+$ADM_X1+0"
+T2="$CMD $W=$DIR $T $G=80x14+$ADM_X1+$ADM_Y1"
+T3="$CMD $W=$DIR $T $G=80x44+$ADM_X1-0"
+T4="$CMD $W=$DIR $T $G=86x60+$ADM_X2-0"
+T5="$CMD $W=$DIR $T $G=66x28+0-0"
+
+D1="$CMD $W=$DIR $T $G=272x12+0+0"
+D2="$CMD $W=$DIR $T $G=80x21+0+$DEV_Y1"
+D3="$CMD $W=$DIR $T $G=80x29+0-0"
+D4="$CMD $W=$DIR $T $G=93x54+$DEV_X1-0"
+D5="$CMD $W=$DIR $T $G=96x54+$DEV_X2-0"
+
+
+
+case $MODE in
+    test)
+        #echo adm; echo T1: $T1; echo T2: $T2; echo T3: $T3; echo T4: $T4; echo T5: $T5;
+        echo adm; echo $T1; echo $T2; echo $T3; echo $T4; echo $T5;
+        echo dev; echo $D1; echo $D2; echo $D3; echo $D4; echo $D5;
+        ;;
+    adm)
+        $T1; $T2; $T3; $T4; $T5;;
+    dev)
+        $D1; $D2; $D3; $D4; $D5;;
+esac
