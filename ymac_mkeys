@@ -1,0 +1,58 @@
+#!/bin/bash
+# Base template.src version 1.4 last modified 2018.01.09 by y
+
+y_start(){ :; }
+y_exit(){ :; }
+y_help(){ :; }
+
+trap y_exit TERM HUP INT
+
+# Uncomment this to allow colors on the console
+#USE_COLOR="yes"
+
+# This will enable positioning of a text to the end (-8 char) 
+# of a line independent of window size
+USE_POS="yes"
+
+# Enable bell for warnings and errors
+USE_BELL="yes"
+
+# Source the function library
+FSH="y_functions.sh"
+FUNCTIONS=`which $FSH`
+test $? != '0' && { echo Fatal Error!; exit 1; }
+test -r ${FUNCTIONS} && source ${FUNCTIONS}
+
+# define the following to match the program current state
+PROGRAM_NAME="ymac_mkeys"
+VERSION="0.0"
+LAST_MOD="2018.01.10"
+
+# Define log file here
+LOG="/tmp/${0##*/}.log"
+
+# Uncomment this if you need debug enabled
+#Y_DEBUG="true"
+
+# use these to set cleanup on exit
+#MOUNTED=""		# y_exit will unmount them
+#DELETE_ON_EXIT=""	# y_exit will delete them
+#LAST_CMD=""		# y_exit will run it just before exit
+
+# command macros
+
+
+y_start
+# ===================================================================================
+
+# read command line parameters
+while [ -n "$1" ] ; do
+	case $1 in
+		--help|-h)	y_help "[Options]"; y_exit;;		#; Help
+	esac
+	shift
+done
+
+# ===================================================================================
+# Leave this as the last line
+y_exit
