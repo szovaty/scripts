@@ -39,7 +39,44 @@ LOG="/tmp/${0##*/}.log"
 #DELETE_ON_EXIT=""	# y_exit will delete them
 #LAST_CMD=""		# y_exit will run it just before exit
 
+SYS_KB_BL_BRIGTHNESS="/sys/devices/platform/applesmc.768/leds/smc::kbd_backlight/brightness"
+
+VOLUME_100="65536"
+
 # command macros
+MKEY_BRIGHTNESS_UP=""
+MKEY_BRIGTHNESS_DOWN=""
+MKEY_KBLIGHT_DOWN=""
+MKEY_KBLIGHT_UP=""
+MKEY_PLAY=""
+MKEY_FWD=""
+MKEY_BWD=""
+
+pa_get_vol_cur (){
+    x=`pactl list sinks | grep Volume | grep front | awk -F" " '{print $5}'`
+    x=${x%\%*}
+    echo $x
+}
+
+pa_set_vol_down (){
+    if [ `pa_get_vol_cur` -ge 10 ]; then 
+        pactl set-sink-volume 0 -10%
+    else
+        pactl set-sink-volume 0 0%
+    fi
+}
+
+pa_set_vol_up (){
+    if [ `pa_get_vol_cur` -le 90 ]; then 
+        pactl set-sink-volume 0 +10%
+    else
+        pactl set-sink-volume 0 100%
+    fi
+}
+
+pa_vol_mute_toggle (){
+    pactl set-sink-mute 0 toggle
+}
 
 
 y_start
@@ -49,9 +86,16 @@ y_start
 while [ -n "$1" ] ; do
 	case $1 in
 		--help|-h)	y_help "[Options]"; y_exit;;		#; Help
+        --pa-up)    pa_set_vol_up;;                     #; Increase audio volume
+        --pa-down)  pa_set_vol_down;;                   #; Decrease audio volume
+        --pa-mute)  pa_vol_mute_toggle;;                #; Toggle audio mute
 	esac
 	shift
 done
+
+pa_get_vol_cur
+#pa_set_vol_up
+#pa_vol_mute_toggle
 
 # ===================================================================================
 # Leave this as the last line
