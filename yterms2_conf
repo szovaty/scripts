@@ -1,5 +1,6 @@
-#!/bin/bash
-# Base template.src version 1.4 last modified 2018.01.09 by y
+#!/bin/bash -i
+# Based on template.src version 1.3 last modified 2017.01.24 by y
+# Add your description here of the program here!
 
 y_start(){ :; }
 y_exit(){ :; }
@@ -24,15 +25,22 @@ test $? != '0' && { echo Fatal Error!; exit 1; }
 test -r ${FUNCTIONS} && source ${FUNCTIONS}
 
 # define the following to match the program current state
-PROGRAM_NAME="Program Name"
+PROGRAM_NAME="yterms2"
 VERSION="0.0"
-LAST_MOD="20xx.xx.xx"
+LAST_MOD="2018.01.09"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
 
 # Uncomment this if you need debug enabled
 #Y_DEBUG="true"
+
+TERM_CMD="xfce4-terminal"
+TERM_OPT="--hide-borders --tab"
+TERM_GEO="--geometry="
+TERM_TITLE="yterms2_design"
+WIN_NUM="4"
+CONF_NAME="/tmp/.yterms2.conf"
 
 # use these to set cleanup on exit
 #MOUNTED=""		# y_exit will unmount them
@@ -46,9 +54,42 @@ y_start
 while [ -n "$1" ] ; do
 	case $1 in
 		--help|-h)	y_help "[Options]"; y_exit;;		#; Help
+        --win|-w)   WIN_NUM=$2; shift;;                 #; Number of windows to open
+        --conf|-c)  CONF_NAME=$2; shift;;               #; Define 'save as' name 
 	esac
 	shift
 done
+
+X=`xprop -root _NET_ACTIVE_WINDOW | awk -F" " '{print $5}'`
+COMMAND_WINID=${X%*,}
+echo [$COMMAND_WINID]
+
+# open initial windows at default positions
+i=1
+while [ $i -le $WIN_NUM ]; do
+    $TERM_CMD $TERM_OPT -T ${TERM_TITLE}_$i
+    let i=i+1
+done
+
+y_info 0 "Position windows and type 'done' when finished"
+X=""
+while [ "$X" != "done" ]; do
+    read X
+done
+
+# readed windows geometry info and dump it to std out
+WLIST=`wmctrl -l | grep $TERM_TITLE | awk -F " " '{print $1}'`
+
+echo > $CONF_NAME
+
+for i in $WLIST ; do
+    X=`xwininfo -id $i -stats | grep "geometry"`
+    X=${X#*geometry}
+    GEO=${X#*' '}
+    echo $TERM_CMD $TERM_OPT ${TERM_GEO}$GEO >> $CONF_NAME
+done
+
+chmod +x $CONF_NAME
 
 # ===================================================================================
 # Leave this as the last line
