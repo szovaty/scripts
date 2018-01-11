@@ -103,7 +103,6 @@ test $MODE = "save" && {
 echo > $CONF_NAME
 
 for i in $WLIST ; do
-    echo [$i]
     X=`xwininfo -id $i -stats | grep "geometry"`
     X=${X#*geometry}
     GEO=${X#*' '}
