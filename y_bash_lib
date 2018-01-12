@@ -39,11 +39,6 @@ ERROR=1
 NOERROR=0
 Y_DATE="date +%Y.%m.%d-%T"
 
-# use these to control cleanup on exit
-#MOUNTED=
-#DELETE_ON_EXIT=
-#LAST_CMD=
-
 #Defaults
 test -z "$LOG" && LOG="/dev/null"
 test -z "$TMP_DIR" && TMP_DIR="/tmp"
@@ -132,9 +127,10 @@ y_error () 	        { y_msg "ERROR" "$1" "$2" ; }
 y_fatal_error ()    { y_msg "FATAL" "$1" "$2" ; }
 y_warning () 	    { y_msg "WARNING" "$1" "$2" ; }
 y_debug ()	        { test -n "$Y_DEBUG" && y_msg "DEBUG" "$1" "$2" ; }
+y_dryrun ()	        { test -n "$Y_DEBUG" && y_msg "DRYRUN" "$1" "$2" ; }
 y_info ()	        { y_msg "INFO" "$1" "$2" ; }
 y_usage ()	        { y_msg "USAGE" "$1" "$2" ; }
-y_help ()	 { 
+y_help (){
 	y_msg "INFO" 0 "$PROGRAM_NAME Version $VERSION; $LAST_MOD"
 	y_msg "HELP" 0 "${0##*/} `echo $1 ; shift ; y_help_opt ; echo $*`"
 }
@@ -151,13 +147,14 @@ y_msg () {
 			ERROR)	 MESG_COLOR=$ERR  ; CALL_EXIT=$NO  ; MSG_OUT=$STD_ERR ; BELL=ERROR;;
 			WARNING) MESG_COLOR=$WARN ; CALL_EXIT=$NO  ; MSG_OUT=$STD_ERR ; BELL=WARNING;;	
 			DEBUG)	 MESG_COLOR=$NORM ; CALL_EXIT=$NO  ; MSG_OUT=$STD_OUT ;;
+			DRYRUN)	 MESG_COLOR=$NORM ; CALL_EXIT=$NO  ; MSG_OUT=$STD_OUT ;;
 			INFO)	 MESG_COLOR=$NORM ; CALL_EXIT=$NO  ; MSG_OUT=$STD_OUT ;;
 			USAGE)	 MESG_COLOR=$WARN ; CALL_EXIT=$YES ; MSG_OUT=$STD_ERR ;;
 			HELP)	 MESG_COLOR=$NORM ; CALL_EXIT=$NO  ; MSG_OUT=$STD_OUT ;;
 			*)       return $ERROR
     esac
     test ! -w "$MSG_OUT" && MSG_OUT=/dev/null
-    test -n "$Y_QUIET" && MSG_OUT=/dev/null
+    test -n "$Y_QUIET" -a $1 != "HELP" && MSG_OUT=/dev/null
 
     MESG_HEADER=`printf "%020s(%05d) %08s" ${0##*/} $$ $1`
     MESG_HEADER1=`printf "%08s" $1`
@@ -199,6 +196,7 @@ y_exit () {
 y_start () { 
     y_info 1 "Start: $0 $1 ; [V${VERSION} , Last modified: ${LAST_MOD}]"
 }
+
 # print version information
 y_version () { echo "Version: V$VERSION ; Last Mod. $LAST_MOD" ; }
 
@@ -207,12 +205,20 @@ y_get_confirm () {
     local X
     test -z "$Y_CONFIRM" && return
     echo -n $*" " ; read X
+    LAST_CMD="y_debug Exiting"
     test "$X" != "$YES" && y_exit
 }
 
 # report progress
-y_progress () { test -z "$Y_QUIET" && printf "%s%010s%s: %s\n" "${GOOD}" "PROGRESS" "${NORM}" "$1" >>/dev/stderr ; }
-y_progress_1 () { printf "%s%010s%s: %s" "${GOOD}" "PROGRESS" "${NORM}" "$1" >>/dev/stderr ; }
+y_progress () { 
+    test -z "$Y_QUIET" && 
+        printf "%s%010s%s: %s\n" "${GOOD}" "PROGRESS" "${NORM}" "$1" >>/dev/stderr
+}
+
+y_progress_1 () { 
+    printf "%s%010s%s: %s" "${GOOD}" "PROGRESS" "${NORM}" "$1" >>/dev/stderr
+}
+
 y_progress_end () { 
 	test -z "$Y_QUIET" || return
     case $1 in
@@ -229,7 +235,7 @@ y_progress_end () {
 y_get_disksize () {
     local x
     x=`fdisk -l $1 2>/dev/null | grep ${1}: | awk ' { print $5 }'` 
-y_debug 1 "DISK_SIZE=[$x]"
+    y_debug 1 "DISK_SIZE=[$x]"
 #    x=${x%' '*} ; x=${x##*' '} ; 
     x=$(($x/1024/1024))
     echo $x
@@ -240,8 +246,11 @@ y_debug 1 "DISK_SIZE=[$x]"
 #  return: set sum dir size in DIR_SIZE
 # local variables: *_4
 y_get_dirsize () { 
-    local x ; x=`du -s -c -m $1 | grep total` ; x=`echo $x`
-    x=${x%%total} ; return $x
+    local x
+    x=`du -s -c -m $1 | grep total`
+    x=`echo $x`
+    x=${x%%total}
+    return $x
 }
 
 # get dir size minus the exclude dirs in the second parameter (a file with the list like tar exclude)
@@ -250,9 +259,10 @@ y_get_dirsize () {
 y_get_dirsize_excl () {
     local i ; local j ; local x ; local FROM
     
-    FROM=$1 ; j=""
+    FROM=$1
+    j=""
     for i in `ls -A $1 2>/dev/null | grep --file=$2 -v 2>/dev/null` ; do
-	j="$j ${FROM%/}/$i"
+	    j="$j ${FROM%/}/$i"
     done 
     x=`$RCMD du -s $3 -c $j_5 2>/dev/null | grep total 2>/dev/null`
     x=`echo $x`
@@ -280,69 +290,46 @@ y_check_cmds () {
 
 # check if a program return with no error
 # if error then call y_fatal_error
-y_check_exec () { test "$1" -ne 0 && y_fatal_error 2 "Failed command: $2" ; }
-
-y_run_cmd () {
-    local OUT error
-    test -z "$1" && return
-    y_debug 1 "call: $1"
-    if [ -n "$Y_DEBUG" ] ; then OUT=${LOG} ; else OUT=/dev/null ; fi
-    test -z "${Y_DRY_RUN}" && { $1 >>$OUT  2>>$LOG ; y_check_exec $? "$1" ; }
-    return 0
-}
-
-
-y_run_cmd1 () { 
-    test -z "$1" && return
-    y_debug 1 "call: $1"
-    if [ -n "$Y_DEBUG" ] ; then OUT=${LOG} ; else OUT=/dev/null ; fi
-    test -z "${Y_DRY_RUN}" && { $1 >>$OUT 2>>$LOG ; return "$?" ; }
-    return 0
-}
-
-y_run_cmd2 () { 
-    local RET
-    test -z "$1" && return
-    y_debug 1 "call: $1"
-    if [ -n "$Y_DEBUG" ] ; then OUT=${LOG} ; else OUT=/dev/null ; fi
-    test -z "${Y_DRY_RUN}" && { 
-			$1 >>$OUT 2>>$LOG ; RET=$?
-			test "$RET" -ne 0 && y_error 1 "Failed command: $1"
-			return $RET
+y_check_exec () {
+    test "$1" -ne 0 && {
+        y_debug 2 "Failed command: $2"
+        test -n ${Y_EXIT_ON_ERROR} && y_exit
     }
-    return 0
 }
 
 
+# run command with dry_run and debug info feature
 y_run () {
-    local OUT
     test -z "$1" && return
-    y_debug 1 "call: $*"
-    if [ -n "$Y_DEBUG" ] ; then OUT=${LOG} ; else OUT=/dev/null ; fi
-    test -z "${Y_DRY_RUN}" && 
-        { eval $* >>$OUT  2>>$LOG ; y_check_exec $? "$*" ; }
-    return 0
+    if [ "$Y_DRY_RUN" = "true" ]; then
+        y_dryrun 1 "$*"
+        return 0
+    else
+        y_debug 1 "$*"
+    fi     
+
+    if [ -z $Y_QUIET ] ; then
+        # no quiet mode
+        if [ "$Y_DEBUG" = "true" ] ; then
+            eval $* | tee -a $LOG
+        else
+            eval $*
+        fi
+    else
+        eval $* 2>&1 >> $LOG
+    fi
+    RET=$?
+    y_check_exec $RET
+    return $RET
 }
 
-y_run1 () { 
-    test -z "$1" && return
-    y_debug 1 "call: $*"
-    if [ -n "$Y_DEBUG" ] ; then OUT=${LOG} ; else OUT=/dev/null ; fi
-    test -z "${Y_DRY_RUN}" && { eval $* >>$OUT 2>>$LOG ; return "$?" ; }
-    return 0
+y_set_default () { 
+    local X
+    eval X='$'$1
+    test -z "$X" && eval $1=\"$2\"
 }
 
-y_run2 () { 
-    local RET
-    test -z "$1" && return
-    y_debug 1 "call: $*"
-    if [ -n "$Y_DEBUG" ] ; then OUT=${LOG} ; else OUT=/dev/null ; fi
-    test -z "${Y_DRY_RUN}" && { 
-	eval $* >>$OUT 2>>$LOG ; RET=$?
-	test "$RET" -ne 0 && y_error 1 "Failed command: $*"
-	return $RET
-    }
+y_mark_log () {	
+    echo "========================================================================"
 }
 
-y_set_default () { local X ; eval X='$'$1 ; test -z "$X" && eval $1=\"$2\" ; }
-y_mark_log () {	echo "========================================================================"; }
