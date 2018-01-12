@@ -1,5 +1,6 @@
 #!/bin/bash
 # Base template.src version 1.4 last modified 2018.01.09 by y
+# Note: keyboard light controll does not have user write permitions!
 
 y_start(){ :; }
 y_exit(){ :; }
@@ -24,7 +25,6 @@ y_fsh (){
     test $? != '0' && { echo Fatal Error!; exit 1; }
     test -r ${FUNCTIONS} && source ${FUNCTIONS}
 }
-y_fsh
 
 # define the following to match the program current state
 PROGRAM_NAME="ymac_mkeys"
@@ -35,17 +35,31 @@ LAST_MOD="2018.01.11"
 LOG="/tmp/${0##*/}.log"
 
 # Uncomment this if you need debug enabled
-#Y_DEBUG="true"
+Y_DEBUG="true"
 
 # use these to set cleanup on exit
 #MOUNTED=""		# y_exit will unmount them
 #DELETE_ON_EXIT=""	# y_exit will delete them
 #LAST_CMD=""		# y_exit will run it just before exit
 
-SYS_KB_BL_BRIGTHNESS="/sys/devices/platform/applesmc.768/leds/smc::kbd_backlight/brightness"
+y_fsh
+
+KBL_BRIGHTNESS="/sys/devices/platform/applesmc.768/leds/smc::kbd_backlight/brightness"
+KBL_MAX_BRIGHTNESS="/sys/devices/platform/applesmc.768/leds/smc::kbd_backlight/max_brightness"
 PA_SET_SINK_VOL="set-sink-volume 0"
 PA_SINK_MUTE="set-sink-mute 0"
 VOLUME_100="65536"
+PA_MIN=0
+PA_MAX=100
+PA_DIFF=5 # set change to #%
+
+KBL_MIN=0
+KBL_MAX=`cat $KBL_MAX_BRIGHTNESS`
+#KBL_MAX=255
+KBL_DIFF=$(($(($KBL_MAX-$KBL_MIN))/10))
+#echo $KBL_MIN
+#echo $KBL_MAX
+#echo $KBL_DIFF
 
 # help functions
 
@@ -56,22 +70,22 @@ pa_get_vol_cur (){
     echo $x
 }
 
-# reduce sound volume by 10%
+# reduce sound volume by $PA_DIFF%
 pa_set_vol_down (){
-    if [ `pa_get_vol_cur` -ge 10 ]; then 
-        y_run pactl $PA_SET_SINK_VOL -10%
+    if [ `pa_get_vol_cur` -ge $PA_DIFF ]; then 
+        y_run pactl $PA_SET_SINK_VOL -${PA_DIFF}%
     else
-        y_run pactl $PA_SET_SINK_VOL 0%
+        y_run pactl $PA_SET_SINK_VOL ${PA_MIN}%
     fi
     y_debug 1 pa_vol_cur=`pa_get_vol_cur`%
 }
 
-# increase hound volume by 10%
+# increase hound volume by $PA_DIFF%
 pa_set_vol_up (){
-    if [ `pa_get_vol_cur` -le 90 ]; then 
-        y_run pactl $PA_SET_SINK_VOL +10%
+    if [ `pa_get_vol_cur` -le $((100-$PA_DIFF)) ]; then 
+        y_run pactl $PA_SET_SINK_VOL +${PA_DIFF}%
     else
-        y_run pactl $PA_SET_SINK_VOL 100%
+        y_run pactl $PA_SET_SINK_VOL ${PA_MAX}%
     fi
     y_debug 1 pa_vol_cur=`pa_get_vol_cur`%
 }
@@ -81,6 +95,38 @@ pa_vol_mute_toggle (){
     y_run pactl $PA_SINK_MUTE toggle
 }
 
+# get current keyboard light setting
+kbl_cur (){
+    cat $KBL_BRIGHTNESS
+}
+
+# reduce  keyboard light by $KBL_DIFF
+kbl_down (){
+    x=$((`kbl_cur`-${KBL_DIFF}))
+    test $x -lt 0 && x=0
+    echo $x > $KBL_BRIGHTNESS
+    y_debug 1 kbl_cur=`kbl_cur`
+}
+
+# increase keyboard light by $KBL_DIFF
+kbl_up (){
+    x=$((`kbl_cur`+$KBL_DIFF))
+    test $x -ge $KBL_MAX && x=$KBL_MAX
+    echo $x > $KBL_BRIGHTNESS
+    y_debug 1 kbl_cur=`kbl_cur`
+}
+
+# keyboard light off
+kbl_off (){
+    echo 0 > $KBL_BRIGHTNESS
+    y_debug 1 kbl_cur=`kbl_cur`
+}
+
+# keyboard light set to #
+kbl_set (){
+    echo $1 > $KBL_BRIGHTNESS
+    y_debug 1 kbl_cur=`kbl_cur`
+}
 
 y_start
 # ===================================================================================
@@ -90,9 +136,13 @@ while [ -n "$1" ] ; do
 	case $1 in
 		--help|-h)	y_help "[Options]"; y_exit;;		#; Help
         --debug|-D) Y_DEBUG="true";y_fsh;;              #; Enable debugging [Y_DEBUG]
-        --pa-up)    pa_set_vol_up;;                     #; Increase audio volume
-        --pa-down)  pa_set_vol_down;;                   #; Decrease audio volume
-        --pa-mute)  pa_vol_mute_toggle;;                #; Toggle audio mute
+        --pa-up)    pa_set_vol_up;;                     #; Increase pa volume by [PA_DIFF]%
+        --pa-down)  pa_set_vol_down;;                   #; Decrease pa volume by [PA_DIFF]%
+        --pa-mute)  pa_vol_mute_toggle;;                #; Toggle audio mute on/off
+        --kbl-up)   kbl_up;;                            #; Increase kbd light by [KBL_DIFF]
+        --kbl-down) kbl_down;;                          #; Decrease kbd light by [KBL_DIFF]
+        --kbl-set)  kbl_set $2; shift;;                 #; Set kbd light to #
+        --kbl-off)  kbl_off;;                           #; Kbd light off
 	esac
 	shift
 done
