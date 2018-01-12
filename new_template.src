@@ -18,10 +18,10 @@ USE_POS="yes"
 USE_BELL="yes"
 
 # Source the function library
-FSH="y_bash_lib"
-LIB=`which $FSH`
+FSH="y_functions.sh"
+FUNCTIONS=`which $FSH`
 test $? != '0' && { echo Fatal Error!; exit 1; }
-test -r ${LIB} && source ${LIB}
+test -r ${FUNCTIONS} && source ${FUNCTIONS}
 
 # define the following to match the program current state
 PROGRAM_NAME="Program Name"
