@@ -1,4 +1,5 @@
-#!/bin/bash -i
+#!/bin/bash
+# vim:set ts=2:
 # Based on template.src version 1.3 last modified 2017.01.24 by y
 # Add your description here of the program here!
 
@@ -44,9 +45,9 @@ CONF_NAME="/tmp/yterms2.conf"
 MODE="new"
 
 # use these to set cleanup on exit
-#MOUNTED=""		# y_exit will unmount them
+#MOUNTED=""		      # y_exit will unmount them
 #DELETE_ON_EXIT=""	# y_exit will delete them
-#LAST_CMD=""		# y_exit will run it just before exit
+#LAST_CMD=""		    # y_exit will run it just before exit
 
 y_start
 # ===================================================================================
@@ -54,59 +55,62 @@ y_start
 # read command line parameters
 while [ -n "$1" ] ; do
 	case $1 in
-		--help|-h)	y_help "[Options]"; y_exit;;		#; Help
-        --win|-w)   WIN_NUM=$2; shift;;                 #; Number of windows [WIN_NUM]
-        --conf|-c)  CONF_NAME=$2; shift;;               #; Define 'save as' name [CONF_NAME]
-        --save|-s)  MODE="save";;                       #; Set save mode [MODE]
-        --term|-t)  TERM_CMD=$2; shift;;                #; Define terminal command [TERM_CMD]
-        --opt|-o)   TERM_OPT=$2; shift;;                #; Define terminal options [TERM_OPT]
+		--help|-h)	y_help "[Options]"; y_exit;;  #; Help
+    --win|-w)   WIN_NUM=$2; shift;;           #; Number of windows [WIN_NUM]
+    --conf|-c)  CONF_NAME=$2; shift;;         #; Define 'save as' name [CONF_NAME]
+    --save|-s)  MODE="save";;                 #; Set save mode [MODE]
+    --term|-t)  TERM_CMD=$2; shift;;          #; Define terminal command [TERM_CMD]
+    --opt|-o)   TERM_OPT=$2; shift;;          #; Define terminal options [TERM_OPT]
 	esac
 	shift
 done
 
 # chech which windows we are running from
 test "x" = "x" && {
-    y_check_cmds "xprop awk"
-    X=`xprop -root _NET_ACTIVE_WINDOW | awk -F" " '{print $5}'`
-    COMMAND_WINID=${X%*,}
-    y_debug 2 [$COMMAND_WINID]
+  y_check_cmds "xprop awk"
+  X=`xprop -root _NET_ACTIVE_WINDOW | awk -F" " '{print $5}'`
+  COMMAND_WINID=${X%*,}
+  y_debug 2 [$COMMAND_WINID]
 }
 
 test $MODE = "new" && {
-    # open initial windows at default positions
-    test $WIN_NUM -le 0 && { y_info 2 "Windows number set to: $WIN_NUM. Exiting" ; y_exit; }
-    i=1
-    while [ $i -le $WIN_NUM ]; do
-        $TERM_CMD $TERM_OPT -T ${TERM_TITLE}_$i
-        let i=i+1
-    done
+  # open initial windows at default positions
+  test $WIN_NUM -le 0 && { 
+    y_info 2 "Windows number set to: $WIN_NUM. Exiting"
+    y_exit
+  }
+  i=1
+  while [ $i -le $WIN_NUM ]; do
+    $TERM_CMD $TERM_OPT -T ${TERM_TITLE}_$i
+    let i=i+1
+  done
 
-    # edit windows size and position
-    y_info 0 "Position windows and type 'done' when finished"
-    X=""
-    while [ "$X" != "done" ]; do
-        read X
-    done
+  # edit windows size and position
+  y_info 0 "Position windows and type 'done' when finished"
+  X=""
+  while [ "$X" != "done" ]; do
+    read X
+  done
 }
 
 # read windows geometry info and save it to a config file
 test $MODE = "new" && 
-    WLIST=`wmctrl -l | grep $TERM_TITLE | awk '{print $1}'`
+  WLIST=`wmctrl -l | grep $TERM_TITLE | awk '{print $1}'`
 test $MODE = "save" && {
-    DISP=`wmctrl -d | grep ' \* ' | awk '{print $1}'`
-    for i in `wmctrl -lx | grep $TERM_CMD | awk -v d=$DISP '$2 == d {print $1}'`; do 
-        WLIST="$WLIST $i"
-    done
+  DISP=`wmctrl -d | grep ' \* ' | awk '{print $1}'`
+  for i in `wmctrl -lx | grep $TERM_CMD | awk -v d=$DISP '$2 == d {print $1}'`; do 
+    WLIST="$WLIST $i"
+  done
 }
 
 # save windows configuration
 echo > $CONF_NAME
 
 for i in $WLIST ; do
-    X=`xwininfo -id $i -stats | grep "geometry"`
-    X=${X#*geometry}
-    GEO=${X#*' '}
-    echo $TERM_CMD $TERM_OPT ${TERM_GEO}$GEO >> $CONF_NAME
+  X=`xwininfo -id $i -stats | grep "geometry"`
+  X=${X#*geometry}
+  GEO=${X#*' '}
+  echo $TERM_CMD $TERM_OPT ${TERM_GEO}$GEO >> $CONF_NAME
 done
 
 chmod +x $CONF_NAME
