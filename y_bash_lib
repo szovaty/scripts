@@ -27,7 +27,8 @@ if [ "$USE_COLOR" = "yes" ] ; then
   Y_FIXME="\[\033[01;31m\]${Y_FIXME}\[\033[00m\]"
 fi
 
-echo PS1=\"$Y_FIXME\" > /tmp/ps1
+Y_FIXME_PS1="/tmp/yps1.$$"
+echo PS1=\"$Y_FIXME\" > $Y_FIXME_PS1
 
 # positioning
 ENDCOL=""
@@ -309,10 +310,10 @@ y_check_exec () {
   ERR="$1"
   test "$1" -ne 0 && {
     shift
-    y_debug 2 "Failed: $*"
+    y_debug 2 "FAILED: $*"
     test "$Y_EXIT_ON_ERROR" = $TRUE && y_exit
     test "$Y_DEBUG_ON_ERROR" = $TRUE && {
-      export PS1="TEST" ;bash --rcfile /tmp/ps1 -i 
+      bash --rcfile $Y_FIXME_PS1 -i 
       RET="$?"
       echo RET=[$RET]
     }
