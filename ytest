@@ -67,6 +67,7 @@ Y_DEBUG_ON_ERROR=$TRUE
 #y_init_screen
 #y_run 'echo `date` - Hello > /tmp/ytest.x'
 y_run grep xtest /etc/fstab
+echo HAHO
 y_run echo Hello World
 
 # ===================================================================================

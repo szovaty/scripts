@@ -303,58 +303,51 @@ y_check_cmds () {
   done
 }
 
-
 # check if a program return with no error
-# if error then call y_fatal_error
 y_check_exec () {
-  ERR="$1"
-  test "$1" -ne 0 && {
-    shift
-    y_debug 2 "FAILED: $*"
-    test "$Y_EXIT_ON_ERROR" = $TRUE && y_exit
-    test "$Y_DEBUG_ON_ERROR" = $TRUE && {
-      bash --rcfile $Y_FIXME_PS1 -i 
-      RET="$?"
-      echo RET=[$RET]
-    }
-  }
-  return $ERR
+  test $? -eq 0 && return
+  shift
+  y_debug 2 "FAILED: $*"
+  test "$Y_EXIT_ON_ERROR" = $TRUE && 
+    y_exit
+  test "$Y_DEBUG_ON_ERROR" = $TRUE && 
+    bash --rcfile $Y_FIXME_PS1 -i 
 }
-
 
 # run command with dry_run and debug info feature
 y_run () {
   test -z "$1" && return
-  if [ "$Y_DRY_RUN" = "$TRUE" ]; then
-    y_dryrun 1 "$*"
-    return 0
-  else
-    y_debug 1 "$*"
-  fi     
-
-  if [ -z $Y_QUIET ] ; then
-    # no quiet mode
-    if [ "$Y_DEBUG" = "TRUE" ] ; then
-      eval $* | tee -a $LOG
+  RET=1
+  while [ $RET -ne 0 ]; do
+    if [ "$Y_DRY_RUN" = "$TRUE" ]; then
+      y_dryrun 1 "$*"
+      return 0
     else
-      eval $*
+      y_debug 1 "$*"
+    fi     
+
+    if [ "$Y_QUIET" != $TRUE ] ; then
+      if [ "$Y_DEBUG" = "TRUE" ] ; then
+        eval $* | tee -a $LOG
+      else
+        eval $*
+      fi
+    else
+      eval $* 2>&1 >> $LOG
     fi
-  else
-    eval $* 2>&1 >> $LOG
-  fi
-  RET=$?
-  y_check_exec $RET $*
-  return $RET
+    y_check_exec $? $*
+    test $? -eq 2 && exit 2
+  done
 }
 
-
-
+# FIXME
 y_set_default () { 
   local X
   eval X='$'$1
   test -z "$X" && eval $1=\"$2\"
 }
 
+# Mark log with a string
 y_mark_log () {	
   for i in {0..80..1} ; do echo -n "=" >> $LOG; done
   echo >> $LOG
