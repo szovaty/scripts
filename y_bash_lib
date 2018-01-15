@@ -10,6 +10,8 @@ Y_LASTMOD="2018.01.12"
 
 # terminal color settings
 unset NORM GOOD ERR BAD WARN ATTEN LINK BLINK BLINKOFF REV REVOFF
+Y_FIXME="FIXME# "
+
 if [ "$USE_COLOR" = "yes" ] ; then
   NORM=$'\e[0m'
   GOOD=$'\e[32m'
@@ -22,7 +24,10 @@ if [ "$USE_COLOR" = "yes" ] ; then
   BLINKOFF=$'\e[25m'
   REV=$'\e[7m'
   REVOFF=$'\e[27m'
+  Y_FIXME="\[\033[01;31m\]${Y_FIXME}\[\033[00m\]"
 fi
+
+echo PS1=\"$Y_FIXME\" > /tmp/ps1
 
 # positioning
 ENDCOL=""
@@ -301,17 +306,25 @@ y_check_cmds () {
 # check if a program return with no error
 # if error then call y_fatal_error
 y_check_exec () {
+  ERR="$1"
   test "$1" -ne 0 && {
-    y_debug 2 "Failed command: $2"
-    test -n ${Y_EXIT_ON_ERROR} && y_exit
+    shift
+    y_debug 2 "Failed: $*"
+    test "$Y_EXIT_ON_ERROR" = $TRUE && y_exit
+    test "$Y_DEBUG_ON_ERROR" = $TRUE && {
+      export PS1="TEST" ;bash --rcfile /tmp/ps1 -i 
+      RET="$?"
+      echo RET=[$RET]
+    }
   }
+  return $ERR
 }
 
 
 # run command with dry_run and debug info feature
 y_run () {
   test -z "$1" && return
-  if [ "$Y_DRY_RUN" = "true" ]; then
+  if [ "$Y_DRY_RUN" = "$TRUE" ]; then
     y_dryrun 1 "$*"
     return 0
   else
@@ -320,7 +333,7 @@ y_run () {
 
   if [ -z $Y_QUIET ] ; then
     # no quiet mode
-    if [ "$Y_DEBUG" = "true" ] ; then
+    if [ "$Y_DEBUG" = "TRUE" ] ; then
       eval $* | tee -a $LOG
     else
       eval $*
@@ -329,9 +342,11 @@ y_run () {
     eval $* 2>&1 >> $LOG
   fi
   RET=$?
-  y_check_exec $RET
+  y_check_exec $RET $*
   return $RET
 }
+
+
 
 y_set_default () { 
   local X
@@ -340,6 +355,7 @@ y_set_default () {
 }
 
 y_mark_log () {	
-  echo "========================================================================"
+  for i in {0..80..1} ; do echo -n "=" >> $LOG; done
+  echo >> $LOG
 }
 

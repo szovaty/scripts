@@ -45,7 +45,6 @@ ylib () {
 }
 ylib
 
-Y_EXIT_ON_ERROR="true"
 
 y_start
 # ===================================================================================
@@ -53,18 +52,22 @@ y_start
 # read command line parameters
 while [ -n "$1" ] ; do
 	case $1 in
-		--help|-h)	y_help "[Options]"; y_exit;;		#; Help
-        --test)     TEST="true";;                       #; [TEST]
-        --quiet|-Q) Y_QUIET="true";;                    #; Enable quiet mode [Y_QUIET]
-        --debug|-D) Y_DEBUG="true";;                    #; Enable debug mode [Y_DEBUG]
-        --dry|-N)   Y_DRY_RUN="true";;                  #; Execute dry run mode [Y_DRY_RUN]
-        --nocolor)  USE_COLOR="";;                      #; Enable color output [USE_COLOR]
+		--help|-h)	y_help "[Options]"; y_exit;;    #; Help
+        --test)     TEST=$TRUE;;                   #; [TEST]
+        --quiet|-Q) Y_QUIET=$TRUE;;                #; Enable quiet mode [Y_QUIET]
+        --debug|-D) Y_DEBUG=$TRUE;;                #; Enable debug mode [Y_DEBUG]
+        --dry|-N)   Y_DRY_RUN=$TRUE;;              #; Execute dry run mode [Y_DRY_RUN]
+        --nocolor)  USE_COLOR="";;                  #; Enable color output [USE_COLOR]
 	esac
 	shift
 done
 
+#Y_EXIT_ON_ERROR=$TRUE
+Y_DEBUG_ON_ERROR=$TRUE
 #y_init_screen
-y_run echo Hello
+#y_run 'echo `date` - Hello > /tmp/ytest.x'
+y_run grep xtest /etc/fstab
+y_run echo Hello World
 
 # ===================================================================================
 # Leave this as the last line
