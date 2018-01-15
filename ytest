@@ -53,11 +53,12 @@ y_start
 while [ -n "$1" ] ; do
 	case $1 in
 		--help|-h)	y_help "[Options]"; y_exit;;    #; Help
-        --test)     TEST=$TRUE;;                   #; [TEST]
-        --quiet|-Q) Y_QUIET=$TRUE;;                #; Enable quiet mode [Y_QUIET]
-        --debug|-D) Y_DEBUG=$TRUE;;                #; Enable debug mode [Y_DEBUG]
-        --dry|-N)   Y_DRY_RUN=$TRUE;;              #; Execute dry run mode [Y_DRY_RUN]
+        --test)     TEST=$TRUE;;                    #; [TEST]
+        --quiet|-Q) Y_QUIET=$TRUE;;                 #; Enable quiet mode [Y_QUIET]
+        --debug|-D) Y_DEBUG=$TRUE;;                 #; Enable debug mode [Y_DEBUG]
+        --dry|-N)   Y_DRY_RUN=$TRUE;;               #; Execute dry run mode [Y_DRY_RUN]
         --nocolor)  USE_COLOR="";;                  #; Enable color output [USE_COLOR]
+        *)          y_fatal_error 2 "Unknown command";;
 	esac
 	shift
 done
@@ -67,7 +68,6 @@ Y_DEBUG_ON_ERROR=$TRUE
 #y_init_screen
 #y_run 'echo `date` - Hello > /tmp/ytest.x'
 y_run grep xtest /etc/fstab
-echo HAHO
 y_run echo Hello World
 
 # ===================================================================================

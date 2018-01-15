@@ -310,11 +310,23 @@ y_check_exec () {
   y_debug 2 "FAILED: $*"
   test "$Y_EXIT_ON_ERROR" = $TRUE && 
     y_exit
-  test "$Y_DEBUG_ON_ERROR" = $TRUE && 
-    bash --rcfile $Y_FIXME_PS1 -i 
+  test "$Y_DEBUG_ON_ERROR" = $TRUE && {
+    y_run_debug_help
+    bash --rcfile $Y_FIXME_PS1 -i
+  }
 }
 
-# run command with dry_run and debug info feature
+# run debug console help screen
+y_run_debug_help () {
+  echo "----------------------------------------"
+  echo "Debug console exit options:"
+  echo "  exit  : skip failed command"
+  echo "  exit 1: retry failed command"
+  echo "  exit 2: terminate execution"
+  echo "-----------------------------------------"
+}
+
+# run command with dry_run, debug and debug console feature
 y_run () {
   test -z "$1" && return
   RET=1
@@ -336,7 +348,8 @@ y_run () {
       eval $* 2>&1 >> $LOG
     fi
     y_check_exec $? $*
-    test $? -eq 2 && exit 2
+    RET=$?
+    test $RET -eq 2 && exit 2
   done
 }
 
