@@ -45,6 +45,9 @@ LIB=`which $FSH`
 test $? != '0' && { echo Fatal Error!; exit 1; }
 test -r ${LIB} && source ${LIB}
 
+# uncomment if you need to exit script on error
+Y_EXIT_ON_ERROR="true"
+
 y_init_screen
 y_start
 # ===================================================================================
@@ -53,6 +56,10 @@ y_start
 while [ -n "$1" ] ; do
 	case $1 in
 		--help|-h)	y_help "[Options]"; y_exit;;		#; Help
+        --test)     TEST="true";;                       #; [TEST]
+        --quiet|-Q) Y_QUIET="true";;                    #; Enable quiet mode [Y_QUIET]
+        --debug|-D) Y_DEBUG="true";;                    #; Enable debug mode [Y_DEBUG]
+        --dry|-N)   Y_DRY_RUN="true";;                  #; Execute dry run mode [Y_DRY_RUN]
 	esac
 	shift
 done
