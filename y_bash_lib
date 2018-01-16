@@ -3,8 +3,8 @@
 # Bash generic function script by Y
 # TODO: porting from y_functions.sh not finished yet! DO NOT USE
 # TODO: dynamic help spacing
-Y_BASH_LIB_VER="0.0"
-Y_LASTMOD="2018.01.12"
+Y_BASH_LIB_VER="0.1"
+Y_LASTMOD="2018.01.16"
 
 # set below control variables before sourcing this file in your script!
 
@@ -142,10 +142,12 @@ y_info ()	        { Y_MSG_TYPE="INFO";  y_msg "$*" ; }
 y_usage ()	      { Y_MSG_TYPE="USAGE"; y_msg "$*" ; }
 y_help (){
   Y_MSG_TYPE="INFO"
+  X=$Y_MSG_DEST
   Y_MSG_DEST="STDOUT"
   y_msg "$PROGRAM_NAME Version $VERSION; $LAST_MOD"
   Y_MSG_TYPE="HELP"
-	y_msg "${0##*/} `echo $1 ; shift ; y_help_opt ; echo $*`"
+	y_msg "${0##*/} \\n\\n`y_help_opt ; echo $*`"
+  Y_MSG_DEST=$X
 }
 y_msg () {
   test -w "$LOG" || {
@@ -166,17 +168,18 @@ y_msg () {
   test ! -w "$MSG_OUT" && MSG_OUT=/dev/null
   test -n "$Y_QUIET" -a $Y_MSG_TYPE != "HELP" && MSG_OUT=/dev/null
 
-  MESG_HEADER=`printf "%020s(%05d) %08s" ${0##*/} $$ $Y_MSG_TYPE`
+  MSG_HEADER_LOG=`printf "%020s(%05d) %08s" ${0##*/} $$ $Y_MSG_TYPE`
+  MSG_HEADER_STD=`printf "%08s"$Y_MSG_TYPE`
 
-  if [ "$Y_MSG_DEST" = "STDOUT" -o "$Y_MSG_DEST" = "BOTH" ] ; then 
-    echo -e "  ${MESG_COLOR}$MESG_HEADER: $*${NORM}" >> $STD_OUT
-  fi
-  if [ "$Y_MSG_DEST" = "STDERR" -o "$Y_MSG_DEST" = "BOTH" ] ; then 
-    echo -e "  ${MESG_COLOR}$MESG_HEADER: $*${NORM}" >> $STD_ERR
-  fi
-  if [ "$Y_MSG_DEST" = "LOG" -o "$Y_MSG_DEST" = "BOTH" ] ; then 
-    echo -e "  `$Y_DATE` $MESG_HEADER: $*" >> $LOG
-  fi
+  echo "$Y_MSG_DEST" | grep STDOUT > /dev/null
+  test $?  -eq 0 &&
+    echo -e "  ${MESG_COLOR}$MSG_HEADER_STD: $*${NORM}" >> $STD_OUT
+  echo "$Y_MSG_DEST" | grep STDERR > /dev/null
+  test $? -eq 0 &&
+    echo -e "  ${MESG_COLOR}$MSG_HEADER_STD: $*${NORM}" >> $STD_ERR
+  echo "$Y_MSG_DEST" | grep LOG > /dev/null
+  test $? -eq 0 && 
+    echo -e "  `$Y_DATE` $MSG_HEADER_LOG: $*" >> $LOG
 
   test -n "$BELL" && y_bell $BELL
 }
@@ -197,20 +200,20 @@ y_exit () {
 		`rm -f -r $i > /dev/null`
 		test "$?" -ne 0 && y_error 2 "delete $i"
 	done
-  SAVED=$Y_MSG_DEST
+  X=$Y_MSG_DEST
   Y_MSG_DEST="LOG"
 	y_info "  End: $0"
-  Y_MSG_DEST=$SAVED
+  Y_MSG_DEST=$X
 	test -n "$LAST_CMD" && { $LAST_CMD ; EXIT_STAT=$? ; }
 	IFS=$' \t\n'
 	exit $EXIT_STAT
 }
 
 y_start () { 
-  SAVED=$Y_MSG_DEST
+  X=$Y_MSG_DEST
   Y_MSG_DEST="LOG"
   y_info "Start: $0 $1 ; [V${VERSION} , Last modified: ${LAST_MOD}]"
-  Y_MSG_DEST=$SAVED
+  Y_MSG_DEST=$X
 }
 
 # print version information

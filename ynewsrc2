@@ -16,14 +16,14 @@ test -r ${YLIB} && source ${YLIB}
 
 # define the following to match the program current state
 PROGRAM_NAME="NEW SCRIPT"
-VERSION="0.0-r0"
-LAST_MOD="xxxx.xx.xx"
+VERSION="0.1"
+LAST_MOD="2018.01.16"
 
 # Define log file here
 LOG="/dev/null"
 
 # Uncomment this if you need debug enabled
-Y_DEBUG="true"
+#Y_DEBUG="true"
 
 y_start
 

@@ -28,8 +28,8 @@ USE_COLOR=$YES
 
 # define the following to match the program current state
 PROGRAM_NAME="ytest"
-VERSION="0.0"
-LAST_MOD="2018.01.11"
+VERSION="0.1"
+LAST_MOD="2018.01.16"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -45,7 +45,7 @@ LOG="/tmp/${0##*/}.log"
 Y_QUIET=$FALSE
 Y_CONFIRM=$TRUE
 # destination options: LOG,STDOUT,STDERR,BOTH
-Y_MSG_DEST="BOTH"
+Y_MSG_DEST="STDOUT,LOG"
 
 ylib
 
@@ -74,7 +74,7 @@ done
 #y_run grep xtest /etc/fstab
 #y_run echo Hello World
 #Y_MSG_DEST="BOTH"
-y_fatal_error Test message
+y_usage Test message
 
 # ===================================================================================
 # Leave this as the last line
