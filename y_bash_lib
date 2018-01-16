@@ -9,7 +9,7 @@ Y_LASTMOD="2018.01.12"
 # set below control variables before sourcing this file in your script!
 
 # terminal color settings
-unset NORM GOOD ERR BAD WARN ATTEN LINK BLINK BLINKOFF REV REVOFF
+unset NORM GOOD ERR BAD WARN ATTEN LINK BLINK BLINKOFF REV REVOFF DRYRUN
 Y_FIXME="FIXME# "
 
 if [ "$USE_COLOR" = "yes" ] ; then
@@ -18,7 +18,8 @@ if [ "$USE_COLOR" = "yes" ] ; then
   ERR=$'\e[31;01m'
   BAD=$ERR
   WARN=$'\e[35;01m'
-  ATTEN=$'\e[33;01m'
+  DRYRUN=$'\e[94m'
+  ATTEN=$'\e[94;01m'
   LINK=$'\e[34;01m'
   BLINK=$'\e[5m'
   BLINKOFF=$'\e[25m'
@@ -131,59 +132,53 @@ y_help_opt () {
 #	dest: 0 - stdout/stderr ; 1 - log_file ; 2 - both
 # 	mess: message to report
 # return $ERROR | $NOERROR
-y_error () 	      { y_msg "ERROR" "$1" "$2" ; }
-y_fatal_error ()  { y_msg "FATAL" "$1" "$2" ; }
-y_warning () 	    { y_msg "WARNING" "$1" "$2" ; }
-y_debug ()	      { test -n "$Y_DEBUG" && y_msg "DEBUG" "$1" "$2" ; }
-y_dryrun ()	      { test -n "$Y_DEBUG" && y_msg "DRYRUN" "$1" "$2" ; }
-y_info ()	        { y_msg "INFO" "$1" "$2" ; }
-y_usage ()	      { y_msg "USAGE" "$1" "$2" ; }
+Y_MSG_TYPE=""
+y_error () 	      { Y_MSG_TYPE="ERROR"; y_msg "$*" ; }
+y_fatal_error ()  { Y_MSG_TYPE="FATAL"; y_msg "$*" ; y_exit;}
+y_warning () 	    { Y_MSG_TYPE="WARN";  y_msg "$*" ; }
+y_debug ()	      { Y_MSG_TYPE="DEBUG"; y_msg "$*" ; }
+y_dryrun ()	      { Y_MSG_TYPE="DRYRUN";y_msg "$*" ; }
+y_info ()	        { Y_MSG_TYPE="INFO";  y_msg "$*" ; }
+y_usage ()	      { Y_MSG_TYPE="USAGE"; y_msg "$*" ; }
 y_help (){
-	y_msg "INFO" 0 "$PROGRAM_NAME Version $VERSION; $LAST_MOD"
-	y_msg "HELP" 0 "${0##*/} `echo $1 ; shift ; y_help_opt ; echo $*`"
+  Y_MSG_TYPE="INFO"
+  Y_MSG_DEST="STDOUT"
+  y_msg "$PROGRAM_NAME Version $VERSION; $LAST_MOD"
+  Y_MSG_TYPE="HELP"
+	y_msg "${0##*/} `echo $1 ; shift ; y_help_opt ; echo $*`"
 }
 y_msg () {
-  local DEST MESG MESG_COLOR CALL_EXIT RSTAT MSG_OUT BELL
-
   test -w "$LOG" || {
     test -e "$LOG" || touch "$LOG" 2>/dev/null
     test -w "$LOG" || LOG=/dev/null
   }
-  MESG_HEADER="$1"
-  case $1 in
-    FATAL)	  MESG_COLOR=$ERR  ; CALL_EXIT=$YES ; MSG_OUT=$STD_ERR ; BELL=FATAL;;
-    ERROR)	  MESG_COLOR=$ERR  ; CALL_EXIT=$NO  ; MSG_OUT=$STD_ERR ; BELL=ERROR;;
-    WARNING)  MESG_COLOR=$WARN ; CALL_EXIT=$NO  ; MSG_OUT=$STD_ERR ; BELL=WARNING;;	
-    DEBUG)	  MESG_COLOR=$NORM ; CALL_EXIT=$NO  ; MSG_OUT=$STD_OUT ;;
-    DRYRUN)	  MESG_COLOR=$NORM ; CALL_EXIT=$NO  ; MSG_OUT=$STD_OUT ;;
-    INFO)	    MESG_COLOR=$NORM ; CALL_EXIT=$NO  ; MSG_OUT=$STD_OUT ;;
-    USAGE)	  MESG_COLOR=$WARN ; CALL_EXIT=$YES ; MSG_OUT=$STD_ERR ;;
-    HELP)	    MESG_COLOR=$NORM ; CALL_EXIT=$NO  ; MSG_OUT=$STD_OUT ;;
+  case $Y_MSG_TYPE in
+    FATAL)	  MESG_COLOR=$ERR  ; BELL=FATAL;;
+    ERROR)	  MESG_COLOR=$ERR  ; BELL=ERROR;;
+    WARN)     MESG_COLOR=$WARN ; BELL=WARNING;;	
+    DEBUG)	  MESG_COLOR=$NORM ;;
+    DRYRUN)	  MESG_COLOR=$DRYRUN ;;
+    INFO)	    MESG_COLOR=$NORM ;;
+    USAGE)	  MESG_COLOR=$WARN ;;
+    HELP)	    MESG_COLOR=$NORM ;;
     *)        return $ERROR
   esac
   test ! -w "$MSG_OUT" && MSG_OUT=/dev/null
-  test -n "$Y_QUIET" -a $1 != "HELP" && MSG_OUT=/dev/null
+  test -n "$Y_QUIET" -a $Y_MSG_TYPE != "HELP" && MSG_OUT=/dev/null
 
-  MESG_HEADER=`printf "%020s(%05d) %08s" ${0##*/} $$ $1`
-  MESG_HEADER1=`printf "%08s" $1`
-  DEST="$2" ; MESG="$3" 
-  test -z "$3" && {
-    DEST=2
-    if [ -z "$2" ] ; then 
-      MESG="NO MESSAGE"
-    else 
-      MESG=$2
-    fi
-  }
+  MESG_HEADER=`printf "%020s(%05d) %08s" ${0##*/} $$ $Y_MSG_TYPE`
 
-  if [ "$DEST" = "0" -o "$DEST" = "2" ] ; then 
-    echo -e "  ${MESG_COLOR}${MESG_HEADER1}: $MESG${NORM}" >> $MSG_OUT
+  if [ "$Y_MSG_DEST" = "STDOUT" -o "$Y_MSG_DEST" = "BOTH" ] ; then 
+    echo -e "  ${MESG_COLOR}$MESG_HEADER: $*${NORM}" >> $STD_OUT
   fi
-  if [ "$DEST" = "1" -o "$DEST" = "2" ] ; then 
-    echo -e "  `$Y_DATE` ${MESG_HEADER}: ${MESG}" >> $LOG 2>/dev/null
+  if [ "$Y_MSG_DEST" = "STDERR" -o "$Y_MSG_DEST" = "BOTH" ] ; then 
+    echo -e "  ${MESG_COLOR}$MESG_HEADER: $*${NORM}" >> $STD_ERR
   fi
+  if [ "$Y_MSG_DEST" = "LOG" -o "$Y_MSG_DEST" = "BOTH" ] ; then 
+    echo -e "  `$Y_DATE` $MESG_HEADER: $*" >> $LOG
+  fi
+
   test -n "$BELL" && y_bell $BELL
-  test "$CALL_EXIT" = "$YES" && y_exit $ERROR
 }
 
 # clean up and exit
@@ -202,14 +197,20 @@ y_exit () {
 		`rm -f -r $i > /dev/null`
 		test "$?" -ne 0 && y_error 2 "delete $i"
 	done
-	y_info 1 "  End: $0"
+  SAVED=$Y_MSG_DEST
+  Y_MSG_DEST="LOG"
+	y_info "  End: $0"
+  Y_MSG_DEST=$SAVED
 	test -n "$LAST_CMD" && { $LAST_CMD ; EXIT_STAT=$? ; }
 	IFS=$' \t\n'
 	exit $EXIT_STAT
 }
 
 y_start () { 
-  y_info 1 "Start: $0 $1 ; [V${VERSION} , Last modified: ${LAST_MOD}]"
+  SAVED=$Y_MSG_DEST
+  Y_MSG_DEST="LOG"
+  y_info "Start: $0 $1 ; [V${VERSION} , Last modified: ${LAST_MOD}]"
+  Y_MSG_DEST=$SAVED
 }
 
 # print version information
