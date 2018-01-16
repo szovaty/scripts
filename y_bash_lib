@@ -31,14 +31,6 @@ fi
 Y_FIXME_PS1="/tmp/yps1.$$"
 echo PS1=\"$Y_FIXME\" > $Y_FIXME_PS1
 
-# positioning
-ENDCOL=""
-if [ "$USE_POS" = "yes" ] ; then
-  COLS="`stty size 2>/dev/null`"
-  COLS=$((${COLS#*' '}-8))
-  ENDCOL=$'\e[A\e['$COLS'G'
-fi
-
 # Globally used constances
 YES="yes"
 NO="no"
@@ -56,6 +48,14 @@ test -z "$CMD_WHICH" && CMD_WHICH="which"
 test -z "$STD_ERR" && STD_ERR="/dev/stderr"
 test -z "$STD_OUT" && STD_OUT="/dev/stdout"
 
+# positioning
+if [ "$USE_POS" = $YES ] ; then
+  COLS="`stty size 2>/dev/null`"
+  COLS=$((${COLS#*' '}-8))
+  ENDCOL=$'\033[A\033['$COLS'G'
+  #echo -e ENDCOL=[$ENDCOL]
+fi
+
 # Generic funtion definitions
 
 # bells
@@ -68,7 +68,6 @@ y_bell () {
 		esac
 	}
 }
-
 
 # init_screen function
 y_init_screen () {
@@ -141,12 +140,10 @@ y_dryrun ()	      { Y_MSG_TYPE="DRYRUN";y_msg "$*" ; }
 y_info ()	        { Y_MSG_TYPE="INFO";  y_msg "$*" ; }
 y_usage ()	      { Y_MSG_TYPE="USAGE"; y_msg "$*" ; }
 y_help (){
-  Y_MSG_TYPE="INFO"
+  Y_MSG_TYPE="HELP"
   X=$Y_MSG_DEST
   Y_MSG_DEST="STDOUT"
-  y_msg "$PROGRAM_NAME Version $VERSION; $LAST_MOD"
-  Y_MSG_TYPE="HELP"
-	y_msg "${0##*/} \\n\\n`y_help_opt ; echo $*`"
+  y_msg "${0##*/} V$VERSION; $LAST_MOD \\n`echo $*; y_help_opt`"
   Y_MSG_DEST=$X
 }
 y_msg () {
@@ -166,14 +163,20 @@ y_msg () {
     *)        return $ERROR
   esac
   test ! -w "$MSG_OUT" && MSG_OUT=/dev/null
-  test -n "$Y_QUIET" -a $Y_MSG_TYPE != "HELP" && MSG_OUT=/dev/null
+  
+  STDPUT=$STD_OUT
+  if [ "$Y_QUIET" = $TRUE -a $Y_MSG_TYPE != "HELP" ]; then
+    STDOUT=/dev/null
+  else
+    STDOUT=$STD_OUT
+  fi
 
   MSG_HEADER_LOG=`printf "%020s(%05d) %08s" ${0##*/} $$ $Y_MSG_TYPE`
   MSG_HEADER_STD=`printf "%08s"$Y_MSG_TYPE`
 
   echo "$Y_MSG_DEST" | grep STDOUT > /dev/null
   test $?  -eq 0 &&
-    echo -e "  ${MESG_COLOR}$MSG_HEADER_STD: $*${NORM}" >> $STD_OUT
+    echo -e "  ${MESG_COLOR}$MSG_HEADER_STD: $*${NORM}" >> $STDOUT
   echo "$Y_MSG_DEST" | grep STDERR > /dev/null
   test $? -eq 0 &&
     echo -e "  ${MESG_COLOR}$MSG_HEADER_STD: $*${NORM}" >> $STD_ERR
@@ -229,23 +232,25 @@ y_get_confirm () {
   test "$X" != "$YES" && y_exit
 }
 
-# report progress
-y_progress () { 
-  test -z "$Y_QUIET" && 
-    printf "%s%010s%s: %s\n" "${GOOD}" "PROGRESS" "${NORM}" "$1" >>/dev/stderr
+# report progress with new line at the end
+y_progress_nl () { 
+  test "$Y_QUIET" != $TRUE && 
+    printf "%s%010s%s: %s\n" "${GOOD}" "PROGRESS" "${NORM}" "$*" >>/dev/stderr
 }
 
-y_progress_1 () { 
-  printf "%s%010s%s: %s" "${GOOD}" "PROGRESS" "${NORM}" "$1" >>/dev/stderr
+# report progress without new line at the end
+y_progress () {
+  test "$Y_QUIET" != $TRUE &&
+    printf "%s%010s%s: %s" "${GOOD}" "PROGRESS" "${NORM}" "$*" >>/dev/stderr
 }
 
 y_progress_end () { 
-	test -z "$Y_QUIET" || return
+  test "$Y_QUIET" = $TRUE && return
   case $1 in
-    0)	echo -e "${ENDCOL}${LINK}[ ${GOOD}OK ${LINK}]${NORM}" >>/dev/stderr ;;
-    1)	echo -e "${ENDCOL}${LINK}[ ${ERR}!! ${LINK}]${NORM}" >>/dev/stderr ;; 
-    2)	echo -e "${ENDCOL}${LINK}[ ${WARN}-- ${LINK}]${NORM}" >>/dev/stderr ;; 
-    *)	echo -e "${ENDCOL}${LINK}[ ${WARN}?? ${LINK}]${NORM}" >>/dev/stderr ;; 
+    0)	echo -e "${ENDCOL}${LINK}[ ${GOOD}OK ${LINK}]${NORM}" >>$STD_ERR;;
+    1)	echo -e "${ENDCOL}${LINK}[ ${ERR}!! ${LINK}]${NORM}" >>$STD_ERR ;; 
+    2)	echo -e "${ENDCOL}${LINK}[ ${WARN}-- ${LINK}]${NORM}" >>$STD_ERR ;; 
+    *)	echo -e "${ENDCOL}${LINK}[ ${WARN}?? ${LINK}]${NORM}" >>$STD_ERR ;; 
   esac
 }
 
@@ -255,7 +260,7 @@ y_progress_end () {
 y_get_disksize () {
   local x
   x=`fdisk -l $1 2>/dev/null | grep ${1}: | awk ' { print $5 }'` 
-  y_debug 1 "DISK_SIZE=[$x]"
+  y_debug "DISK_SIZE=[$x]"
   # x=${x%' '*} ; x=${x##*' '} ; 
   x=$(($x/1024/1024))
   echo $x
@@ -309,9 +314,9 @@ y_check_cmds () {
 
 # check if a program return with no error
 y_check_exec () {
-  test $? -eq 0 && return
+  test $1 -eq 0 && return 0
   shift
-  y_debug 2 "FAILED: $*"
+  y_error "$*"
   test "$Y_EXIT_ON_ERROR" = $TRUE && 
     y_exit
   test "$Y_DEBUG_ON_ERROR" = $TRUE && {
@@ -335,29 +340,56 @@ y_run () {
   test -z "$1" && return
   RET=1
   while [ $RET -ne 0 ]; do
-    if [ "$Y_DRY_RUN" = "$TRUE" ]; then
-      y_dryrun 1 "$*"
+    if [ "$Y_DRY_RUN" = $TRUE ]; then
+      y_dryrun "$*"
       return 0
     else
-      y_debug 1 "$*"
+      test "$Y_DEBUG" = $TRUE && y_debug "$*"
     fi     
 
-    if [ "$Y_QUIET" != $TRUE ] ; then
-      if [ "$Y_DEBUG" = "TRUE" ] ; then
+    if [ "$Y_QUIET" = $TRUE ] ; then
+      eval $* 2>&1 >> $LOG
+      RET=$?
+    else
+      if [ "$Y_DEBUG" = $TRUE ] ; then
         eval $* | tee -a $LOG
+        RET=${PIPESTATUS[0]}
       else
         eval $*
+        RET=$?
       fi
-    else
-      eval $* 2>&1 >> $LOG
     fi
-    y_check_exec $? $*
+    y_check_exec $RET $*
     RET=$?
     test $RET -eq 2 && exit 2
+    test "$Y_DEBUG_ON_ERROR" != $TRUE && return $RET
   done
 }
 
-# FIXME
+# chroot with cd into dir feature
+# y_run_chroot new_root [cd_dir] command
+#   cd_dir is relative to new_root
+y_run_chroot(){
+    test "$Y_DRY_RUN" = $TRUE && {
+      y_run y_run_chroot $@
+      return
+    }
+    test -z "$1" && y_fatal_error "No chroot defined"
+    CH_ROOT="$1"
+    CH_CMD=""
+    # check if cd_dir is defined and cd into it before execute CMD
+    test $# -ge 2 && { 
+      CH_CMD="cd $2; "
+      shift
+    }
+    shift
+    CH_CMD="$CH_CMD $@"
+
+    y_info chroot $CH_ROOT \"$CH_CMD\"
+}
+
+
+# FIXME: add description
 y_set_default () { 
   local X
   eval X='$'$1
@@ -365,8 +397,13 @@ y_set_default () {
 }
 
 # Mark log with a string
-y_mark_log () {	
-  for i in {0..80..1} ; do echo -n "=" >> $LOG; done
-  echo >> $LOG
+y_mark_log () {
+  C="="
+  test -n "$1" && C=$1
+  echo -n "#"  >> $LOG
+  for i in {0..80..1} ; do 
+    echo -n "$C" >> $LOG
+  done
+  echo "#">> $LOG
 }
 

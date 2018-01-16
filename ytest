@@ -1,4 +1,5 @@
 #!/bin/bash
+# vim:set ts=2 sw=2:
 # Base template.src version 1.4 last modified 2018.01.09 by y
 
 y_start(){ :; }
@@ -9,10 +10,10 @@ trap y_exit TERM HUP INT
 
 # Source the function library
 ylib () {
-    FSH="y_bash_lib"
-    LIB=`which $FSH`
-    test $? != '0' && { echo Fatal Error!; exit 1; }
-    test -r ${LIB} && source ${LIB}
+  FSH="y_bash_lib"
+  LIB=`which $FSH`
+  test $? != '0' && { echo Fatal Error!; exit 1; }
+  test -r ${LIB} && source ${LIB}
 }
 ylib
 
@@ -21,7 +22,7 @@ USE_COLOR=$YES
 
 # This will enable positioning of a text to the end (-8 char) 
 # of a line independent of window size
-#USE_POS=$YES
+USE_POS=$YES
 
 # Enable bell for warnings and errors
 #USE_BELL=$YES
@@ -55,26 +56,56 @@ y_start
 
 # read command line parameters
 while [ -n "$1" ] ; do
-	case $1 in
-		--help|-h)	y_help "[Options]"; y_exit;;    #; Help
-        --test)     TEST=$TRUE;;                    #; [TEST]
-        --quiet|-Q) Y_QUIET=$TRUE;;                 #; Enable quiet mode [Y_QUIET]
-        --debug|-D) Y_DEBUG=$TRUE;;                 #; Enable debug mode [Y_DEBUG]
-        --dry|-N)   Y_DRY_RUN=$TRUE;;               #; Execute dry run mode [Y_DRY_RUN]
-        --nocolor)  USE_COLOR="";;                  #; Enable color output [USE_COLOR]
-        *)          y_fatal_error 2 "Unknown command";;
-	esac
-	shift
+  case $1 in
+    --help|-h)	y_help "[Options]"; y_exit;;    #; Help
+    --test)     TEST=$TRUE;;                    #; [TEST]
+    --quiet|-Q) Y_QUIET=$TRUE;;                 #; Enable quiet mode [Y_QUIET]
+    --debug|-D) Y_DEBUG=$TRUE;;                 #; Enable debug mode [Y_DEBUG]
+    --dry|-N)   Y_DRY_RUN=$TRUE;;               #; Execute dry run mode [Y_DRY_RUN]
+    --nocolor)  USE_COLOR="";;                  #; Enable color output [USE_COLOR]
+    *)          y_fatal_error 2 "Unknown command";;
+  esac
+  shift
 done
+
+#y_mark_log -
 
 #Y_EXIT_ON_ERROR=$TRUE
 #Y_DEBUG_ON_ERROR=$TRUE
 #y_init_screen
-#y_run 'echo `date` - Hello > /tmp/ytest.x'
-#y_run grep xtest /etc/fstab
-#y_run echo Hello World
-#Y_MSG_DEST="BOTH"
-y_usage Test message
+
+test "x" = "xx" && {
+  #Y_EXIT_ON_ERROR=$TRUE
+  Y_EXIT_ON_ERROR=$FALSE
+  Y_MSG_DEST="LOG,STDERR"
+  y_run 'echo `date` - Hello > /tmp/ytest.x'
+  y_run grep xtest /etc/fstab
+  y_run echo Hello World
+}
+
+test "x" = "x" && {
+  #Y_EXIT_ON_ERROR=$TRUE
+  Y_EXIT_ON_ERROR=$FALSE
+  Y_MSG_DEST="LOG,STDERR"
+  y_run_chroot /mnt /tmp 'echo `date` - Hello > /tmp/ytest.x'
+  y_run_chroot /mnt grep xtest /etc/fstab
+  y_run echo Hello World
+}
+
+test "x" = "xx" && {
+  y_progress_nl Testing...
+  y_progress_end 2
+  y_progress_nl Testing...
+  y_progress_end 1
+
+  y_progress Loop Testing.
+  for i in {0..5..1}; do 
+    echo -n .
+    sleep 1
+  done
+  echo
+  y_progress_end 0
+}
 
 # ===================================================================================
 # Leave this as the last line
