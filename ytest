@@ -18,11 +18,11 @@ ylib () {
 ylib
 
 # Uncomment this to allow colors on the console
-USE_COLOR=$YES
+#USE_COLOR=$YES
 
 # This will enable positioning of a text to the end (-8 char) 
 # of a line independent of window size
-USE_POS=$YES
+#USE_POS=$YES
 
 # Enable bell for warnings and errors
 #USE_BELL=$YES
@@ -57,7 +57,7 @@ y_start
 # read command line parameters
 while [ -n "$1" ] ; do
   case $1 in
-    --help|-h)	y_help "[Options]"; y_exit;;    #; Help
+    --help|-h)	y_help "[Options]"; y_exit;;    #; Help screen
     --test)     TEST=$TRUE;;                    #; [TEST]
     --quiet|-Q) Y_QUIET=$TRUE;;                 #; Enable quiet mode [Y_QUIET]
     --debug|-D) Y_DEBUG=$TRUE;;                 #; Enable debug mode [Y_DEBUG]
@@ -68,13 +68,10 @@ while [ -n "$1" ] ; do
   shift
 done
 
-#y_mark_log -
+y_mark_log -
+y_init_screen
 
-#Y_EXIT_ON_ERROR=$TRUE
-#Y_DEBUG_ON_ERROR=$TRUE
-#y_init_screen
-
-test "x" = "xx" && {
+test "x" = "x" && {
   #Y_EXIT_ON_ERROR=$TRUE
   Y_EXIT_ON_ERROR=$FALSE
   Y_MSG_DEST="LOG,STDERR"
@@ -84,15 +81,16 @@ test "x" = "xx" && {
 }
 
 test "x" = "x" && {
-  #Y_EXIT_ON_ERROR=$TRUE
+  #set -o pipefail
   Y_EXIT_ON_ERROR=$FALSE
-  Y_MSG_DEST="LOG,STDERR"
-  y_run_chroot /mnt /tmp 'echo `date` - Hello > /tmp/ytest.x'
-  y_run_chroot /mnt grep xtest /etc/fstab
-  y_run echo Hello World
+  Y_DEBUG_ON_ERROR=$TRUE
+  Y_MSG_DEST="STDOUT"
+  y_run chroot /xy /bin/bash -c '"cd /tmp; echo `date` - Hello > ytest.x"'
+  y_run chroot /xy /bin/bash -c '"grep xtest /etc/fstab >/dev/null"'
+  y_info Hello World
 }
 
-test "x" = "xx" && {
+test "x" = "x" && {
   y_progress_nl Testing...
   y_progress_end 2
   y_progress_nl Testing...

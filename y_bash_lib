@@ -1,10 +1,13 @@
 #!/bin/bash
 # vim:set ts=2 sw=2:
 # Bash generic function script by Y
-# TODO: porting from y_functions.sh not finished yet! DO NOT USE
+#  it is a refactored version of y_functions.sh
+#
 # TODO: dynamic help spacing
-Y_BASH_LIB_VER="0.1"
-Y_LASTMOD="2018.01.16"
+# TODO: port a few old script and test the new lib
+
+Y_BASH_LIB_VER="1.0-rc1"
+Y_LASTMOD="2018.01.17"
 
 # set below control variables before sourcing this file in your script!
 
@@ -71,7 +74,7 @@ y_bell () {
 
 # init_screen function
 y_init_screen () {
-  test -n "$Y_QUIET" && return
+  test "$Y_QUIET" = $TRUE && return
   clear
   echo -e ${NORM}
   echo "======================================================================="
@@ -91,7 +94,7 @@ y_init_screen () {
 # add #; at the begin that you want to show up on the help screen
 # comments needs to be inline with the comment option!
 y_help_opt () {
-  local HELPMSG MSG DEF i j k x
+  #local HELPMSG MSG DEF i j k x
   IFS=$'\n'
   for i in `cat $0 | grep -e '#;'` ; do
     HELPMSG="${i##*'#;'}"
@@ -103,26 +106,35 @@ y_help_opt () {
     fi
     IFS=$'|'
     for j in $i ; do
-      if [ "${j%\$*}" = "$j" ] ; then k=$i ; break ; fi
+      if [ "${j%\$*}" = "$j" ] ; then 
+        k=$i
+        break
+      fi
       eval x='$'${j#*\$}
-      if [ -z "$k" ] ; then k=$x ; else k="$k|$x" ; fi
-	done
-	k="${k}:"
-	IFS=$' \t\n' ; MSG="" ; DEF=""
-	for j in $HELPMSG ; do
-    if [ "${j#*[}" != "$j" ] ; then 
-        eval j='$'${j#*[} ; 
-        DEF="[${j}" ; 
-        continue ; 
-    fi
-    MSG="$MSG $j"
-	done
-	IFS=$'\n'
-	k=`echo $k | awk ' { print $1 }'`
-	printf "%20s %-40s %s\n" "${k}" "$MSG" "$DEF" 
-	k=""
+      if [ -z "$k" ] ; then 
+        k=$x
+      else 
+        k="$k|$x"
+      fi
+	  done
+	  k="${k}:"
+	  IFS=$' \t\n'
+    MSG=""
+    DEF=""
+    for j in $HELPMSG ; do
+      if [ "${j#*[}" != "$j" ] ; then 
+        eval j='$'${j#*[}
+        DEF="[${j}"
+        continue
+      fi
+      MSG="$MSG $j"
     done
-    IFS=$' \t\n'
+    IFS=$'\n'
+    k=`echo $k | awk ' { print $1 }'`
+    printf "%20s %-40s %s\n" "${k}" "$MSG" "$DEF" 
+    k=""
+  done
+  IFS=$' \t\n'
 }
 
 # generic message function
@@ -235,13 +247,13 @@ y_get_confirm () {
 # report progress with new line at the end
 y_progress_nl () { 
   test "$Y_QUIET" != $TRUE && 
-    printf "%s%010s%s: %s\n" "${GOOD}" "PROGRESS" "${NORM}" "$*" >>/dev/stderr
+    printf "%s%010s%s: %s\n" "${GOOD}" "PROGRESS" "${NORM}" "$*" >>$STD_ERR
 }
 
 # report progress without new line at the end
 y_progress () {
   test "$Y_QUIET" != $TRUE &&
-    printf "%s%010s%s: %s" "${GOOD}" "PROGRESS" "${NORM}" "$*" >>/dev/stderr
+    printf "%s%010s%s: %s" "${GOOD}" "PROGRESS" "${NORM}" "$*" >>$STD_ERR
 }
 
 y_progress_end () { 
@@ -317,8 +329,9 @@ y_check_exec () {
   test $1 -eq 0 && return 0
   shift
   y_error "$*"
-  test "$Y_EXIT_ON_ERROR" = $TRUE && 
+  test "$Y_EXIT_ON_ERROR" = "$TRUE" && {
     y_exit
+  }
   test "$Y_DEBUG_ON_ERROR" = $TRUE && {
     y_run_debug_help
     bash --rcfile $Y_FIXME_PS1 -i
@@ -329,15 +342,23 @@ y_check_exec () {
 y_run_debug_help () {
   echo "----------------------------------------"
   echo "Debug console exit options:"
-  echo "  exit  : skip failed command"
+  echo "  exit 0: skip failed command"
   echo "  exit 1: retry failed command"
   echo "  exit 2: terminate execution"
   echo "-----------------------------------------"
 }
 
 # run command with dry_run, debug and debug console feature
+# usage: y_run command_to_run
+# chroot usage: y_run chroot NEW_ROOT /bin/bash -c '"command to run"'
+# you need to control it using:
+#   Y_DRY_RUN - dry run
+#   Y_DEBUG - show the command it executes
+#   Y_QUIET - less message 
+#   Y_DEBUG_ON_ERROR - enter debug console on error
+#   Y_EXIT_ON_ERROR - exit if function fails
 y_run () {
-  test -z "$1" && return
+  test -z "$1" && return 1
   RET=1
   while [ $RET -ne 0 ]; do
     if [ "$Y_DRY_RUN" = $TRUE ]; then
@@ -349,54 +370,32 @@ y_run () {
 
     if [ "$Y_QUIET" = $TRUE ] ; then
       eval $* 2>&1 >> $LOG
-      RET=$?
     else
       if [ "$Y_DEBUG" = $TRUE ] ; then
+        set -o pipefail
         eval $* | tee -a $LOG
-        RET=${PIPESTATUS[0]}
+        #RET=${PIPESTATUS[0]} # alternative to 'set -o pipefail'
       else
         eval $*
-        RET=$?
       fi
     fi
-    y_check_exec $RET $*
+    y_check_exec $? $*
     RET=$?
     test $RET -eq 2 && exit 2
     test "$Y_DEBUG_ON_ERROR" != $TRUE && return $RET
   done
 }
 
-# chroot with cd into dir feature
-# y_run_chroot new_root [cd_dir] command
-#   cd_dir is relative to new_root
-y_run_chroot(){
-    test "$Y_DRY_RUN" = $TRUE && {
-      y_run y_run_chroot $@
-      return
-    }
-    test -z "$1" && y_fatal_error "No chroot defined"
-    CH_ROOT="$1"
-    CH_CMD=""
-    # check if cd_dir is defined and cd into it before execute CMD
-    test $# -ge 2 && { 
-      CH_CMD="cd $2; "
-      shift
-    }
-    shift
-    CH_CMD="$CH_CMD $@"
-
-    y_info chroot $CH_ROOT \"$CH_CMD\"
-}
-
-
-# FIXME: add description
+# Set a variable to default if it not set
+# usage: y_set_default FOO FOO_DEFAULT
+#   it sets variable FOO to FOO_DEFAULT if FOO not set yet
 y_set_default () { 
   local X
   eval X='$'$1
-  test -z "$X" && eval $1=\"$2\"
+  test -z "$X" && eval $1='"$2"'
 }
 
-# Mark log with a string
+# Mark log file with a string
 y_mark_log () {
   C="="
   test -n "$1" && C=$1
