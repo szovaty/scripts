@@ -50,13 +50,14 @@ Y_CONFIRM=$TRUE
 ylib
 
 
+HELP="Defaults"
 y_start
 # ===================================================================================
 
 # read command line parameters
 while [ -n "$1" ] ; do
   case $1 in
-    --help|-h)	y_help "[Options]"; y_exit;;    #; Help screen
+    --help|-h)	y_help "[Options]"; y_exit;;    #; Help screen [HELP]
     --test)     TEST=$TRUE;;                    #; [TEST]
     --quiet|-Q) Y_QUIET=$TRUE;;                 #; Enable quiet mode [Y_QUIET]
     --debug|-D) Y_DEBUG=$TRUE;;                 #; Enable debug mode [Y_DEBUG]

@@ -3,11 +3,10 @@
 # Bash generic function script by Y
 #  it is a refactored version of y_functions.sh
 #
-# TODO: dynamic help spacing
 # TODO: port a few old script and test the new lib
 
-Y_BASH_LIB_VER="1.0-rc1"
-Y_LASTMOD="2018.01.17"
+Y_BASH_LIB_VER="1.0-rc2"
+Y_LASTMOD="2018.01.18"
 
 # set below control variables before sourcing this file in your script!
 
@@ -95,6 +94,7 @@ y_init_screen () {
 # comments needs to be inline with the comment option!
 y_help_opt () {
   #local HELPMSG MSG DEF i j k x
+  LINE=0
   IFS=$'\n'
   for i in `cat $0 | grep -e '#;'` ; do
     HELPMSG="${i##*'#;'}"
@@ -131,10 +131,28 @@ y_help_opt () {
     done
     IFS=$'\n'
     k=`echo $k | awk ' { print $1 }'`
-    printf "%20s %-40s %s\n" "${k}" "$MSG" "$DEF" 
+    HELP_OPT[$LINE]="$k"
+    HELP_MSG[$LINE]="$MSG"
+    HELP_DEF[$LINE]="$DEF"
+    LINE=$(($LINE+1))
+    #printf "%20s %-40s %s\n" "${k}" "$MSG" "$DEF" 
     k=""
   done
   IFS=$' \t\n'
+  HELP_OPT_MAX=0
+  HELP_MSG_MAX=0
+  for (( i=0; i<$LINE; i++)) ; do
+    HELP_OPT_CUR=`echo ${HELP_OPT[$i]} | awk '{print length}'`
+    test $HELP_OPT_CUR -gt $HELP_OPT_MAX && HELP_OPT_MAX=$HELP_OPT_CUR
+    HELP_MSG_CUR=`echo ${HELP_MSG[$i]} | awk '{print length}'`
+    test $HELP_MSG_CUR -gt $HELP_MSG_MAX && HELP_MSG_MAX=$HELP_MSG_CUR
+  done
+  HELP_OPT_MAX=$((HELP_OPT_MAX+4))
+  HELP_MSG_MAX=$((HELP_MSG_MAX+2))
+  for (( i=0; i<$LINE; i++)) ; do
+    printf "%${HELP_OPT_MAX}s %-${HELP_MSG_MAX}s %s\n" \
+      "${HELP_OPT[$i]}" "${HELP_MSG[$i]}" "${HELP_DEF[$i]}"
+  done
 }
 
 # generic message function
