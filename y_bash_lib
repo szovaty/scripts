@@ -149,6 +149,10 @@ y_help_opt () {
   done
   HELP_OPT_MAX=$((HELP_OPT_MAX+4))
   HELP_MSG_MAX=$((HELP_MSG_MAX+2))
+  MAX_SIZE=20
+  test $HELP_OPT_MAX -gt $MAX_SIZE && HELP_OPT_MAX=$MAX_SIZE
+  MAX_SIZE=50
+  test $HELP_MSG_MAX -gt $MAX_SIZE && HELP_MSG_MAX=$MAX_SIZE
   for (( i=0; i<$LINE; i++)) ; do
     printf "%${HELP_OPT_MAX}s %-${HELP_MSG_MAX}s %s\n" \
       "${HELP_OPT[$i]}" "${HELP_MSG[$i]}" "${HELP_DEF[$i]}"
