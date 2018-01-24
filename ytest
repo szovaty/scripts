@@ -59,10 +59,13 @@ while [ -n "$1" ] ; do
   case $1 in
     --help|-h)	y_help "[Options]"; y_exit;;    #; Help screen [HELP]
     --test)     TEST=$TRUE;;                    #; [TEST]
+    --noclean)  Y_NOCLEAN=$TRUE;;               #; Do not unmount before exit [Y_NOCLEAN]
     --quiet|-Q) Y_QUIET=$TRUE;;                 #; Enable quiet mode [Y_QUIET]
     --debug|-D) Y_DEBUG=$TRUE;;                 #; Enable debug mode [Y_DEBUG]
     --dry|-N)   Y_DRY_RUN=$TRUE;;               #; Execute dry run mode [Y_DRY_RUN]
     --nocolor)  USE_COLOR="";;                  #; Enable color output [USE_COLOR]
+    --exit)     Y_EXIT_ON_ERROR=$TRUE;;         #; Exit on error [Y_EXIT_ON_ERROR]
+    --edebug)   Y_DEBUG_ON_ERROR=$TRUE;;        #; Debug on error [Y_DEBUG_ON_ERROR]
     *)          y_fatal_error 2 "Unknown command";;
   esac
   shift
@@ -76,9 +79,7 @@ y_set_default Y_EXIT_ON_ERROR $FALSE
 #y_mark_log -
 #y_init_screen
 
-test "x" = "x" && {
-  #Y_EXIT_ON_ERROR=$TRUE
-  Y_EXIT_ON_ERROR=$FALSE
+test "x" = "xx" && {
   Y_MSG_DEST="LOG,STDERR"
   y_run 'echo `date` - Hello > /tmp/ytest.x'
   y_run grep xtest /etc/fstab
@@ -87,15 +88,13 @@ test "x" = "x" && {
 
 test "x" = "xx" && {
   #set -o pipefail
-  Y_EXIT_ON_ERROR=$FALSE
-  Y_DEBUG_ON_ERROR=$TRUE
   #Y_MSG_DEST="STDOUT"
   y_run chroot /xy /bin/bash -c '"cd /tmp; echo `date` - Hello > ytest.x"'
   y_run chroot /xy /bin/bash -c '"grep xtest /etc/fstab >/dev/null"'
   y_info Hello World
 }
 
-test "x" = "x" && {
+test "x" = "xx" && {
   y_progress_nl Testing...
   y_progress_end 2
   y_progress_nl Testing...
@@ -112,6 +111,14 @@ test "x" = "x" && {
   echo
   y_progress_end 0
 }
+
+test "x" = "x" && {
+  y_info mount / umount testing
+  y_mount /xos
+  y_umount /xos
+}
+
+! y_dry_run && echo dry run
 
 # ===================================================================================
 # Leave this as the last line

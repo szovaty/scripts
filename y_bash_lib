@@ -10,11 +10,20 @@ Y_LASTMOD="2018.01.18"
 
 # set below control variables before sourcing this file in your script!
 
+# Globally used constances
+YES="yes"
+NO="no"
+TRUE="true"
+FALSE="false"
+ERROR=1
+NOERROR=0
+Y_DATE="date +%Y.%m.%d-%T"
+
 # terminal color settings
 unset NORM GOOD ERR BAD WARN ATTEN LINK BLINK BLINKOFF REV REVOFF DRYRUN
 Y_FIXME="FIXME# "
 
-if [ "$USE_COLOR" = "yes" ] ; then
+if [ "$USE_COLOR" = $YES ] ; then
   NORM=$'\e[0m'
   GOOD=$'\e[32m'
   ERR=$'\e[31;01m'
@@ -32,15 +41,6 @@ fi
 
 Y_FIXME_PS1="/tmp/yps1.$$"
 echo PS1=\"$Y_FIXME\" > $Y_FIXME_PS1
-
-# Globally used constances
-YES="yes"
-NO="no"
-TRUE="true"
-FALSE="false"
-ERROR=1
-NOERROR=0
-Y_DATE="date +%Y.%m.%d-%T"
 
 #Defaults
 test -z "$LOG" && LOG="/dev/null"
@@ -170,7 +170,13 @@ y_error () 	      { Y_MSG_TYPE="ERROR"; y_msg "$*" ; }
 y_fatal_error ()  { Y_MSG_TYPE="FATAL"; y_msg "$*" ; y_exit;}
 y_warning () 	    { Y_MSG_TYPE="WARN";  y_msg "$*" ; }
 y_debug ()	      { Y_MSG_TYPE="DEBUG"; y_msg "$*" ; }
-y_dryrun ()	      { Y_MSG_TYPE="DRYRUN";y_msg "$*" ; }
+y_dryrun ()	      { 
+  test "$Y_DRY_RUN" != $TRUE && return
+  X="$Y_MSG_DEST"
+  Y_MSG_DEST="LOG"
+  Y_MSG_TYPE="DRYRUN";y_msg "$*"
+  Y_MSG_DEST=$X
+}
 y_info ()	        { Y_MSG_TYPE="INFO";  y_msg "$*" ; }
 y_usage ()	      { Y_MSG_TYPE="USAGE"; y_msg "$*" ; }
 y_help (){
@@ -183,7 +189,10 @@ y_help (){
 y_msg () {
   test -w "$LOG" || {
     test -e "$LOG" || touch "$LOG" 2>/dev/null
-    test -w "$LOG" || LOG=/dev/null
+    test -w "$LOG" || {
+      echo "WARNING: Can not write to $LOG"
+      LOG=/dev/null
+    }
   }
   case $Y_MSG_TYPE in
     FATAL)	  MESG_COLOR=$ERR  ; BELL=FATAL;;
@@ -229,7 +238,7 @@ y_exit () {
 	if [ -n "$MOUNTED" ] ; then
 		for i in $MOUNTED ; do
 			`umount -l $i > /dev/null`
-			test "$?" = "1" && y_error 2 "umount $i"
+			test "$?" = "1" && y_error "umount $i"
 		done
 	fi
     MOUNTED=""
@@ -247,7 +256,7 @@ y_exit () {
 }
 
 y_start () { 
-  X=$Y_MSG_DEST
+  X="$Y_MSG_DEST"
   Y_MSG_DEST="LOG"
   y_info "Start: $0 $1 ; [V${VERSION} , Last modified: ${LAST_MOD}]"
   Y_MSG_DEST=$X
@@ -428,3 +437,33 @@ y_mark_log () {
   echo "#">> $LOG
 }
 
+# mount device and store it for cleanup
+y_mount(){
+  y_run mount "$*"
+  test $? -eq 0 -a "$Y_DRY_RUN" != $TRUE && {
+    MOUNTED_CC="${@: -1} $MOUNTED_CC"
+    test -n "$Y_NOCLEAN" || MOUNTED=$MOUNTED_CC
+  }
+} 
+
+# unmount dirs and remove them from mounted list
+y_umount(){
+  y_dryrun umount '$MOUNTED'
+  if [ -n "$MOUNTED" ] ; then
+    for i in $MOUNTED ; do
+      y_run "umount -l $i > /dev/null"
+      test "$?" != "0" && y_error "umount $i"
+    done
+  fi
+  MOUNTED=""
+}
+
+y_dry_run () {
+  if [ "$Y_DRY_RUN" = $TRUE ] ; then
+    #echo true
+    return 0
+  else
+    #echo false
+    return -1
+  fi
+}

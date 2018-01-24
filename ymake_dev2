@@ -15,13 +15,14 @@ ylib () {
   test $? != '0' && { echo Fatal Error!; exit 1; }
   test -r ${LIB} && source ${LIB}
 }
+ylib
 
 # Uncomment this to allow colors on the console
-#USE_COLOR=$YES
+USE_COLOR=$YES
 
 # This will enable positioning of a text to the end (-8 char) 
 # of a line independent of window size
-#USE_POS=$YES
+USE_POS=$YES
 
 # Enable bell for warnings and errors
 #USE_BELL=$YES
@@ -50,8 +51,12 @@ LOG="/tmp/${0##*/}.log"
 
 # destination options: LOG,STDOUT,STDERR
 #Y_MSG_DEST="STDOUT,LOG"
-
 ylib
+
+# -------------- configuration defaults -----------------------
+Y_DEV_DEV="/dev/sdc3"
+Y_DEV_MNT="/xy"
+Y_SRC_DIRS="/usr /var /opt /boot"
 
 #y_init_screen
 y_start
@@ -65,15 +70,52 @@ while [ -n "$1" ] ; do
     --debug|-D) Y_DEBUG="true";;                #; Enable debug mode [Y_DEBUG]
     --dry|-N)   Y_DRY_RUN="true";;              #; Execute dry run mode [Y_DRY_RUN]
     --nocolor)  USE_COLOR="";;                  #; Enable color output [USE_COLOR]
+    --log|-L)   LOG="$2"; shift;;               #; Set log destination [LOG]
+    --version|-V) y_version; y_exit;;           #; Display version and exit
+    --dev|-d)   Y_DEV_DEV="$2"; shift;;         #; Set device [Y_DEV_DEV]
+    --mnt|-M)   Y_DEV_MNT="$2"; shift;;         #; Set DEV root [Y_DEV_MNT]
+    --mountdev) Y_MOUNT_DEV="true";;            #; Mount DEV FS [Y_MOUNT_DEV]
+    --noclean)  Y_NOCLEAN="true";;              #; Do not clean on exit [Y_NOCLEAN]
+    --sync)     Y_SYNC="true";;                 #; Sync gentoo files [Y_SYNC]
+    --update)   Y_UPDATE="true";;               #; Update Gentoo [Y_UPDATE]
+    --check)    Y_CHECK="true";;                #; Pre-check build [Y_CHECK]
+    --build)    Y_BUILD="true";;                #; Build/update DEV system [Y_BUILD]
+    --lkernel)  Y_LINK_KERNEL="true";;          #; Link kernel [Y_LINK_KERNEL]
+    --ckernel)  Y_CONFIG_KERNEL="true";;        #; Config kernel [Y_CONFIG_KERNEL]
+    --bkernel)  Y_BUILD_KERNEL="true";;         #; Build kernel [Y_BUILD_KERNEL]
+    --lilo)     Y_LILO="true";;                 #; Update bootloader [Y_LILO]
+    --rebuild)  Y_REBUILD="true";;              #; Rebuild system after new kernel
+    --cgentoo)  Y_CGENTOO="true";;              #; Clean Gentoo [Y_CGENTOO]
+    --qtest)    Y_QUICKTEST="true";;            #; Test new sys by chroot [Y_QUICKTEST]
+    --systest)  Y_SYSTEST="true";;              #; Test by reboot into DEV [Y_SYSTEST]
     *)          y_fatal_error 2 "Unknown command";;
   esac
   shift
 done
 
 y_set_default Y_MSG_DEST "STDOUT,LOG"
-y_set_default USE_COLOR $TRUE
 y_set_default Y_DEBUG_ON_ERROR $FALSE
 y_set_default Y_EXIT_ON_ERROR $FALSE
+ylib
+
+! y_dry_run -a $(id -u) != 0 && 
+  y_fatal_error "Script should run as root!"
+
+# mount DEV root
+test -n "$Y_MOUNT_DEV" && {
+    y_progress_nl "Mount DEV root on $Y_DEV_MNT..."
+    y_run "fsck -p "$Y_DEV_DEV" 2>&1 > $LOG"
+    y_run mkdir -p $Y_DEV_MNT
+    y_mount "$Y_DEV_MNT"
+    y_progress_end 0
+}
+
+# sync dev to current
+test -n "$Y_SYNC" && {
+    y_progress_nl "Sync DEV system with current install..."
+    y_run yrsync_xos -x "$Y_DEV_MNT" -f /etc/fstab.dev -d $Y_SRC_DIRS -m 
+    y_progress_end 0
+}  
 
 
 # ===================================================================================
