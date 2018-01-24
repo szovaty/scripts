@@ -1,0 +1,81 @@
+#!/bin/bash
+# vim:set ts=2 sw=2:
+# Base template2.src version 1.0 last modified 2018.01.11 by y
+
+y_start(){ :; }
+y_exit(){ :; }
+y_help(){ :; }
+
+trap y_exit TERM HUP INT
+
+# Source the function library
+ylib () {
+  FSH="y_bash_lib"
+  LIB=`which $FSH`
+  test $? != '0' && { echo Fatal Error!; exit 1; }
+  test -r ${LIB} && source ${LIB}
+}
+
+# Uncomment this to allow colors on the console
+#USE_COLOR=$YES
+
+# This will enable positioning of a text to the end (-8 char) 
+# of a line independent of window size
+#USE_POS=$YES
+
+# Enable bell for warnings and errors
+#USE_BELL=$YES
+
+# define the following to match the program current state
+PROGRAM_NAME="ynew_dev2"
+VERSION="0.0"
+LAST_MOD="2018.01.24"
+
+# Define log file here
+LOG="/tmp/${0##*/}.log"
+
+# Uncomment this if you need debug enabled
+#Y_DEBUG=$TRUE
+
+# use these to set cleanup on exit
+#MOUNTED=""             # y_exit will unmount them
+#DELETE_ON_EXIT=""      # y_exit will delete them
+#LAST_CMD=""            # y_exit will run it just before exit
+
+# Uncomment to make script quiet
+#Y_QUIET=$FALSE
+
+# Uncomment to ask for confirmation 
+#Y_CONFIRM=$TRUE
+
+# destination options: LOG,STDOUT,STDERR
+#Y_MSG_DEST="STDOUT,LOG"
+
+ylib
+
+#y_init_screen
+y_start
+# ===================================================================================
+HELP="Defaults"
+# read command line parameters
+while [ -n "$1" ] ; do
+  case $1 in
+    --help|-h)	y_help "[Options]"; y_exit;;    #; Help [HELP]
+    --quiet|-Q) Y_QUIET="true";;                #; Enable quiet mode [Y_QUIET]
+    --debug|-D) Y_DEBUG="true";;                #; Enable debug mode [Y_DEBUG]
+    --dry|-N)   Y_DRY_RUN="true";;              #; Execute dry run mode [Y_DRY_RUN]
+    --nocolor)  USE_COLOR="";;                  #; Enable color output [USE_COLOR]
+    *)          y_fatal_error 2 "Unknown command";;
+  esac
+  shift
+done
+
+y_set_default Y_MSG_DEST "STDOUT,LOG"
+y_set_default USE_COLOR $TRUE
+y_set_default Y_DEBUG_ON_ERROR $FALSE
+y_set_default Y_EXIT_ON_ERROR $FALSE
+
+
+# ===================================================================================
+# Leave this as the last line
+y_exit
