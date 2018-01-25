@@ -112,13 +112,24 @@ test "x" = "xx" && {
   y_progress_end 0
 }
 
-test "x" = "x" && {
+test "x" = "xX" && {
   y_info mount / umount testing
-  y_mount /xos
-  y_umount /xos
+  y_check_mount /dev/sdb2 /xy
+  #y_mount /xos
+  #y_umount /xos
 }
 
-! y_dry_run && echo dry run
+test "x" = "xx" && {
+  y_check_dryrun && echo dry_run true || echo dry run false
+  y_check_dryrun_not && echo DRY_RUN_NOT true || echo DRY_RUN_NOT false
+}
+
+test "x" = "x" && {
+    #PORTAGE_TMP=`
+    X=`y_run "emerge --info 2>/dev/null | grep PORTAGE_TMPDIR"`
+    echo [$X]
+}
+
 
 # ===================================================================================
 # Leave this as the last line

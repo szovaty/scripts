@@ -30,7 +30,7 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="ynew_dev2"
 VERSION="0.0"
-LAST_MOD="2018.01.24"
+LAST_MOD="2018.01.25"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -54,9 +54,11 @@ LOG="/tmp/${0##*/}.log"
 ylib
 
 # -------------- configuration defaults -----------------------
-Y_DEV_DEV="/dev/sdc3"
+Y_MOUNT_DEV="$FALSE"
+Y_DEV_DEV="/dev/sdb3"
 Y_DEV_MNT="/xy"
 Y_SRC_DIRS="/usr /var /opt /boot"
+Y_SRC_FSTAB="/etc/fstab.dev"
 
 #y_init_screen
 y_start
@@ -75,6 +77,8 @@ while [ -n "$1" ] ; do
     --dev|-d)   Y_DEV_DEV="$2"; shift;;         #; Set device [Y_DEV_DEV]
     --mnt|-M)   Y_DEV_MNT="$2"; shift;;         #; Set DEV root [Y_DEV_MNT]
     --mountdev) Y_MOUNT_DEV="true";;            #; Mount DEV FS [Y_MOUNT_DEV]
+    --src_dirs) Y_SRC_DIRS="$2"; shift;;        #; Source dirs [Y_SRC_DIRS]
+    --src_fstab) Y_SRC_FSTAB="$2";shift;;       #; fstab to as source [Y_SRC_FSTAB]
     --noclean)  Y_NOCLEAN="true";;              #; Do not clean on exit [Y_NOCLEAN]
     --sync)     Y_SYNC="true";;                 #; Sync gentoo files [Y_SYNC]
     --update)   Y_UPDATE="true";;               #; Update Gentoo [Y_UPDATE]
@@ -98,13 +102,13 @@ y_set_default Y_DEBUG_ON_ERROR $FALSE
 y_set_default Y_EXIT_ON_ERROR $FALSE
 ylib
 
-! y_dry_run -a $(id -u) != 0 && 
+y_check_dryrun_not && test $(id -u) -ne 0 && 
   y_fatal_error "Script should run as root!"
 
-# mount DEV root
-test -n "$Y_MOUNT_DEV" && {
+# mount DEV ROOT_FS if it is not mounted yet
+! y_check_mount "$Y_DEV_DEV" "$Y_DEV_MNT" && {
     y_progress_nl "Mount DEV root on $Y_DEV_MNT..."
-    y_run "fsck -p "$Y_DEV_DEV" 2>&1 > $LOG"
+    y_run "fsck -p "$Y_DEV_DEV" 2>&1 >> $LOG"
     y_run mkdir -p $Y_DEV_MNT
     y_mount "$Y_DEV_MNT"
     y_progress_end 0
@@ -113,9 +117,27 @@ test -n "$Y_MOUNT_DEV" && {
 # sync dev to current
 test -n "$Y_SYNC" && {
     y_progress_nl "Sync DEV system with current install..."
-    y_run yrsync_xos -x "$Y_DEV_MNT" -f /etc/fstab.dev -d $Y_SRC_DIRS -m 
+    y_run yrsync_xos -x "$Y_DEV_MNT" -f /etc/fstab.dev -d \"$Y_SRC_DIRS\" -m 
     y_progress_end 0
 }  
+
+# mount system on DEV
+test -n "$Y_MOUNT_DEV" && {
+    y_progress_nl "Mount DEV system devices..."
+    y_run mkdir -p $Y_DEV_MNT/dev
+    y_mount --bind /dev $Y_DEV_MNT/dev
+    y_run mkdir -p $Y_DEV_MNT/dev/pts
+    y_mount --bind /dev/pts $Y_DEV_MNT/dev/pts
+    y_run mkdir -p $Y_DEV_MNT/proc
+    y_mount -t proc proc "$Y_DEV_MNT"/proc
+    y_run mkdir -p $Y_DEV_MNT/gentoo
+    mount | grep /gentoo > /dev/null
+    test $? != 0 && mount /gentoo
+    y_mount --bind /gentoo "$Y_DEV_MNT"/gentoo
+    PORTAGE_TMP=`y_run "emerge --info 2>/dev/null | grep PORTAGE_TMPDIR"`
+    y_run mkdir -p $Y_DEV_MNT${PORTAGE_TMP##*PORTAGE_TMPDIR=}
+    y_progress_end 0
+}
 
 
 # ===================================================================================

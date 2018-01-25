@@ -169,7 +169,14 @@ Y_MSG_TYPE=""
 y_error () 	      { Y_MSG_TYPE="ERROR"; y_msg "$*" ; }
 y_fatal_error ()  { Y_MSG_TYPE="FATAL"; y_msg "$*" ; y_exit;}
 y_warning () 	    { Y_MSG_TYPE="WARN";  y_msg "$*" ; }
-y_debug ()	      { Y_MSG_TYPE="DEBUG"; y_msg "$*" ; }
+y_debug ()	      { 
+  test "$Y_DEBUG" != $TRUE && return
+  X="$Y_MSG_DEST"
+  Y_MSG_DEST="LOG"
+  Y_MSG_TYPE="DEBUG"
+  y_msg "$*"
+  Y_MSG_DEST=$X
+}
 y_dryrun ()	      { 
   test "$Y_DRY_RUN" != $TRUE && return
   X="$Y_MSG_DEST"
@@ -396,7 +403,7 @@ y_run () {
       y_dryrun "$*"
       return 0
     else
-      test "$Y_DEBUG" = $TRUE && y_debug "$*"
+      y_debug "$*"
     fi     
 
     if [ "$Y_QUIET" = $TRUE ] ; then
@@ -458,12 +465,30 @@ y_umount(){
   MOUNTED=""
 }
 
-y_dry_run () {
+# test if we are in dry run mode
+y_check_dryrun () {
   if [ "$Y_DRY_RUN" = $TRUE ] ; then
-    #echo true
     return 0
   else
-    #echo false
     return -1
   fi
 }
+
+# same as above with inveted result
+y_check_dryrun_not () { 
+  y_check_dryrun && return -1
+  return 0
+}
+
+# check is a device is mounted to the defined directory
+# y_check_mount DEVICE DIRECTORY
+y_check_mount () {
+  y_check_dryrun && {
+    y_dryrun check 'if' "$1" mounted on "$2"
+    return
+  }
+  y_debug "mount | grep "$1 on $2" 2>&1 >/dev/null"
+  mount | grep "$1 on $2" 2>&1 >/dev/null
+  return $?
+}
+
