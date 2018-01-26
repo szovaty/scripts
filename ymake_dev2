@@ -50,7 +50,7 @@ LOG="/tmp/${0##*/}.log"
 #Y_CONFIRM=$TRUE
 
 # destination options: LOG,STDOUT,STDERR
-#Y_MSG_DEST="STDOUT,LOG"
+Y_MSG_DEST="LOG"
 ylib
 
 # -------------- configuration defaults -----------------------
@@ -59,6 +59,7 @@ Y_DEV_DEV="/dev/sdb3"
 Y_DEV_MNT="/xy"
 Y_SRC_DIRS="/usr /var /opt /boot"
 Y_SRC_FSTAB="/etc/fstab.dev"
+Y_PART_GENTOO="/dev/sdb2"
 
 #y_init_screen
 y_start
@@ -79,6 +80,7 @@ while [ -n "$1" ] ; do
     --mountdev) Y_MOUNT_DEV="true";;            #; Mount DEV FS [Y_MOUNT_DEV]
     --src_dirs) Y_SRC_DIRS="$2"; shift;;        #; Source dirs [Y_SRC_DIRS]
     --src_fstab) Y_SRC_FSTAB="$2";shift;;       #; fstab to as source [Y_SRC_FSTAB]
+    --gentoo)   Y_PART_GENTOO="$2";shift;;      #; Define gentoo partition [Y_PART_GENTOO]
     --noclean)  Y_NOCLEAN="true";;              #; Do not clean on exit [Y_NOCLEAN]
     --sync)     Y_SYNC="true";;                 #; Sync gentoo files [Y_SYNC]
     --update)   Y_UPDATE="true";;               #; Update Gentoo [Y_UPDATE]
@@ -92,12 +94,12 @@ while [ -n "$1" ] ; do
     --cgentoo)  Y_CGENTOO="true";;              #; Clean Gentoo [Y_CGENTOO]
     --qtest)    Y_QUICKTEST="true";;            #; Test new sys by chroot [Y_QUICKTEST]
     --systest)  Y_SYSTEST="true";;              #; Test by reboot into DEV [Y_SYSTEST]
-    *)          y_fatal_error 2 "Unknown command";;
+#    *)          y_fatal_error "Unknown command";;
   esac
   shift
 done
 
-y_set_default Y_MSG_DEST "STDOUT,LOG"
+y_set_default Y_MSG_DEST "LOG"
 y_set_default Y_DEBUG_ON_ERROR $FALSE
 y_set_default Y_EXIT_ON_ERROR $FALSE
 ylib
@@ -111,14 +113,15 @@ y_check_dryrun_not && test $(id -u) -ne 0 &&
     y_run "fsck -p "$Y_DEV_DEV" 2>&1 >> $LOG"
     y_run mkdir -p $Y_DEV_MNT
     y_mount "$Y_DEV_MNT"
-    y_progress_end 0
+    y_progress_end $?
 }
 
 # sync dev to current
 test -n "$Y_SYNC" && {
     y_progress_nl "Sync DEV system with current install..."
-    y_run yrsync_xos -x "$Y_DEV_MNT" -f /etc/fstab.dev -d \"$Y_SRC_DIRS\" -m 
-    y_progress_end 0
+    y_run yrsync_xos -x "$Y_DEV_MNT" -f /etc/fstab.dev -d \"$Y_SRC_DIRS\" -m
+    y_run rm $Y_DEV_MNT/gentoo
+    y_progress_end $?
 }  
 
 # mount system on DEV
@@ -131,14 +134,45 @@ test -n "$Y_MOUNT_DEV" && {
     y_run mkdir -p $Y_DEV_MNT/proc
     y_mount -t proc proc "$Y_DEV_MNT"/proc
     y_run mkdir -p $Y_DEV_MNT/gentoo
-    mount | grep /gentoo > /dev/null
-    test $? != 0 && mount /gentoo
-    y_mount --bind /gentoo "$Y_DEV_MNT"/gentoo
+    test ! -d $Y_DEV_MNT/gentoo/portage &&
+      y_mount $Y_PART_GENTOO ${Y_DEV_MNT}/gentoo
     PORTAGE_TMP=`y_run "emerge --info 2>/dev/null | grep PORTAGE_TMPDIR"`
     y_run mkdir -p $Y_DEV_MNT${PORTAGE_TMP##*PORTAGE_TMPDIR=}
-    y_progress_end 0
+    y_progress_end $?
 }
 
+# clean up gentoo files: packages and distfiles
+test -n "$Y_CGENTOO" && {
+    y_progress_nl "Clear Gentoo build files...."
+    y_run eclean-pkg
+    y_progress_end $?
+}
+
+# update build system on DEV: emerge --sync
+test -n "$Y_UPDATE" && {
+   y_progress_nl "Update gentoo build cache..."
+    #y_run chroot $Y_DEV_MNT emerge --sync
+    y_run chroot $Y_DEV_MNT emaint -a sync
+    y_run chroot $Y_DEV_MNT emerge -1q portage
+    y_progress_end $?
+}
+
+# check if it would build: emerge -pvuDN world
+test -n "$Y_CHECK" && {
+    y_progress_nl "Pre-Check build..."
+    y_run chroot $Y_DEV_MNT emerge -pvuDN --verbose-conflicts world
+    y_progress_end $Y_RUN_RET
+}
+
+# build system on DEV: emerge -qubDN world
+test -n "$Y_BUILD" && {
+    y_progress_nl "Build/update DEV system..."
+    y_run chroot $Y_DEV_MNT emerge -quDN world
+    y_run chroot $Y_DEV_MNT etc-update
+    y_progress_end $y
+}
+
+#y_debug_console
 
 # ===================================================================================
 # Leave this as the last line

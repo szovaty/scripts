@@ -124,12 +124,25 @@ test "x" = "xx" && {
   y_check_dryrun_not && echo DRY_RUN_NOT true || echo DRY_RUN_NOT false
 }
 
-test "x" = "x" && {
-    #PORTAGE_TMP=`
+test "x" = "xx" && {
     X=`y_run "emerge --info 2>/dev/null | grep PORTAGE_TMPDIR"`
     echo [$X]
 }
 
+test "x" = "x" && {
+  Y_MSG_DEST="STDOUT,LOG"
+  y_run echo TEST
+}
+
+test "x" = "xx" && {
+  Y_MSG_DEST="LOG"
+  y_error y_error
+  y_info y_info
+  y_warning y_warning
+  y_debug y_debug
+  y_dryrun y_dryrun
+  y_usage y_usage
+}
 
 # ===================================================================================
 # Leave this as the last line

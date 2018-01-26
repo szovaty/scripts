@@ -5,8 +5,8 @@
 #
 # TODO: port a few old script and test the new lib
 
-Y_BASH_LIB_VER="1.0-rc2"
-Y_LASTMOD="2018.01.18"
+Y_BASH_LIB_VER="1.0-rc3"
+Y_LASTMOD="2018.01.26"
 
 # set below control variables before sourcing this file in your script!
 
@@ -18,6 +18,7 @@ FALSE="false"
 ERROR=1
 NOERROR=0
 Y_DATE="date +%Y.%m.%d-%T"
+set -o pipefail
 
 # terminal color settings
 unset NORM GOOD ERR BAD WARN ATTEN LINK BLINK BLINKOFF REV REVOFF DRYRUN
@@ -212,8 +213,8 @@ y_msg () {
     HELP)	    MESG_COLOR=$NORM ;;
     *)        return $ERROR
   esac
-  test ! -w "$MSG_OUT" && MSG_OUT=/dev/null
-  
+
+test "x" = "xx" && {  
   STDPUT=$STD_OUT
   if [ "$Y_QUIET" = $TRUE -a $Y_MSG_TYPE != "HELP" ]; then
     STDOUT=/dev/null
@@ -233,7 +234,33 @@ y_msg () {
   echo "$Y_MSG_DEST" | grep LOG > /dev/null
   test $? -eq 0 && 
     echo -e "  `$Y_DATE` $MSG_HEADER_LOG: $*" >> $LOG
+}
 
+  MSG_HEADER_LOG=`printf "%020s(%05d) %08s" ${0##*/} $$ $Y_MSG_TYPE`
+  MSG_HEADER_STD=`printf "%08s"$Y_MSG_TYPE`
+
+  if [ "$Y_QUIET" = $TRUE ] ; then
+    STDOUT="2>&1 >> $LOG"
+    MSG="  `$Y_DATE` $MSG_HEADER_LOG: $*"
+  else
+    case $Y_MSG_DEST in
+      *LOG*)    
+        echo -e "  `$Y_DATE` $MSG_HEADER_LOG: $*" >>$LOG;;
+    esac
+    case $Y_MSG_DEST in
+      *STDERR*) 
+        STDERR=" ";
+        MSG="  ${MESG_COLOR}$MSG_HEADER_STD: $*${NORM}";;
+      *)      STDERR=" 2>/dev/null ";;
+    esac
+    case $Y_MSG_DEST in
+      *STDOUT*) 
+        STDOUT=" " ;
+        MSG="  ${MESG_COLOR}$MSG_HEADER_STD: $*${NORM}";;
+      *)      STDOUT=" 1>/dev/null ";;
+    esac
+  fi
+  eval 'echo -e "$MSG"' $STDERR $STDOUT
   test -n "$BELL" && y_bell $BELL
 }
 
@@ -376,6 +403,14 @@ y_check_exec () {
   }
 }
 
+# force debug console entry
+y_debug_console (){
+  X="$Y_DEBUG_ON_ERROR"
+  Y_DEBUG_ON_ERROR=$TRUE
+  y_run false
+  Y_DEBUG_CONSOLE=$X
+}
+
 # run debug console help screen
 y_run_debug_help () {
   echo "----------------------------------------"
@@ -404,23 +439,28 @@ y_run () {
       return 0
     else
       y_debug "$*"
-    fi     
-
-    if [ "$Y_QUIET" = $TRUE ] ; then
-      eval $* 2>&1 >> $LOG
-    else
-      if [ "$Y_DEBUG" = $TRUE ] ; then
-        set -o pipefail
-        eval $* | tee -a $LOG
-        #RET=${PIPESTATUS[0]} # alternative to 'set -o pipefail'
-      else
-        eval $*
-      fi
     fi
+    if [ "$Y_QUIET" = $TRUE ] ; then
+      STDOUT="2>&1 >> $LOG"
+    else
+      case $Y_MSG_DEST in
+        *LOG*)    STDLOG=" 2>&1 |  tee -a $LOG ";;
+        *)      STDLOG=" ";;
+      esac
+      case $Y_MSG_DEST in
+        *STDERR*) STDERR=" ";;
+        *)      STDERR=" 2>/dev/null ";;
+      esac
+      case $Y_MSG_DEST in
+        *STDOUT*) STDOUT=" " ;;
+        *)      STDOUT=" 1>/dev/null ";;
+      esac
+    fi
+    eval $* $STDERR $STDLOG $STDOUT
     y_check_exec $? $*
-    RET=$?
-    test $RET -eq 2 && exit 2
-    test "$Y_DEBUG_ON_ERROR" != $TRUE && return $RET
+    Y_RUN_RET=$?
+    test $Y_RUN_RET -eq 2 && exit 2
+    test "$Y_DEBUG_ON_ERROR" != $TRUE && return $Y_RUN_RET
   done
 }
 
