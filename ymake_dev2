@@ -51,6 +51,7 @@ LOG="/tmp/${0##*/}.log"
 
 # destination options: LOG,STDOUT,STDERR
 Y_MSG_DEST="LOG"
+Y_RUN_RET_SUM=0
 ylib
 
 # -------------- configuration defaults -----------------------
@@ -86,7 +87,6 @@ while [ -n "$1" ] ; do
     --update)   Y_UPDATE="true";;               #; Update Gentoo [Y_UPDATE]
     --check)    Y_CHECK="true";;                #; Pre-check build [Y_CHECK]
     --build)    Y_BUILD="true";;                #; Build/update DEV system [Y_BUILD]
-    --lkernel)  Y_LINK_KERNEL="true";;          #; Link kernel [Y_LINK_KERNEL]
     --ckernel)  Y_CONFIG_KERNEL="true";;        #; Config kernel [Y_CONFIG_KERNEL]
     --bkernel)  Y_BUILD_KERNEL="true";;         #; Build kernel [Y_BUILD_KERNEL]
     --lilo)     Y_LILO="true";;                 #; Update bootloader [Y_LILO]
@@ -113,7 +113,7 @@ y_check_dryrun_not && test $(id -u) -ne 0 &&
     y_run "fsck -p "$Y_DEV_DEV" 2>&1 >> $LOG"
     y_run mkdir -p $Y_DEV_MNT
     y_mount "$Y_DEV_MNT"
-    y_progress_end $?
+    y_progress_end
 }
 
 # sync dev to current
@@ -121,7 +121,7 @@ test -n "$Y_SYNC" && {
     y_progress_nl "Sync DEV system with current install..."
     y_run yrsync_xos -x "$Y_DEV_MNT" -f /etc/fstab.dev -d \"$Y_SRC_DIRS\" -m
     y_run rm $Y_DEV_MNT/gentoo
-    y_progress_end $?
+    y_progress_end
 }  
 
 # mount system on DEV
@@ -138,14 +138,14 @@ test -n "$Y_MOUNT_DEV" && {
       y_mount $Y_PART_GENTOO ${Y_DEV_MNT}/gentoo
     PORTAGE_TMP=`y_run "emerge --info 2>/dev/null | grep PORTAGE_TMPDIR"`
     y_run mkdir -p $Y_DEV_MNT${PORTAGE_TMP##*PORTAGE_TMPDIR=}
-    y_progress_end $?
+    y_progress_end
 }
 
 # clean up gentoo files: packages and distfiles
 test -n "$Y_CGENTOO" && {
     y_progress_nl "Clear Gentoo build files...."
     y_run eclean-pkg
-    y_progress_end $?
+    y_progress_end
 }
 
 # update build system on DEV: emerge --sync
@@ -154,14 +154,14 @@ test -n "$Y_UPDATE" && {
     #y_run chroot $Y_DEV_MNT emerge --sync
     y_run chroot $Y_DEV_MNT emaint -a sync
     y_run chroot $Y_DEV_MNT emerge -1q portage
-    y_progress_end $?
+    y_progress_end
 }
 
 # check if it would build: emerge -pvuDN world
 test -n "$Y_CHECK" && {
     y_progress_nl "Pre-Check build..."
     y_run chroot $Y_DEV_MNT emerge -pvuDN --verbose-conflicts world
-    y_progress_end $Y_RUN_RET
+    y_progress_end
 }
 
 # build system on DEV: emerge -qubDN world
@@ -169,7 +169,87 @@ test -n "$Y_BUILD" && {
     y_progress_nl "Build/update DEV system..."
     y_run chroot $Y_DEV_MNT emerge -quDN world
     y_run chroot $Y_DEV_MNT etc-update
-    y_progress_end $y
+    y_progress_end
+}
+
+# configure kernel
+test -n "$Y_CONFIG_KERNEL" && {
+  y_dryrun "Change the kernel configuration"
+  y_check_dryrun_not && {
+    cd $Y_DEV_MNT/usr/src/linux
+    bash --rcfile $Y_CONSOLE -i
+  }
+}
+
+
+# build new kernel
+test -n "$Y_BUILD_KERNEL" && {
+    y_progress_nl "Build kernel..."
+    y_run chroot $Y_DEV_MNT /bin/bash -c \
+      '"cd /usr/src/linux; make bzImage modules modules_install"'
+    y_run mount -o remount,rw /boot
+    y_run cp /boot/vmlinuz.dev /boot/vmlinuz.dev_old
+    y_run cp $Y_DEV_MNT/usr/src/linux/arch/x86/boot/bzImage /boot/vmlinuz.dev
+    y_run mount -o remount,ro /boot
+    y_progress_end
+}
+
+# update lilo bootloader
+test -n "$Y_LILO" && {
+    y_progress_nl "Update bootloader..."
+    y_run mount -o remount,rw /boot
+    y_run lilo
+    y_run mount -o remount,ro /boot
+    y_progress_end
+}    
+
+# rebuild/clean-up system after new kernel
+test -n "$Y_REBUILD" && {
+    y_progress_nl "Check and clean-up system..."
+    y_progress_nl "  Chech build integrity..."
+    y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge -quDN world"'
+    y_progress_nl "  Remove unused packages '--depclean'..."
+    y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge --depclean -q"'
+    y_progress_nl "  Chech build after depclean..."
+    y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge -quDN world"'
+    y_progress_nl "  Rebuild preserved packages..."
+    y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge @preserved-rebuild -q"'
+    y_progress_nl "  Rebuild X11 modules..."
+    y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge @x11-module-rebuild -q"'
+    y_progress_nl "  Rebuild other modules..."
+    y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge @module-rebuild -q"'
+    y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge -q1 udev"'
+    y_progress_nl "Check, clean-up system"
+    y_progress_end
+}
+
+# quick test new install by chroot and command line
+test -n "$Y_QUICKTEST" && {
+    y_progress_nl "Quick test new system..."
+    y_run cp /x_proj/jenov/scripts/yrsync_dev $Y_DEV_MNT/usr/local/bin
+    y_run chroot $Y_DEV_MNT bash --rcfile $Y_CONSOLE -i
+    y_progress_end
+}
+
+test -f "$Y_TODO" && y_run_ cp "$Y_TODO" "$Y_DEV_MNT"/__TODO__
+
+# Test new install by hibernating current version and boot into DEV
+test -n "$Y_SYSTEST" -o -n "$Y_SYSMERGE" && {
+    y_progress_nl "System test/merge..."
+    y_progress_nl "  Hibernate current host and boot into DEV..."
+    y_run cp /proj/jenov/scripts/yrsync_dev $Y_DEV_MNT/usr/local/bin
+    y_run y_umount
+    y_run mount -o remount,rw /boot
+    y_run lilo -R DEV noresume
+    y_run mount -o remount,ro /boot
+    y_run y_hibernate reboot
+    y_run pm-hibernate
+    y_run mount -o remount,rw /boot
+    y_run lilo -R
+    y_run mount -o remount,ro /boot
+    y_run y_hibernate shutdown
+    y_progress "All done"
+    y_progress_end
 }
 
 #y_debug_console

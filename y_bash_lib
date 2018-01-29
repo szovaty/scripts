@@ -5,8 +5,8 @@
 #
 # TODO: port a few old script and test the new lib
 
-Y_BASH_LIB_VER="1.0-rc3"
-Y_LASTMOD="2018.01.26"
+Y_BASH_LIB_VER="1.0-rc4"
+Y_LASTMOD="2018.01.29"
 
 # set below control variables before sourcing this file in your script!
 
@@ -19,6 +19,7 @@ ERROR=1
 NOERROR=0
 Y_DATE="date +%Y.%m.%d-%T"
 set -o pipefail
+Y_RUN_RET_SUM=0
 
 # terminal color settings
 unset NORM GOOD ERR BAD WARN ATTEN LINK BLINK BLINKOFF REV REVOFF DRYRUN
@@ -38,10 +39,13 @@ if [ "$USE_COLOR" = $YES ] ; then
   REV=$'\e[7m'
   REVOFF=$'\e[27m'
   Y_FIXME="\[\033[01;31m\]${Y_FIXME}\[\033[00m\]"
+  Y_CON_PS2="\[\033[00;34m\]DEV#\[\033[00m\] "
 fi
 
 Y_FIXME_PS1="/tmp/yps1.$$"
 echo PS1=\"$Y_FIXME\" > $Y_FIXME_PS1
+Y_CONSOLE="/tmp/yps2.$$"
+echo PS1=\"$Y_CON_PS2\" > $Y_CONSOLE
 
 #Defaults
 test -z "$LOG" && LOG="/dev/null"
@@ -321,12 +325,17 @@ y_progress () {
     printf "%s%010s%s: %s" "${GOOD}" "PROGRESS" "${NORM}" "$*" >>$STD_ERR
 }
 
-y_progress_end () { 
+y_progress_end () {
+  RESULT="$1"
+  test -z $1 && 
+    RESULT="$Y_RUN_RET_SUM"
+  Y_RUN_RET_SUM=0
   test "$Y_QUIET" = $TRUE && return
-  case $1 in
+  case $RESULT in
     0)	echo -e "${ENDCOL}${LINK}[ ${GOOD}OK ${LINK}]${NORM}" >>$STD_ERR;;
-    1)	echo -e "${ENDCOL}${LINK}[ ${ERR}!! ${LINK}]${NORM}" >>$STD_ERR ;; 
-    2)	echo -e "${ENDCOL}${LINK}[ ${WARN}-- ${LINK}]${NORM}" >>$STD_ERR ;; 
+    -1|[1-9]|[1-9][0-9])	
+      echo -e "${ENDCOL}${LINK}[ ${ERR}!! ${LINK}]${NORM}" >>$STD_ERR ;; 
+    -2)	echo -e "${ENDCOL}${LINK}[ ${WARN}-- ${LINK}]${NORM}" >>$STD_ERR ;; 
     *)	echo -e "${ENDCOL}${LINK}[ ${WARN}?? ${LINK}]${NORM}" >>$STD_ERR ;; 
   esac
 }
@@ -392,6 +401,7 @@ y_check_cmds () {
 # check if a program return with no error
 y_check_exec () {
   test $1 -eq 0 && return 0
+  Y_RUN_RET_SUM=$(($Y_RUN_RET_SUM + $1))
   shift
   y_error "$*"
   test "$Y_EXIT_ON_ERROR" = "$TRUE" && {
@@ -457,12 +467,15 @@ y_run () {
       esac
     fi
     eval $* $STDERR $STDLOG $STDOUT
-    y_check_exec $? $*
     Y_RUN_RET=$?
-    test $Y_RUN_RET -eq 2 && exit 2
+    Y_RUN_RET_CUM=$(($Y_RUN_RET + Y_RUN_RET_SUM))
+    y_check_exec $Y_RUN_RET $*
+    test $? -eq 2 && exit 2
     test "$Y_DEBUG_ON_ERROR" != $TRUE && return $Y_RUN_RET
   done
 }
+
+
 
 # Set a variable to default if it not set
 # usage: y_set_default FOO FOO_DEFAULT
@@ -530,5 +543,22 @@ y_check_mount () {
   y_debug "mount | grep "$1 on $2" 2>&1 >/dev/null"
   mount | grep "$1 on $2" 2>&1 >/dev/null
   return $?
+}
+
+# set hibernate mode
+y_hibernate(){
+    SYS_POWER_DISK="/sys/power/disk"
+    PM_CONFIG="/etc/pm/config.d/config"
+    cat ${SYS_POWER_DISK} | grep $1 >/dev/null
+    if [ $? = "0" ] ; then
+        grep HIBERNATE_MODE $PM_CONFIG > /dev/null
+        if [ $? = "0" ] ; then
+            sed -i s/HIBERNATE_MODE=\".*\"/HIBERNATE_MODE=\"$1\"/ $PM_CONFIG
+        else
+            echo HIBERNATE_MODE=\"$1\" >> $PM_CONFIG
+        fi
+    else
+        y_fatal_error "Invalid hibarnate mode [$1]"
+    fi
 }
 

@@ -30,7 +30,7 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="ytest"
 VERSION="0.1"
-LAST_MOD="2018.01.16"
+LAST_MOD="2018.01.29"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -94,22 +94,25 @@ test "x" = "xx" && {
   y_info Hello World
 }
 
-test "x" = "xx" && {
-  y_progress_nl Testing...
-  y_progress_end 2
-  y_progress_nl Testing...
-  y_progress_end 1
+test "x" = "x" && {
+  y_progress_nl Testing 1...
+  y_run true
+  y_progress_end
+  y_progress_nl Testing 2...
+  y_run false
+  y_progress_end 99
 
   X=$Y_DEBUG
   Y_DEBUG=$FALSE
   y_progress Loop Testing.
-  for i in {0..5..1}; do 
+  for i in {0..5..1} ; do 
     y_run echo -n .
+    y_run true
     y_run sleep 1
   done
   Y_DEBUG=$X
   echo
-  y_progress_end 0
+  y_progress_end
 }
 
 test "x" = "xX" && {
@@ -129,7 +132,7 @@ test "x" = "xx" && {
     echo [$X]
 }
 
-test "x" = "x" && {
+test "x" = "xx" && {
   Y_MSG_DEST="STDOUT,LOG"
   y_run echo TEST
 }
