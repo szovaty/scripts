@@ -60,7 +60,6 @@ if [ "$USE_POS" = $YES ] ; then
   COLS="`stty size 2>/dev/null`"
   COLS=$((${COLS#*' '}-8))
   ENDCOL=$'\033[A\033['$COLS'G'
-  #echo -e ENDCOL=[$ENDCOL]
 fi
 
 # Generic funtion definitions
@@ -470,7 +469,9 @@ y_run () {
     Y_RUN_RET=$?
     Y_RUN_RET_CUM=$(($Y_RUN_RET + Y_RUN_RET_SUM))
     y_check_exec $Y_RUN_RET $*
-    test $? -eq 2 && exit 2
+    X=$?
+    test $X -eq 2 && exit $X
+    test $X -eq 0 && return $X
     test "$Y_DEBUG_ON_ERROR" != $TRUE && return $Y_RUN_RET
   done
 }

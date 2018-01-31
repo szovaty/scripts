@@ -30,7 +30,7 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="ynew_dev2"
 VERSION="0.0"
-LAST_MOD="2018.01.25"
+LAST_MOD="2018.01.31"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -78,11 +78,11 @@ while [ -n "$1" ] ; do
     --version|-V) y_version; y_exit;;           #; Display version and exit
     --dev|-d)   Y_DEV_DEV="$2"; shift;;         #; Set device [Y_DEV_DEV]
     --mnt|-M)   Y_DEV_MNT="$2"; shift;;         #; Set DEV root [Y_DEV_MNT]
-    --mountdev) Y_MOUNT_DEV="true";;            #; Mount DEV FS [Y_MOUNT_DEV]
+    --mountdev) Y_MOUNT_DEV="$2"; shift;;       #; Mount DEV FS [Y_MOUNT_DEV]
     --src_dirs) Y_SRC_DIRS="$2"; shift;;        #; Source dirs [Y_SRC_DIRS]
     --src_fstab) Y_SRC_FSTAB="$2";shift;;       #; fstab to as source [Y_SRC_FSTAB]
-    --gentoo)   Y_PART_GENTOO="$2";shift;;      #; Define gentoo partition [Y_PART_GENTOO]
-    --noclean)  Y_NOCLEAN="true";;              #; Do not clean on exit [Y_NOCLEAN]
+    --gentoo)   Y_GENTOO_DIR="$2";shift;;       #; Gentoo dir location [Y_GENTOO_DIR]
+    --noclean)  Y_NOCLEAN="true";;              #; Do not clean-up on exit [Y_NOCLEAN]
     --sync)     Y_SYNC="true";;                 #; Sync gentoo files [Y_SYNC]
     --update)   Y_UPDATE="true";;               #; Update Gentoo [Y_UPDATE]
     --check)    Y_CHECK="true";;                #; Pre-check build [Y_CHECK]
@@ -91,7 +91,7 @@ while [ -n "$1" ] ; do
     --bkernel)  Y_BUILD_KERNEL="true";;         #; Build kernel [Y_BUILD_KERNEL]
     --lilo)     Y_LILO="true";;                 #; Update bootloader [Y_LILO]
     --rebuild)  Y_REBUILD="true";;              #; Rebuild system after new kernel
-    --cgentoo)  Y_CGENTOO="true";;              #; Clean Gentoo [Y_CGENTOO]
+    --clgentoo) Y_CGENTOO="true";;              #; Clean Gentoo [Y_CGENTOO]
     --qtest)    Y_QUICKTEST="true";;            #; Test new sys by chroot [Y_QUICKTEST]
     --systest)  Y_SYSTEST="true";;              #; Test by reboot into DEV [Y_SYSTEST]
 #    *)          y_fatal_error "Unknown command";;
@@ -112,7 +112,7 @@ y_check_dryrun_not && test $(id -u) -ne 0 &&
     y_progress_nl "Mount DEV root on $Y_DEV_MNT..."
     y_run "fsck -p "$Y_DEV_DEV" 2>&1 >> $LOG"
     y_run mkdir -p $Y_DEV_MNT
-    y_mount "$Y_DEV_MNT"
+    y_mount $Y_DEV_DEV $Y_DEV_MNT
     y_progress_end
 }
 
@@ -120,24 +120,33 @@ y_check_dryrun_not && test $(id -u) -ne 0 &&
 test -n "$Y_SYNC" && {
     y_progress_nl "Sync DEV system with current install..."
     y_run yrsync_xos -x "$Y_DEV_MNT" -f /etc/fstab.dev -d \"$Y_SRC_DIRS\" -m
-    y_run rm $Y_DEV_MNT/gentoo
+    test -h $Y_DEV_MNT/gentoo && y_run rm $Y_DEV_MNT/gentoo
     y_progress_end
 }  
 
 # mount system on DEV
-test -n "$Y_MOUNT_DEV" && {
+test "$Y_MOUNT_DEV" != $FALSE && {
     y_progress_nl "Mount DEV system devices..."
     y_run mkdir -p $Y_DEV_MNT/dev
     y_mount --bind /dev $Y_DEV_MNT/dev
     y_run mkdir -p $Y_DEV_MNT/dev/pts
     y_mount --bind /dev/pts $Y_DEV_MNT/dev/pts
     y_run mkdir -p $Y_DEV_MNT/proc
-    y_mount -t proc proc "$Y_DEV_MNT"/proc
+    y_mount -t proc proc $Y_DEV_MNT/proc
     y_run mkdir -p $Y_DEV_MNT/gentoo
     test ! -d $Y_DEV_MNT/gentoo/portage &&
-      y_mount $Y_PART_GENTOO ${Y_DEV_MNT}/gentoo
+      y_mount --bind $Y_GENTOO_DIR ${Y_DEV_MNT}/gentoo
+    X="$Y_MSG_DEST"
+    Y_MSG_DEST="LOG,STDOUT"
     PORTAGE_TMP=`y_run "emerge --info 2>/dev/null | grep PORTAGE_TMPDIR"`
-    y_run mkdir -p $Y_DEV_MNT${PORTAGE_TMP##*PORTAGE_TMPDIR=}
+    Y_MSG_DEST=$X
+    PORTAGE_TMP=${PORTAGE_TMP##*PORTAGE_TMPDIR=\"}
+    PORTAGE_TMP=${PORTAGE_TMP%*\"}
+    y_run mkdir -p ${Y_DEV_MNT}${PORTAGE_TMP}
+    y_run chmod 1777 $Y_DEV_MNT$PORTAGE_TMP
+    for i in $Y_MOUNT_DEV ; do
+      y_mount ${i%=*} ${Y_DEV_MNT}${i#*=}
+    done
     y_progress_end
 }
 
@@ -150,7 +159,7 @@ test -n "$Y_CGENTOO" && {
 
 # update build system on DEV: emerge --sync
 test -n "$Y_UPDATE" && {
-   y_progress_nl "Update gentoo build cache..."
+   y_progress_nl "Gentoo sync and portage update..."
     #y_run chroot $Y_DEV_MNT emerge --sync
     y_run chroot $Y_DEV_MNT emaint -a sync
     y_run chroot $Y_DEV_MNT emerge -1q portage
@@ -219,7 +228,7 @@ test -n "$Y_REBUILD" && {
     y_progress_nl "  Rebuild other modules..."
     y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge @module-rebuild -q"'
     y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge -q1 udev"'
-    y_progress_nl "Check, clean-up system"
+    #y_progress_nl "Check, clean-up system"
     y_progress_end
 }
 
@@ -252,7 +261,7 @@ test -n "$Y_SYSTEST" -o -n "$Y_SYSMERGE" && {
     y_progress_end
 }
 
-#y_debug_console
+y_debug_console
 
 # ===================================================================================
 # Leave this as the last line
