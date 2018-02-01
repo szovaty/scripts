@@ -1,0 +1,26 @@
+#!/bin/bash
+# vim: ts=4 sw=4:
+
+# remote testing session
+PROJ="/x_proj/jenov/scripts/ymake_dev2"
+CMD="ssh -t root@sormas ymake_dev2"
+LIB="/x_proj/jenov/scripts/y_bash_lib"
+DEST1="root@sormas:/usr/local/bin"
+DEST2="root@sormas:/usr/local/bin"
+
+export DEF_CHECK="     --mountdev  -sync  -cgentoo --update --check  -build  -lkernel  -ckernel  -bkernel  -lilo  -rebuild  -qtest -systest -D"
+export DEF_BUILD="     --mountdev  -sync  -cgentoo --update --check --build  -lkernel  -ckernel  -bkernel  -lilo  -rebuild  -qtest -systest -D"
+export DEF_NEW_KERNEL="--mountdev  -sync  -cgentoo  -update  -check  -build --lkernel --ckernel --bkernel --lilo --rebuild --qtest -systest -D"
+export DEF_TEST="      --mountdev  -sync  -cgentoo  -update  -check  -build  -lkernel  -ckernel  -bkernel  -lilo  -rebuild --qtest -systest -D"
+export DEF_ALL="       --mountdev '/dev/sdc2=/boot /dev/sdc1=/boot/efi'  -sync  -clgentoo -update -check -build -lkernel -ckernel -bkernel -lilo -rebuild -qtest -systest -D"
+
+test -n "$1" && eval CURRENT='$'"DEF_"$1
+test -z "$CURRENT" -o "$CURRENT" = "$1" && { 
+    echo MISSING mode definition
+    env | grep DEF_
+    exit 1; 
+}
+scp $PROJ $DEST1 1>/dev/null
+scp $LIB $DEST2 1>/dev/null
+$CMD --gentoo /xdir/gentoo --dev /dev/sdc4 --mnt /mnt $CURRENT $*
+#fsck -p /dev/sdb3 2>&1 >> /var/log/ymake_dev.log

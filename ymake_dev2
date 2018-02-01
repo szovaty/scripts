@@ -143,7 +143,12 @@ test "$Y_MOUNT_DEV" != $FALSE && {
     PORTAGE_TMP=${PORTAGE_TMP##*PORTAGE_TMPDIR=\"}
     PORTAGE_TMP=${PORTAGE_TMP%*\"}
     y_run mkdir -p ${Y_DEV_MNT}${PORTAGE_TMP}
+    y_mount --bind /tmp $Y_DEV_MNT$PORTAGE_TMP
     y_run chmod 1777 $Y_DEV_MNT$PORTAGE_TMP
+    OLDIFS=$IFS
+    IFS=","
+    Y_MOUNT_DEV=`echo $Y_MOUNT_DEV`
+    IFS=$OLDIFS
     for i in $Y_MOUNT_DEV ; do
       y_mount ${i%=*} ${Y_DEV_MNT}${i#*=}
     done
