@@ -9,10 +9,10 @@ DEST1="root@sormas:/usr/local/bin"
 DEST2="root@sormas:/usr/local/bin"
 
 export DEF_CHECK="     --mountdev  -sync  -cgentoo --update --check  -build  -lkernel  -ckernel  -bkernel  -lilo  -rebuild  -qtest -systest -D"
-export DEF_BUILD="     --mountdev  -sync  -cgentoo --update --check --build  -lkernel  -ckernel  -bkernel  -lilo  -rebuild  -qtest -systest -D"
-export DEF_NEW_KERNEL="--mountdev  -sync  -cgentoo  -update  -check  -build --lkernel --ckernel --bkernel --lilo --rebuild --qtest -systest -D"
+export DEF_BUILD="     --mountdev /dev/sdc2=/boot,/dev/sdc1=/boot/efi  -sync  -cgentoo --update --check --build -ckernel -bkernel  -lilo  -rebuild  -qtest -systest -D"
+export DEF_NEW_KERNEL="--mountdev /dev/sdc2=/boot,/dev/sdc1=/boot/efi -sync  -cgentoo  -update  -check  -build --ckernel --bkernel -lilo -rebuild -qtest -systest -D"
 export DEF_TEST="      --mountdev  -sync  -cgentoo  -update  -check  -build  -lkernel  -ckernel  -bkernel  -lilo  -rebuild --qtest -systest -D"
-export DEF_ALL="       --mountdev '/dev/sdc2=/boot /dev/sdc1=/boot/efi'  -sync  -clgentoo -update -check -build -lkernel -ckernel -bkernel -lilo -rebuild -qtest -systest -D"
+export DEF_ALL="       --mountdev /dev/sdc2=/boot,/dev/sdc1=/boot/efi  -sync  -clgentoo -update -check -build -ckernel -bkernel -lilo -rebuild -qtest -systest -D"
 
 test -n "$1" && eval CURRENT='$'"DEF_"$1
 test -z "$CURRENT" -o "$CURRENT" = "$1" && { 

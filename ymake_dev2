@@ -50,7 +50,7 @@ LOG="/tmp/${0##*/}.log"
 #Y_CONFIRM=$TRUE
 
 # destination options: LOG,STDOUT,STDERR
-Y_MSG_DEST="LOG"
+#Y_MSG_DEST="LOG"
 Y_RUN_RET_SUM=0
 ylib
 
@@ -99,9 +99,9 @@ while [ -n "$1" ] ; do
   shift
 done
 
-y_set_default Y_MSG_DEST "LOG"
+y_set_default Y_MSG_DEST "LOG,STDOUT,STDERR"
 y_set_default Y_DEBUG_ON_ERROR $FALSE
-y_set_default Y_EXIT_ON_ERROR $FALSE
+y_set_default Y_EXIT_ON_ERROR $TRUE
 ylib
 
 y_check_dryrun_not && test $(id -u) -ne 0 && 
@@ -138,13 +138,16 @@ test "$Y_MOUNT_DEV" != $FALSE && {
       y_mount --bind $Y_GENTOO_DIR ${Y_DEV_MNT}/gentoo
     X="$Y_MSG_DEST"
     Y_MSG_DEST="LOG,STDOUT"
-    PORTAGE_TMP=`y_run "emerge --info 2>/dev/null | grep PORTAGE_TMPDIR"`
+    PORTAGE_TMPDIR=`y_run chroot $Y_DEV_MNT /bin/bash -c \
+      '"emerge --info 2>/dev/null | grep PORTAGE_TMPDIR"'`
     Y_MSG_DEST=$X
-    PORTAGE_TMP=${PORTAGE_TMP##*PORTAGE_TMPDIR=\"}
-    PORTAGE_TMP=${PORTAGE_TMP%*\"}
-    y_run mkdir -p ${Y_DEV_MNT}${PORTAGE_TMP}
-    y_mount --bind /tmp $Y_DEV_MNT$PORTAGE_TMP
-    y_run chmod 1777 $Y_DEV_MNT$PORTAGE_TMP
+    P_TMP=${PORTAGE_TMPDIR##*PORTAGE_TMPDIR=\"}
+    P_TMP=${P_TMP%*\"}
+    test "PORTAGE_TMPDIR=\"$P_TMP\"" != "$PORTAGE_TMPDIR" && 
+      y_fatal_error Portage TMP dir [$P_TMP] not what expected!
+    y_run mkdir -p ${Y_DEV_MNT}${P_TMP}
+    y_mount --bind /tmp $Y_DEV_MNT$P_TMP
+    y_run chmod 1777 $Y_DEV_MNT$P_TMP
     OLDIFS=$IFS
     IFS=","
     Y_MOUNT_DEV=`echo $Y_MOUNT_DEV`
@@ -182,7 +185,10 @@ test -n "$Y_CHECK" && {
 test -n "$Y_BUILD" && {
     y_progress_nl "Build/update DEV system..."
     y_run chroot $Y_DEV_MNT emerge -quDN world
+    X="$Y_MSG_DEST"
+    Y_MSG_DEST="STDOUT,LOG"
     y_run chroot $Y_DEV_MNT etc-update
+    Y_MSG_DEST=$X
     y_progress_end
 }
 
@@ -199,12 +205,13 @@ test -n "$Y_CONFIG_KERNEL" && {
 # build new kernel
 test -n "$Y_BUILD_KERNEL" && {
     y_progress_nl "Build kernel..."
+    Y_MSG_DEST="STDERR,LOG"
     y_run chroot $Y_DEV_MNT /bin/bash -c \
       '"cd /usr/src/linux; make bzImage modules modules_install"'
-    y_run mount -o remount,rw /boot
-    y_run cp /boot/vmlinuz.dev /boot/vmlinuz.dev_old
-    y_run cp $Y_DEV_MNT/usr/src/linux/arch/x86/boot/bzImage /boot/vmlinuz.dev
-    y_run mount -o remount,ro /boot
+    #y_run mount -o remount,rw /boot
+    #y_run cp /boot/vmlinuz.dev /boot/vmlinuz.dev_old
+    #y_run cp $Y_DEV_MNT/usr/src/linux/arch/x86/boot/bzImage /boot/vmlinuz.dev
+    #y_run mount -o remount,ro /boot
     y_progress_end
 }
 
@@ -266,7 +273,7 @@ test -n "$Y_SYSTEST" -o -n "$Y_SYSMERGE" && {
     y_progress_end
 }
 
-y_debug_console
+#y_debug_console
 
 # ===================================================================================
 # Leave this as the last line

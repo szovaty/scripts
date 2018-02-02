@@ -467,7 +467,7 @@ y_run () {
     fi
     eval $* $STDERR $STDLOG $STDOUT
     Y_RUN_RET=$?
-    Y_RUN_RET_CUM=$(($Y_RUN_RET + Y_RUN_RET_SUM))
+    Y_RUN_RET_SUM=$(($Y_RUN_RET + Y_RUN_RET_SUM))
     y_check_exec $Y_RUN_RET $*
     X=$?
     test $X -eq 2 && exit $X
