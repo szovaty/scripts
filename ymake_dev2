@@ -70,9 +70,9 @@ HELP="Defaults"
 while [ -n "$1" ] ; do
   case $1 in
     --help|-h)	y_help "[Options]"; y_exit;;    #; Help [HELP]
-    --quiet|-Q) Y_QUIET=$TRUE;;                #; Enable quiet mode [Y_QUIET]
-    --debug|-D) Y_DEBUG=$TRUE;;                #; Enable debug mode [Y_DEBUG]
-    --dry|-N)   Y_DRY_RUN=$TRUE;;              #; Execute dry run mode [Y_DRY_RUN]
+    --quiet|-Q) Y_QUIET=$TRUE;;                 #; Enable quiet mode [Y_QUIET]
+    --debug|-D) Y_DEBUG=$TRUE;;                 #; Enable debug mode [Y_DEBUG]
+    --dry|-N)   Y_DRY_RUN=$TRUE;;               #; Execute dry run mode [Y_DRY_RUN]
     --nocolor)  USE_COLOR="";;                  #; Enable color output [USE_COLOR]
     --log|-L)   LOG="$2"; shift;;               #; Set log destination [LOG]
     --version|-V) y_version; y_exit;;           #; Display version and exit
@@ -82,20 +82,20 @@ while [ -n "$1" ] ; do
     --src_dirs) Y_SRC_DIRS="$2"; shift;;        #; Source dirs [Y_SRC_DIRS]
     --src_fstab) Y_SRC_FSTAB="$2";shift;;       #; fstab to as source [Y_SRC_FSTAB]
     --gentoo)   Y_GENTOO_DIR="$2";shift;;       #; Gentoo dir location [Y_GENTOO_DIR]
-    --noclean)  Y_NOCLEAN=$TRUE;;              #; Do not clean-up on exit [Y_NOCLEAN]
-    --sync)     Y_SYNC=$TRUE;;                 #; Sync gentoo files [Y_SYNC]
-    --update)   Y_UPDATE=$TRUE;;               #; Update Gentoo [Y_UPDATE]
-    --check)    Y_CHECK=$TRUE;;                #; Pre-check build [Y_CHECK]
-    --build)    Y_BUILD=$TRUE;;                #; Build/update DEV system [Y_BUILD]
+    --noclean)  Y_NOCLEAN=$TRUE;;               #; Do not clean-up on exit [Y_NOCLEAN]
+    --sync)     Y_SYNC=$TRUE;;                  #; Sync gentoo files [Y_SYNC]
+    --update)   Y_UPDATE=$TRUE;;                #; Update Gentoo [Y_UPDATE]
+    --check)    Y_CHECK=$TRUE;;                 #; Pre-check build [Y_CHECK]
+    --build)    Y_BUILD=$TRUE;;                 #; Build/update DEV system [Y_BUILD]
     --ckernel)  Y_CONFIG_KERNEL=$TRUE;;         #; Config kernel [Y_CONFIG_KERNEL]
     --bkernel)  Y_BUILD_KERNEL=$TRUE;;          #; Build kernel [Y_BUILD_KERNEL]
-    --lilo)     Y_LILO=$TRUE;;                 #; Update bootloader [Y_LILO]
+    --lilo)     Y_LILO=$TRUE;;                  #; Update bootloader [Y_LILO]
     --grub_inst) Y_GRUB_INSTALL="$2";shift;;    #; Install grub to [Y_GRUB_INSTALL]
     --grub)     Y_GRUB=$TRUE;;                  #; Update grub [Y_GRUB]
-    --rebuild)  Y_REBUILD=$TRUE;;              #; Rebuild system after new kernel
-    --clgentoo) Y_CGENTOO=$TRUE;;              #; Clean Gentoo [Y_CGENTOO]
-    --qtest)    Y_QUICKTEST=$TRUE;;            #; Test new sys by chroot [Y_QUICKTEST]
-    --systest)  Y_SYSTEST=$TRUE;;              #; Test by reboot into DEV [Y_SYSTEST]
+    --rebuild)  Y_REBUILD=$TRUE;;               #; Rebuild system after new kernel
+    --clgentoo) Y_CGENTOO=$TRUE;;               #; Clean Gentoo [Y_CGENTOO]
+    --qtest)    Y_QUICKTEST=$TRUE;;             #; Test new sys by chroot [Y_QUICKTEST]
+    --systest)  Y_SYSTEST=$TRUE;;               #; Test by reboot into DEV [Y_SYSTEST]
   esac
   shift
 done
@@ -127,16 +127,17 @@ test -n "$Y_SYNC" && {
 
 # mount system on DEV
 test "$Y_MOUNT_DEV" != $FALSE && {
-    y_progress_nl "Mount DEV system devices..."
-    y_run mkdir -p $Y_DEV_MNT/dev
-    y_mount --bind /dev $Y_DEV_MNT/dev
-    y_run mkdir -p $Y_DEV_MNT/dev/pts
-    y_mount --bind /dev/pts $Y_DEV_MNT/dev/pts
-    y_run mkdir -p $Y_DEV_MNT/proc
-    y_mount -t proc proc $Y_DEV_MNT/proc
-    y_run mkdir -p $Y_DEV_MNT/gentoo
-    test ! -d $Y_DEV_MNT/gentoo/portage &&
-      y_mount --bind $Y_GENTOO_DIR ${Y_DEV_MNT}/gentoo
+  y_progress_nl "Mount DEV system devices..."
+  y_run mkdir -p $Y_DEV_MNT/dev
+  y_mount --bind /dev $Y_DEV_MNT/dev
+  y_run mkdir -p $Y_DEV_MNT/dev/pts
+  y_mount --bind /dev/pts $Y_DEV_MNT/dev/pts
+  y_run mkdir -p $Y_DEV_MNT/proc
+  y_mount -t proc proc $Y_DEV_MNT/proc
+  y_run mkdir -p $Y_DEV_MNT/gentoo
+  test ! -d $Y_DEV_MNT/gentoo/portage &&
+    y_mount --bind $Y_GENTOO_DIR ${Y_DEV_MNT}/gentoo
+  y_check_dryrun_not && { 
     X="$Y_MSG_DEST"
     Y_MSG_DEST="LOG,STDOUT"
     PORTAGE_TMPDIR=`y_run chroot $Y_DEV_MNT /bin/bash -c \
@@ -146,17 +147,18 @@ test "$Y_MOUNT_DEV" != $FALSE && {
     P_TMP=${P_TMP%*\"}
     test "PORTAGE_TMPDIR=\"$P_TMP\"" != "$PORTAGE_TMPDIR" && 
       y_fatal_error Portage TMP dir [$P_TMP] not what expected!
-    y_run mkdir -p ${Y_DEV_MNT}${P_TMP}
-    y_mount --bind /tmp $Y_DEV_MNT$P_TMP
-    y_run chmod 1777 $Y_DEV_MNT$P_TMP
-    OLDIFS=$IFS
-    IFS=","
-    Y_MOUNT_DEV=`echo $Y_MOUNT_DEV`
-    IFS=$OLDIFS
-    for i in $Y_MOUNT_DEV ; do
-      y_mount ${i%=*} ${Y_DEV_MNT}${i#*=}
-    done
-    y_progress_end
+  }
+  y_run mkdir -p ${Y_DEV_MNT}${P_TMP}
+  y_mount --bind /tmp $Y_DEV_MNT$P_TMP
+  y_run chmod 1777 $Y_DEV_MNT$P_TMP
+  OLDIFS=$IFS
+  IFS=","
+  Y_MOUNT_DEV=`echo $Y_MOUNT_DEV`
+  IFS=$OLDIFS
+  for i in $Y_MOUNT_DEV ; do
+    y_mount ${i%=*} ${Y_DEV_MNT}${i#*=}
+  done
+  y_progress_end
 }
 
 # clean up gentoo files: packages and distfiles
