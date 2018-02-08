@@ -5,8 +5,8 @@
 #
 # TODO: port a few old script and test the new lib
 
-Y_BASH_LIB_VER="1.0-rc4"
-Y_LASTMOD="2018.01.29"
+Y_BASH_LIB_VER="1.0-rc5"
+Y_LASTMOD="2018.02.08"
 
 # set below control variables before sourcing this file in your script!
 
@@ -472,7 +472,8 @@ y_run () {
     X=$?
     test $X -eq 2 && exit $X
     test $X -eq 0 && return $X
-    test "$Y_DEBUG_ON_ERROR" != $TRUE && return $Y_RUN_RET
+    test "$Y_DEBUG_ON_ERROR" != $TRUE &&
+      return $Y_RUN_RET
   done
 }
 

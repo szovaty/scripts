@@ -29,8 +29,8 @@ USE_POS=$YES
 
 # define the following to match the program current state
 PROGRAM_NAME="ynew_dev2"
-VERSION="0.0"
-LAST_MOD="2018.01.31"
+VERSION="0.1"
+LAST_MOD="2018.02.08"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -90,7 +90,7 @@ while [ -n "$1" ] ; do
     --ckernel)  Y_CONFIG_KERNEL=$TRUE;;         #; Config kernel [Y_CONFIG_KERNEL]
     --bkernel)  Y_BUILD_KERNEL=$TRUE;;          #; Build kernel [Y_BUILD_KERNEL]
     --lilo)     Y_LILO=$TRUE;;                  #; Update bootloader [Y_LILO]
-    --grub_inst) Y_GRUB_INSTALL="$2";shift;;    #; Install grub to [Y_GRUB_INSTALL]
+    --grub_inst) Y_GRUB_INSTALL=$TRUE;;         #; Install grub [Y_GRUB_INSTALL]
     --grub)     Y_GRUB=$TRUE;;                  #; Update grub [Y_GRUB]
     --rebuild)  Y_REBUILD=$TRUE;;               #; Rebuild system after new kernel
     --clgentoo) Y_CGENTOO=$TRUE;;               #; Clean Gentoo [Y_CGENTOO]
@@ -101,8 +101,8 @@ while [ -n "$1" ] ; do
 done
 
 y_set_default Y_MSG_DEST "LOG,STDOUT,STDERR"
-y_set_default Y_DEBUG_ON_ERROR $FALSE
-y_set_default Y_EXIT_ON_ERROR $TRUE
+y_set_default Y_DEBUG_ON_ERROR $TRUE
+y_set_default Y_EXIT_ON_ERROR $FALSE
 ylib
 
 y_check_dryrun_not && test $(id -u) -ne 0 && 
@@ -111,10 +111,23 @@ y_check_dryrun_not && test $(id -u) -ne 0 &&
 # mount DEV ROOT_FS if it is not mounted yet
 ! y_check_mount "$Y_DEV_DEV" "$Y_DEV_MNT" && {
     y_progress_nl "Mount DEV root on $Y_DEV_MNT..."
-    y_run "fsck -p "$Y_DEV_DEV" 2>&1 >> $LOG"
+    y_run "fsck -p $Y_DEV_DEV 2>&1 >> $LOG"
     y_run mkdir -p $Y_DEV_MNT
     y_mount $Y_DEV_DEV $Y_DEV_MNT
     y_progress_end
+}
+
+test "$Y_MOUNT_DEV" != $FALSE && {
+  y_progress_nl "Mount extra devices..."
+  OLDIFS=$IFS
+  IFS=","
+  Y_MOUNT_LIST=`echo $Y_MOUNT_DEV`
+  IFS=$OLDIFS
+  for i in $Y_MOUNT_LIST ; do
+    y_run mkdir -p ${Y_DEV_MNT}${i#*=}
+    y_mount ${i%=*} ${Y_DEV_MNT}${i#*=}
+  done
+  y_progress_end
 }
 
 # sync dev to current
@@ -151,13 +164,6 @@ test "$Y_MOUNT_DEV" != $FALSE && {
   y_run mkdir -p ${Y_DEV_MNT}${P_TMP}
   y_mount --bind /tmp $Y_DEV_MNT$P_TMP
   y_run chmod 1777 $Y_DEV_MNT$P_TMP
-  OLDIFS=$IFS
-  IFS=","
-  Y_MOUNT_DEV=`echo $Y_MOUNT_DEV`
-  IFS=$OLDIFS
-  for i in $Y_MOUNT_DEV ; do
-    y_mount ${i%=*} ${Y_DEV_MNT}${i#*=}
-  done
   y_progress_end
 }
 
@@ -230,7 +236,9 @@ test -n "$Y_LILO" && {
 # grub install
 test -n "$Y_GRUB_INSTALL" && {
   y_progress_nl "Grub install..."
-  y_run chroot $Y_DEV_MNT /bin/bach -c '"grub_install --root-directory=/boot/efi"'
+  y_run grub-install --root-directory=$Y_DEV_MNT \
+    --target=x86_64-efi --efi-directory=$Y_DEV_MNT/boot/efi \
+    /dev/`lsblk -no pkname $Y_DEV_DEV`
   y_progress_end
 }
 

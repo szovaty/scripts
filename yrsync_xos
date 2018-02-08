@@ -48,7 +48,7 @@ MOUNT="yes"
 y_start
 # ===================================================================================
 # there is a bug in y_functions around y_help, it can not display RSYNC_OPT well
-y_info "Default rsync options: $RSYNC_OPT"
+#y_info "Default rsync options: $RSYNC_OPT"
 
 # read command line parameters
 while [ -n "$1" ] ; do
