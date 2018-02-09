@@ -105,6 +105,8 @@ y_set_default Y_DEBUG_ON_ERROR $TRUE
 y_set_default Y_EXIT_ON_ERROR $FALSE
 ylib
 
+y_check_cmds "lsblk chroot grep emerge"
+
 y_check_dryrun_not && test $(id -u) -ne 0 && 
   y_fatal_error "Script should run as root!"
 
@@ -236,9 +238,11 @@ test -n "$Y_LILO" && {
 # grub install
 test -n "$Y_GRUB_INSTALL" && {
   y_progress_nl "Grub install..."
+  DEV=`lsblk -no pkname $Y_DEV_DEV`
+  test -b /dev/$DEV || y_fatal_error "Invalid block device [$DEV]"
+  Y_MSG_DEST="LOG"
   y_run grub-install --root-directory=$Y_DEV_MNT \
-    --target=x86_64-efi --efi-directory=$Y_DEV_MNT/boot/efi \
-    /dev/`lsblk -no pkname $Y_DEV_DEV`
+    --target=x86_64-efi --efi-directory=$Y_DEV_MNT/boot/efi /dev/$DEV
   y_progress_end
 }
 
@@ -298,7 +302,7 @@ test -n "$Y_SYSTEST" -o -n "$Y_SYSMERGE" && {
     y_progress_end
 }
 
-y_debug_console
+#y_debug_console
 
 # ===================================================================================
 # Leave this as the last line

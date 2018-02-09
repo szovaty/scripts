@@ -392,8 +392,8 @@ y_check_cmds () {
   local i CMD
   for i in $1 ; do
     CMD=`which $i 2>&1`
-    test "$?" = "1" && { y_error 2 "Command $i not found!" ; return $ERROR ; }
-    test -x "$CMD" || { y_error 2 "Can not run $CMD command" ; return $ERROR ; }
+    test "$?" = "1" && { y_error "Command $i not found!" ; return $ERROR ; }
+    test -x "$CMD" || { y_error "Can not run $CMD command" ; return $ERROR ; }
   done
 }
 
