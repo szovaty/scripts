@@ -212,7 +212,6 @@ test -n "$Y_CONFIG_KERNEL" && {
   }
 }
 
-
 # build new kernel
 test -n "$Y_BUILD_KERNEL" && {
     y_progress_nl "Build kernel..."
@@ -240,9 +239,13 @@ test -n "$Y_GRUB_INSTALL" && {
   y_progress_nl "Grub install..."
   DEV=`lsblk -no pkname $Y_DEV_DEV`
   test -b /dev/$DEV || y_fatal_error "Invalid block device [$DEV]"
+  X="$Y_MSG_DEST"
   Y_MSG_DEST="LOG"
-  y_run grub-install --root-directory=$Y_DEV_MNT \
+  y_run mount -o remount,rw /sys/firmware/efi/efivars
+  y_run grub-install --root-directory=$Y_DEV_MNT --removable \
     --target=x86_64-efi --efi-directory=$Y_DEV_MNT/boot/efi /dev/$DEV
+  y_run mount -o remount,ro /sys/firmware/efi/efivars
+  Y_MSG_DEST=$X
   y_progress_end
 }
 
