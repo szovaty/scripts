@@ -7,7 +7,7 @@ y_start(){ :; }
 y_exit(){ :; }
 y_help(){ :; }
 
-trap y_exit TERM HUP INT
+trap y_exit TERM HUP INT EXIT
 
 # Uncomment this to allow colors on the console
 #USE_COLOR="yes"
@@ -27,8 +27,8 @@ test -r ${FUNCTIONS} && source ${FUNCTIONS}
 
 # define the following to match the program current state
 PROGRAM_NAME="yterms2_conf"
-VERSION="1.0-rc2"
-LAST_MOD="2018.01.10"
+VERSION="1.0-rc3"
+LAST_MOD="2018.02.12"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -37,7 +37,7 @@ LOG="/tmp/${0##*/}.log"
 #Y_DEBUG="true"
 
 TERM_CMD="xfce4-terminal"
-TERM_OPT="--hide-borders --tab"
+TERM_OPT="--font=\$FONT --hide-borders --tab"
 TERM_GEO="--geometry="
 TERM_TITLE="yterms2"
 WIN_NUM="5"
@@ -104,7 +104,7 @@ test $MODE = "save" && {
 }
 
 # save windows configuration
-echo > $CONF_NAME
+echo "FONT=5" > $CONF_NAME
 
 for i in $WLIST ; do
   X=`xwininfo -id $i -stats | grep "geometry"`
@@ -117,4 +117,4 @@ chmod +x $CONF_NAME
 
 # ===================================================================================
 # Leave this as the last line
-y_exit
+#y_exit

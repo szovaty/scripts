@@ -6,7 +6,7 @@ y_start(){ :; }
 y_exit(){ :; }
 y_help(){ :; }
 
-trap y_exit TERM HUP INT
+trap y_exit TERM HUP INT EXIT
 
 # Source the function library
 ylib () {

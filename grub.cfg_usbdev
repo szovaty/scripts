@@ -1,0 +1,11 @@
+insmod all_video
+terminal_input console
+terminal_output console
+set timeout=20
+set gfxpayload=keep
+insmod gzio
+insmod part_gpt
+insmod ext2
+set root='hd0,gpt2'
+linux /vmlinuz.dev root=/dev/sdb4 ro rootdelay=10
+boot
