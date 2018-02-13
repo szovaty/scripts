@@ -2,11 +2,9 @@
 # vim:set ts=2 sw=2:
 # Bash generic function script by Y
 #  it is a refactored version of y_functions.sh
-#
-# TODO: port a few old script and test the new lib
 
-Y_BASH_LIB_VER="1.0-rc5"
-Y_LASTMOD="2018.02.08"
+Y_BASH_LIB_VER="1.0-rc6"
+Y_LASTMOD="2018.02.13"
 
 # set below control variables before sourcing this file in your script!
 
@@ -25,15 +23,15 @@ Y_RUN_RET_SUM=0
 unset NORM GOOD ERR BAD WARN ATTEN LINK BLINK BLINKOFF REV REVOFF DRYRUN
 Y_FIXME="FIXME# "
 
-if [ "$USE_COLOR" = $YES ] ; then
+if [ "$USE_COLOR" = "$YES" -o "$USE_COLOR" = "$TRUE" ] ; then
   NORM=$'\e[0m'
-  GOOD=$'\e[32m'
-  ERR=$'\e[31;01m'
+  GOOD=$'\e[0m\e[32m'
+  ERR=$'\e[01;31m'
   BAD=$ERR
-  WARN=$'\e[35;01m'
+  WARN=$'\e[01;35m'
   DRYRUN=$'\e[94m'
-  ATTEN=$'\e[94;01m'
-  LINK=$'\e[34;01m'
+  ATTEN=$'\e[01;94m'
+  LINK=$'\e[01;34m'
   BLINK=$'\e[5m'
   BLINKOFF=$'\e[25m'
   REV=$'\e[7m'

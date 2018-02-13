@@ -5,8 +5,8 @@
 PROJ="/x_proj/jenov/scripts/ymake_dev2"
 CMD="ssh -t root@sormas ymake_dev2"
 LIB="/x_proj/jenov/scripts/y_bash_lib"
-DEST1="root@sormas:/usr/local/bin"
-DEST2="root@sormas:/usr/local/bin"
+DEST1="/usr/local/bin"
+DEST2="/usr/local/bin"
 
 DEF_CHECK="     -sync  -clgentoo --update --check  -build  -lkernel  -ckernel  -bkernel  -lilo  -rebuild  -qtest -systest -D"
 DEF_NEW_KERNEL="-sync  -clgentoo  -update  -check  -build --lkernel --ckernel --bkernel --lilo --rebuild --qtest -systest -D"
@@ -20,8 +20,7 @@ test -z "$CURRENT" -o "$CURRENT" = "$1" && {
     env | grep DEF_
     exit 1; 
 }
-#scp $PROJ $DEST1 1>/dev/null
-#scp $LIB $DEST2 1>/dev/null
-#$PROJ --mountdev "/dev/sdc2=/boot /dev/sdc1=/boot/efi" --gentoo /xdir/gentoo --dev /dev/sdc4 --mnt /mnt $CURRENT $*
+cp $PROJ $DEST1 1>/dev/null
+cp $LIB $DEST2 1>/dev/null
 $PROJ --mountdev /dev/sdc2=/boot,/dev/sdc1=/boot/efi --gentoo /xdir/gentoo --dev /dev/sdc4 --mnt /mnt $CURRENT $*
 #fsck -p /dev/sdb3 2>&1 >> /var/log/ymake_dev.log
