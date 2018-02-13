@@ -1,7 +1,6 @@
 insmod all_video
 terminal_input console
 terminal_output console
-set timeout=20
 set gfxpayload=keep
 insmod gzio
 insmod part_gpt

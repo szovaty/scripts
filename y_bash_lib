@@ -29,7 +29,7 @@ if [ "$USE_COLOR" = "$YES" -o "$USE_COLOR" = "$TRUE" ] ; then
   ERR=$'\e[01;31m'
   BAD=$ERR
   WARN=$'\e[01;35m'
-  DRYRUN=$'\e[94m'
+  DRYRUN=$'\e[0m\e[94m'
   ATTEN=$'\e[01;94m'
   LINK=$'\e[01;34m'
   BLINK=$'\e[5m'
@@ -40,9 +40,9 @@ if [ "$USE_COLOR" = "$YES" -o "$USE_COLOR" = "$TRUE" ] ; then
   Y_CON_PS2="\[\033[00;34m\]DEV#\[\033[00m\] "
 fi
 
-Y_FIXME_PS1="/tmp/yps1.$$"
+Y_FIXME_PS1="/tmp/yps1"
 echo PS1=\"$Y_FIXME\" > $Y_FIXME_PS1
-Y_CONSOLE="/tmp/yps2.$$"
+Y_CONSOLE="/tmp/yps2"
 echo PS1=\"$Y_CON_PS2\" > $Y_CONSOLE
 
 #Defaults
@@ -402,7 +402,7 @@ y_check_exec () {
   shift
   y_error "$*"
   test "$Y_EXIT_ON_ERROR" = "$TRUE" && {
-    y_exit
+    y_exit $Y_RUN_RET_SUM
   }
   test "$Y_DEBUG_ON_ERROR" = $TRUE && {
     y_run_debug_help
@@ -468,7 +468,7 @@ y_run () {
     Y_RUN_RET_SUM=$(($Y_RUN_RET + Y_RUN_RET_SUM))
     y_check_exec $Y_RUN_RET $*
     X=$?
-    test $X -eq 2 && exit $X
+    test $X -eq 2 && y_exit 2
     test $X -eq 0 && return $X
     test "$Y_DEBUG_ON_ERROR" != $TRUE &&
       return $Y_RUN_RET

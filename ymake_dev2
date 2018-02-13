@@ -6,7 +6,7 @@ y_start(){ :; }
 y_exit(){ :; }
 y_help(){ :; }
 
-trap y_exit TERM HUP INT EXIT
+trap y_exit TERM HUP INT
 
 # Source the function library
 ylib () {
@@ -29,8 +29,8 @@ USE_POS=$YES
 
 # define the following to match the program current state
 PROGRAM_NAME="ynew_dev2"
-VERSION="0.1"
-LAST_MOD="2018.02.08"
+VERSION="0.2"
+LAST_MOD="2018.02.13"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -52,7 +52,6 @@ LOG="/tmp/${0##*/}.log"
 # destination options: LOG,STDOUT,STDERR
 #Y_MSG_DEST="LOG"
 Y_RUN_RET_SUM=0
-ylib
 
 # -------------- configuration defaults -----------------------
 Y_MOUNT_DEV="$FALSE"
@@ -62,6 +61,7 @@ Y_SRC_DIRS="/usr /var /opt /boot /home"
 Y_SRC_FSTAB="/etc/fstab.dev"
 Y_PART_GENTOO="/dev/sdb2"
 
+ylib
 #y_init_screen
 y_start
 # ===================================================================================
@@ -100,17 +100,22 @@ while [ -n "$1" ] ; do
   shift
 done
 
+# set some sane defaults if not set already
 y_set_default Y_MSG_DEST "LOG,STDOUT,STDERR"
 y_set_default Y_DEBUG_ON_ERROR $TRUE
 y_set_default Y_EXIT_ON_ERROR $FALSE
+
+# resource the library to make effect changes in the environment variables
 ylib
 
+# check if required tools are installed
 y_check_cmds "lsblk chroot grep emerge"
 
+# make sure we run as root
 y_check_dryrun_not && test $(id -u) -ne 0 && 
   y_fatal_error "Script should run as root!"
 
-# mount DEV ROOT_FS if it is not mounted yet
+# mount DEV ROOTFS if it is not mounted yet
 ! y_check_mount "$Y_DEV_DEV" "$Y_DEV_MNT" && {
   y_progress_nl "Mount DEV root on $Y_DEV_MNT..."
   y_run "fsck -p $Y_DEV_DEV 2>&1 >> $LOG"
@@ -119,6 +124,7 @@ y_check_dryrun_not && test $(id -u) -ne 0 &&
   y_progress_end
 }
 
+# mount extra block device(s) required to make up DEVFS
 test "$Y_MOUNT_DEV" != $FALSE && {
   y_progress_nl "Mount extra devices..."
   OLDIFS=$IFS
@@ -132,16 +138,16 @@ test "$Y_MOUNT_DEV" != $FALSE && {
   y_progress_end
 }
 
-# sync dev to current
+# sync DEV install from current install 
 test -n "$Y_SYNC" && {
   y_progress_nl "Sync DEV system with current install..."
   y_run yrsync_xos -x "$Y_DEV_MNT" -f /etc/fstab.dev -d \"$Y_SRC_DIRS\" -m
   y_progress_end
 }  
 
-# mount system on DEV
+# mount presudo fs and support dirs on DEV
 test "$Y_MOUNT_DEV" != $FALSE && {
-  y_progress_nl "Mount DEV system devices..."
+  y_progress_nl "Mount DEV support devices..."
   y_run mkdir -p $Y_DEV_MNT/dev
   y_mount --bind /dev $Y_DEV_MNT/dev
   y_run mkdir -p $Y_DEV_MNT/dev/pts
@@ -186,14 +192,14 @@ test -n "$Y_UPDATE" && {
 # check if it would build: emerge -pvuDN world
 test -n "$Y_CHECK" && {
     y_progress_nl "Pre-Check build..."
-    y_run chroot $Y_DEV_MNT emerge -pvuDN --verbose-conflicts world
+    y_run chroot $Y_DEV_MNT emerge -pvuDN --verbose-conflicts --changed-deps world
     y_progress_end
 }
 
 # build system on DEV: emerge -qubDN world
 test -n "$Y_BUILD" && {
     y_progress_nl "Build/update DEV system..."
-    y_run chroot $Y_DEV_MNT emerge -quDN world
+    y_run chroot $Y_DEV_MNT emerge -quDN --changed-deps world
     X="$Y_MSG_DEST"
     Y_MSG_DEST="STDOUT,LOG"
     y_run chroot $Y_DEV_MNT etc-update
@@ -257,7 +263,7 @@ test -n "$Y_GRUB_INSTALL" && {
 # update grub bootloader
 test -n "$Y_GRUB" && {
   y_progress_nl "Update grub bootloader..."
-
+  # nothing to do here
   y_progress_end
 }
 
@@ -267,29 +273,32 @@ test -n "$Y_REBUILD" && {
   Y_MSG_DEST="LOG"
   y_progress_nl "Check and clean-up system..."
   y_progress_nl "  Chech build integrity..."
-  y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge -quDN world"'
+  y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge -quDN --changed-deps world"'
   y_progress_nl "  Remove unused packages '--depclean'..."
   y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge --depclean -q"'
   y_progress_nl "  Chech build after depclean..."
-  y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge -quDN world"'
+  y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge -quDN --changed-deps world"'
   y_progress_nl "  Rebuild preserved packages..."
   y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge @preserved-rebuild -q"'
   y_progress_nl "  Rebuild X11 modules..."
   y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge @x11-module-rebuild -q"'
-  y_progress_nl "  Rebuild other modules..."
+  y_progress_nl "  Rebuild misc. modules..."
   y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge @module-rebuild -q"'
   y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge -q1 udev"'
-  #y_progress_nl "Check, clean-up system"
+  y_progress_nl "Check and clean-up result"
   Y_MSG_DEST=$X
   y_progress_end
 }
 
 # quick test new install by chroot and command line
 test -n "$Y_QUICKTEST" && {
-    y_progress_nl "Quick test new system..."
-    y_run cp /x_proj/jenov/scripts/yrsync_dev $Y_DEV_MNT/usr/local/bin
-    y_run chroot $Y_DEV_MNT bash --rcfile $Y_CONSOLE -i
-    y_progress_end
+  y_progress_nl "Quick test new system..."
+  X="$Y_MSG_DEST"
+  Y_MSG_DEST="STDOUT,STDERR,LOG"
+  y_run cp /x_proj/jenov/scripts/yrsync_dev $Y_DEV_MNT/usr/local/bin
+  y_run chroot $Y_DEV_MNT bash --rcfile $Y_CONSOLE -i
+  Y_MSG_DEST=$X
+  y_progress_end
 }
 
 test -f "$Y_TODO" && y_run_ cp "$Y_TODO" "$Y_DEV_MNT"/__TODO__
@@ -317,4 +326,4 @@ test -n "$Y_SYSTEST" -o -n "$Y_SYSMERGE" && {
 
 # ===================================================================================
 # Leave this as the last line
-#y_exit
+y_exit
