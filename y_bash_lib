@@ -562,3 +562,14 @@ y_hibernate(){
     fi
 }
 
+# make temporary change to the Y_MSG_DEST env var
+y_msg_dest() {
+  test -n "$1" && {
+    Y_MSG_DEST_BACKUP="$Y_MSG_DEST"
+    Y_MSG_DEST="$1"
+  }
+}
+
+y_msg_dest_restore() {
+  Y_MSG_DEST="$Y_MSG_DEST_BACKUP"
+}

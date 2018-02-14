@@ -94,7 +94,7 @@ test "x" = "xx" && {
   y_info Hello World
 }
 
-test "x" = "x" && {
+test "x" = "xx" && {
   y_progress_nl Testing 1...
   y_run true
   y_progress_end
@@ -145,6 +145,18 @@ test "x" = "xx" && {
   y_debug y_debug
   y_dryrun y_dryrun
   y_usage y_usage
+}
+
+test "x" = "xx" && {
+  echo [$Y_MSG_DEST]
+  y_msg_dest "LOG"
+  echo [$Y_MSG_DEST]
+  y_msg_dest_restore
+  echo [$Y_MSG_DEST]
+  y_msg_dest "STDERR"
+  echo [$Y_MSG_DEST]
+  y_msg_dest_restore
+  echo [$Y_MSG_DEST]
 }
 
 # ===================================================================================

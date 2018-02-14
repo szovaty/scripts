@@ -159,11 +159,10 @@ test "$Y_MOUNT_DEV" != $FALSE && {
   y_run mkdir -p $Y_DEV_MNT/xdir
   y_mount --bind /xdir $Y_DEV_MNT/xdir
   if y_check_dryrun_not ; then 
-    X="$Y_MSG_DEST"
-    Y_MSG_DEST="LOG,STDOUT"
+    y_msg_dest "LOG,STDOUT"
     PORTAGE_TMPDIR=`y_run chroot $Y_DEV_MNT /bin/bash -c \
       '"emerge --info 2>/dev/null | grep PORTAGE_TMPDIR"'`
-    Y_MSG_DEST=$X
+    y_msg_dest_restore
     P_TMP=${PORTAGE_TMPDIR##*PORTAGE_TMPDIR=\"}
     P_TMP=${P_TMP%*\"}
     test "PORTAGE_TMPDIR=\"$P_TMP\"" != "$PORTAGE_TMPDIR" && 
@@ -187,34 +186,32 @@ test -n "$Y_CGENTOO" && {
 # update build system on DEV: emerge --sync
 test -n "$Y_UPDATE" && {
   y_progress_nl "Gentoo sync and portage update..."
-  X="$Y_MSG_DEST"
-  Y_MSG_DEST="LOG"
+  y_msg_dest "LOG"
   #y_run chroot $Y_DEV_MNT emerge --sync
   y_run chroot $Y_DEV_MNT emaint -a sync
   y_run chroot $Y_DEV_MNT emerge -1q portage
-  Y_MSG_DEST=$X
+  y_msg_dest_restore
   y_progress_end
 }
 
 # check if it would build: emerge -pvuDN world
 test -n "$Y_CHECK" && {
     y_progress_nl "Pre-Check build..."
-    X="$Y_MSG_DEST"
-    Y_MSG_DEST="LOG"
+    y_msg_dest ="LOG"
     y_run chroot $Y_DEV_MNT emerge -pvuDN --verbose-conflicts --changed-deps world
-    Y_MSG_DEST=$X
+    y_msg_dest_restore
     y_progress_end
 }
 
 # build system on DEV: emerge -qubDN world
 test -n "$Y_BUILD" && {
-    X="$Y_MSG_DEST"
-    Y_MSG_DEST="LOG"
+    y_msg_dest "LOG"
     y_progress_nl "Build/update DEV system..."
     y_run chroot $Y_DEV_MNT emerge -quDN --changed-deps world
-    Y_MSG_DEST="STDOUT,LOG"
+    y_msg_dest_restore
+    y_msg_dest "STDOUT,LOG"
     y_run chroot $Y_DEV_MNT etc-update
-    Y_MSG_DEST=$X
+    y_msg_dest_restore
     y_progress_end
 }
 
@@ -224,10 +221,9 @@ test -n "$Y_CONFIG_KERNEL" && {
   y_check_dryrun_not && {
     y_progress_nl "Kernel configuration..."
     cd $Y_DEV_MNT/usr/src/linux
-    X="$Y_MSG_DEST"
-    Y_MSG_DEST="STDOUT,STDERR"
+    y_msg_dest "STDOUT,STDERR"
     y_run bash --rcfile $Y_CONSOLE -i
-    Y_MSG_DEST=$X
+    y_msg_dest_restore
     y_progress_end
   }
 }
@@ -235,12 +231,11 @@ test -n "$Y_CONFIG_KERNEL" && {
 # build new kernel
 test -n "$Y_BUILD_KERNEL" && {
     y_progress_nl "Build kernel..."
-    X="$Y_MSG_DEST"
-    Y_MSG_DEST="STDERR,LOG"
+    y_msg_dest "STDERR,LOG"
     y_run chroot $Y_DEV_MNT /bin/bash -c \
       '"cd /usr/src/linux; make bzImage modules modules_install"'
     y_run cp $Y_DEV_MNT/usr/src/linux/arch/x86/boot/bzImage $Y_DEV_MNT/boot/vmlinuz.dev
-    Y_MSG_DEST=$X
+    y_msg_dest_restore
     y_progress_end
 }
 
@@ -258,13 +253,12 @@ test -n "$Y_GRUB_INSTALL" && {
   y_progress_nl "Grub EFI install..."
   DEV=`lsblk -no pkname $Y_DEV_DEV`
   test -b /dev/$DEV || y_fatal_error "Invalid block device [$DEV]"
-  X="$Y_MSG_DEST"
-  Y_MSG_DEST="LOG"
+  y_msg_dest "LOG"
   y_run mount -o remount,rw /sys/firmware/efi/efivars
   y_run grub-install --root-directory=$Y_DEV_MNT --removable \
     --target=x86_64-efi --efi-directory=$Y_DEV_MNT/boot/efi /dev/$DEV
   y_run mount -o remount,ro /sys/firmware/efi/efivars
-  Y_MSG_DEST=$X
+  y_msg_dest_restore
   y_progress_end
 }
 
@@ -277,10 +271,9 @@ test -n "$Y_GRUB" && {
 
 # rebuild/clean-up system after new kernel
 test -n "$Y_REBUILD" && {
-  X="$Y_MSG_DEST"
-  Y_MSG_DEST="LOG"
   y_progress_nl "Check and clean-up system..."
   y_progress_nl "  Chech build integrity..."
+  y_msg_dest "LOG"
   y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge -quDN --changed-deps world"'
   y_progress_nl "  Remove unused packages '--depclean'..."
   y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge --depclean -q"'
@@ -293,19 +286,18 @@ test -n "$Y_REBUILD" && {
   y_progress_nl "  Rebuild misc. modules..."
   y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge @module-rebuild -q"'
   y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge -q1 udev"'
+  y_msg_dest_restore
   y_progress_nl "Check and clean-up result"
-  Y_MSG_DEST=$X
   y_progress_end
 }
 
 # quick test new install by chroot and command line
 test -n "$Y_QUICKTEST" && {
   y_progress_nl "Quick test new system..."
-  X="$Y_MSG_DEST"
-  Y_MSG_DEST="STDOUT,STDERR,LOG"
+  y_msg_dest "STDOUT,STDERR,LOG"
   y_run cp /x_proj/jenov/scripts/yrsync_dev $Y_DEV_MNT/usr/local/bin
   y_run chroot $Y_DEV_MNT bash --rcfile $Y_CONSOLE -i
-  Y_MSG_DEST=$X
+  y_msg_dest_restore
   y_progress_end
 }
 
