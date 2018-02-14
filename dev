@@ -8,11 +8,11 @@ LIB="/x_proj/jenov/scripts/y_bash_lib"
 DEST1="/usr/local/bin"
 DEST2="/usr/local/bin"
 
-DEF_CHECK="     -sync  -clgentoo --update --check  -build  -lkernel  -ckernel  -bkernel  -lilo  -rebuild  -qtest -systest -D"
-DEF_NEW_KERNEL="-sync  -clgentoo  -update  -check  -build --lkernel --ckernel --bkernel --lilo --rebuild --qtest -systest -D"
-DEF_TEST="      -sync  -clgentoo  -update  -check  -build  -lkernel  -ckernel  -bkernel  -lilo --grub_inst -rebuild --qtest -systest -D"
-DEF_BUILD="     -sync  -clgentoo --update --check --build  -lkernel  -ckernel  -bkernel  -lilo --grub_inst -rebuild  -qtest -systest -D"
-DEF_ALL="       -sync  -clgentoo  -update  -check  -build  -lkernel  -ckernel  -bkernel  -lilo  -grub_inst --rebuild  -qtest -systest -D"
+DEF_CHECK="      -sync   -clgentoo --update --check  -build  -ckernel  -bkernel  -lilo  -grub_inst  -grub  -rebuild  -qtest  -systest -D"
+DEF_NEW_KERNEL=" -sync   -clgentoo  -update  -check  -build --ckernel --bkernel --lilo  -grub_inst  -grub --rebuild --qtest  -systest -D"
+DEF_TEST="       -sync   -clgentoo  -update  -check  -build  -ckernel  -bkernel  -lilo  -grub_inst  -grub  -rebuild --qtest  -systest -D"
+DEF_BUILD="      -sync   -clgentoo --update --check --build  -ckernel  -bkernel  -lilo --grub_inst  -grub  -rebuild  -qtest  -systest -D"
+DEF_ALL="        -sync   -clgentoo  -update --check --build --ckernel --bkernel  -lilo --grub_inst --grub --rebuild --qtest  -systest -D"
 
 test -n "$1" && eval CURRENT='$'"DEF_"$1
 test -z "$CURRENT" -o "$CURRENT" = "$1" && { 

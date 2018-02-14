@@ -59,6 +59,7 @@ Y_DEV_DEV="/dev/sdb3"
 Y_DEV_MNT="/xy"
 Y_SRC_DIRS="/usr /var /opt /boot /home"
 Y_SRC_FSTAB="/etc/fstab.dev"
+Y_GRUB_CFG="grub.cfg_usbdev"
 Y_PART_GENTOO="/dev/sdb2"
 
 ylib
@@ -92,6 +93,7 @@ while [ -n "$1" ] ; do
     --lilo)     Y_LILO=$TRUE;;                  #; Update bootloader [Y_LILO]
     --grub_inst) Y_GRUB_INSTALL=$TRUE;;         #; Install grub [Y_GRUB_INSTALL]
     --grub)     Y_GRUB=$TRUE;;                  #; Update grub [Y_GRUB]
+    --grub_cfg) Y_GRUB_CFG="$2";shift;;         #; Define grub.cfg file [Y_GRUB_CFG]
     --rebuild)  Y_REBUILD=$TRUE;;               #; Rebuild system after new kernel
     --clgentoo) Y_CGENTOO=$TRUE;;               #; Clean Gentoo [Y_CGENTOO]
     --qtest)    Y_QUICKTEST=$TRUE;;             #; Test new sys by chroot [Y_QUICKTEST]
@@ -126,7 +128,7 @@ y_check_dryrun_not && test $(id -u) -ne 0 &&
 
 # mount extra block device(s) required to make up DEVFS
 test "$Y_MOUNT_DEV" != $FALSE && {
-  y_progress_nl "Mount extra devices..."
+  y_progress_nl "Mount required block devices..."
   OLDIFS=$IFS
   IFS=","
   Y_MOUNT_LIST=`echo $Y_MOUNT_DEV`
@@ -147,7 +149,7 @@ test -n "$Y_SYNC" && {
 
 # mount presudo fs and support dirs on DEV
 test "$Y_MOUNT_DEV" != $FALSE && {
-  y_progress_nl "Mount DEV support devices..."
+  y_progress_nl "Mount DEV misc. devices..."
   y_run mkdir -p $Y_DEV_MNT/dev
   y_mount --bind /dev $Y_DEV_MNT/dev
   y_run mkdir -p $Y_DEV_MNT/dev/pts
@@ -156,7 +158,7 @@ test "$Y_MOUNT_DEV" != $FALSE && {
   y_mount -t proc proc $Y_DEV_MNT/proc
   y_run mkdir -p $Y_DEV_MNT/xdir
   y_mount --bind /xdir $Y_DEV_MNT/xdir
-  y_check_dryrun_not && { 
+  if y_check_dryrun_not ; then 
     X="$Y_MSG_DEST"
     Y_MSG_DEST="LOG,STDOUT"
     PORTAGE_TMPDIR=`y_run chroot $Y_DEV_MNT /bin/bash -c \
@@ -166,10 +168,12 @@ test "$Y_MOUNT_DEV" != $FALSE && {
     P_TMP=${P_TMP%*\"}
     test "PORTAGE_TMPDIR=\"$P_TMP\"" != "$PORTAGE_TMPDIR" && 
       y_fatal_error Portage TMP dir [$P_TMP] not what expected!
-  }
-  y_run mkdir -p ${Y_DEV_MNT}${P_TMP}
-  y_mount --bind /tmp $Y_DEV_MNT$P_TMP
-  y_run chmod 1777 $Y_DEV_MNT$P_TMP
+    y_run mkdir -p ${Y_DEV_MNT}${P_TMP}
+    y_mount --bind /tmp $Y_DEV_MNT$P_TMP
+    y_run chmod 1777 $Y_DEV_MNT$P_TMP
+  else
+    y_dryrun Mount tmp_fs
+  fi
   y_progress_end
 }
 
@@ -182,25 +186,32 @@ test -n "$Y_CGENTOO" && {
 
 # update build system on DEV: emerge --sync
 test -n "$Y_UPDATE" && {
-   y_progress_nl "Gentoo sync and portage update..."
-    #y_run chroot $Y_DEV_MNT emerge --sync
-    y_run chroot $Y_DEV_MNT emaint -a sync
-    y_run chroot $Y_DEV_MNT emerge -1q portage
-    y_progress_end
+  y_progress_nl "Gentoo sync and portage update..."
+  X="$Y_MSG_DEST"
+  Y_MSG_DEST="LOG"
+  #y_run chroot $Y_DEV_MNT emerge --sync
+  y_run chroot $Y_DEV_MNT emaint -a sync
+  y_run chroot $Y_DEV_MNT emerge -1q portage
+  Y_MSG_DEST=$X
+  y_progress_end
 }
 
 # check if it would build: emerge -pvuDN world
 test -n "$Y_CHECK" && {
     y_progress_nl "Pre-Check build..."
+    X="$Y_MSG_DEST"
+    Y_MSG_DEST="LOG"
     y_run chroot $Y_DEV_MNT emerge -pvuDN --verbose-conflicts --changed-deps world
+    Y_MSG_DEST=$X
     y_progress_end
 }
 
 # build system on DEV: emerge -qubDN world
 test -n "$Y_BUILD" && {
+    X="$Y_MSG_DEST"
+    Y_MSG_DEST="LOG"
     y_progress_nl "Build/update DEV system..."
     y_run chroot $Y_DEV_MNT emerge -quDN --changed-deps world
-    X="$Y_MSG_DEST"
     Y_MSG_DEST="STDOUT,LOG"
     y_run chroot $Y_DEV_MNT etc-update
     Y_MSG_DEST=$X
@@ -228,10 +239,7 @@ test -n "$Y_BUILD_KERNEL" && {
     Y_MSG_DEST="STDERR,LOG"
     y_run chroot $Y_DEV_MNT /bin/bash -c \
       '"cd /usr/src/linux; make bzImage modules modules_install"'
-    y_run mount -o remount,rw /boot
-    y_run cp /boot/vmlinuz.dev /boot/vmlinuz.dev_old
-    y_run cp $Y_DEV_MNT/usr/src/linux/arch/x86/boot/bzImage /boot/vmlinuz.dev
-    y_run mount -o remount,ro /boot
+    y_run cp $Y_DEV_MNT/usr/src/linux/arch/x86/boot/bzImage $Y_DEV_MNT/boot/vmlinuz.dev
     Y_MSG_DEST=$X
     y_progress_end
 }
@@ -247,7 +255,7 @@ test -n "$Y_LILO" && {
 
 # grub install
 test -n "$Y_GRUB_INSTALL" && {
-  y_progress_nl "Grub install..."
+  y_progress_nl "Grub EFI install..."
   DEV=`lsblk -no pkname $Y_DEV_DEV`
   test -b /dev/$DEV || y_fatal_error "Invalid block device [$DEV]"
   X="$Y_MSG_DEST"
@@ -263,7 +271,7 @@ test -n "$Y_GRUB_INSTALL" && {
 # update grub bootloader
 test -n "$Y_GRUB" && {
   y_progress_nl "Update grub bootloader..."
-  # nothing to do here
+  y_run cp $Y_GRUB_CFG $Y_DEV_MNT/boot/grub/grub.cfg
   y_progress_end
 }
 
@@ -323,6 +331,7 @@ test -n "$Y_SYSTEST" -o -n "$Y_SYSMERGE" && {
 }
 
 #y_debug_console
+
 
 # ===================================================================================
 # Leave this as the last line

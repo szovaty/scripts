@@ -422,7 +422,7 @@ y_debug_console (){
 y_run_debug_help () {
   echo "----------------------------------------"
   echo "Debug console exit options:"
-  echo "  exit 0: skip failed command"
+  echo "  exit  : skip failed command"
   echo "  exit 1: retry failed command"
   echo "  exit 2: terminate execution"
   echo "-----------------------------------------"
