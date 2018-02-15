@@ -77,6 +77,7 @@ while [ -n "$1" ] ; do
     --nocolor)  USE_COLOR="";;                  #; Enable color output [USE_COLOR]
     --log|-L)   LOG="$2"; shift;;               #; Set log destination [LOG]
     --version|-V) y_version; y_exit;;           #; Display version and exit
+    --new_dev)  Y_NEW_DEV=$TRUE;;               #; Initial new DEV device [Y_NEW_DEV]
     --dev|-d)   Y_DEV_DEV="$2"; shift;;         #; Set device [Y_DEV_DEV]
     --mnt|-M)   Y_DEV_MNT="$2"; shift;;         #; Set DEV root [Y_DEV_MNT]
     --mountdev) Y_MOUNT_DEV="$2"; shift;;       #; Mount DEV FS [Y_MOUNT_DEV]
@@ -111,7 +112,32 @@ y_set_default Y_EXIT_ON_ERROR $FALSE
 ylib
 
 # check if required tools are installed
-y_check_cmds "lsblk chroot grep emerge"
+y_check_cmds "lsblk chroot grep emerge parted mkfs.vfat mkfs.ext2 mkfs.ext4 mkswap"
+
+# initialize a new device to be used
+test -n "$Y_NEW_DEV" && {
+  y_msg_dest "LOG"
+  DEV=`lsblk -no pkname $Y_DEV_DEV`
+  test -b /dev/$DEV || y_fatal_error "Invalid [$DEV] block device"
+  y_progress_nl "Initialize device [$DEV]"
+  y_run parted --script /dev/$DEV \
+    mklabel gpt \
+    mkpart primary 2MiB 4MiB \
+    mkpart primary 4MiB 1024MiB \
+    mkpart primary 1GiB 10GiB \
+    mkpart primary 10GiB -1 \
+    name 1 efi \
+    name 2 grub \
+    name 3 swap \
+    name 4 rootfs \
+    set 1 esp on 
+  y_run mkfs.vfat /dev/${DEV}1
+  y_run mkfs.ext2 /dev/${DEV}2
+  y_run mkswap /dev/${DEV}3
+  y_run mkfs.ext4 /dev/${DEV}4
+  y_msg_dest_restore
+  y_progress_end
+}
 
 # make sure we run as root
 y_check_dryrun_not && test $(id -u) -ne 0 && 
