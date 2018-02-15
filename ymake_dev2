@@ -59,7 +59,7 @@ Y_DEV_DEV="/dev/sdb3"
 Y_DEV_MNT="/xy"
 Y_SRC_DIRS="/usr /var /opt /boot /home"
 Y_SRC_FSTAB="/etc/fstab.dev"
-Y_GRUB_CFG="grub.cfg_usbdev"
+Y_GRUB_CFG="/tmp/grub.cfg_usbdev"
 Y_PART_GENTOO="/dev/sdb2"
 
 ylib
@@ -115,6 +115,7 @@ ylib
 y_check_cmds "lsblk chroot grep emerge parted mkfs.vfat mkfs.ext2 mkfs.ext4 mkswap"
 
 # initialize a new device to be used
+#  tune partitions and filesystem config below
 test -n "$Y_NEW_DEV" && {
   y_msg_dest "LOG"
   DEV=`lsblk -no pkname $Y_DEV_DEV`
@@ -123,9 +124,9 @@ test -n "$Y_NEW_DEV" && {
   y_run parted --script /dev/$DEV \
     mklabel gpt \
     mkpart primary 2MiB 4MiB \
-    mkpart primary 4MiB 1024MiB \
-    mkpart primary 1GiB 10GiB \
-    mkpart primary 10GiB -1 \
+    mkpart primary ext2 4MiB 1024MiB \
+    mkpart primary linux-swap 1GiB 2GiB \
+    mkpart primary ext4 2GiB -1 \
     name 1 efi \
     name 2 grub \
     name 3 swap \
