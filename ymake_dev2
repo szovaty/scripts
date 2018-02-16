@@ -118,24 +118,24 @@ y_check_cmds "lsblk chroot grep emerge parted mkfs.vfat mkfs.ext2 mkfs.ext4 mksw
 #  tune partitions and filesystem config below
 test -n "$Y_NEW_DEV" && {
   y_msg_dest "LOG"
-  DEV=`lsblk -no pkname $Y_DEV_DEV`
-  test -b /dev/$DEV || y_fatal_error "Invalid [$DEV] block device"
+  DEV=${Y_DEV_DEV%*[[:digit:]]}
+  test -b $DEV || y_fatal_error "Invalid [$DEV] block device"
   y_progress_nl "Initialize device [$DEV]"
-  y_run parted --script /dev/$DEV \
+  y_run parted --script $DEV \
     mklabel gpt \
     mkpart primary 2MiB 4MiB \
     mkpart primary ext2 4MiB 1024MiB \
-    mkpart primary linux-swap 1GiB 2GiB \
-    mkpart primary ext4 2GiB -1 \
+    mkpart primary linux-swap 1GiB 10GiB \
+    mkpart primary ext4 10GiB 100% \
     name 1 efi \
     name 2 grub \
     name 3 swap \
     name 4 rootfs \
     set 1 esp on 
-  y_run mkfs.vfat /dev/${DEV}1
-  y_run mkfs.ext2 /dev/${DEV}2
-  y_run mkswap /dev/${DEV}3
-  y_run mkfs.ext4 /dev/${DEV}4
+  y_run mkfs.vfat ${DEV}1
+  y_run mkfs.ext2 ${DEV}2
+  y_run mkswap ${DEV}3
+  y_run mkfs.ext4 ${DEV}4
   y_msg_dest_restore
   y_progress_end
 }
@@ -185,7 +185,9 @@ test "$Y_MOUNT_DEV" != $FALSE && {
   y_mount -t proc proc $Y_DEV_MNT/proc
   y_run mkdir -p $Y_DEV_MNT/xdir
   y_mount --bind /xdir $Y_DEV_MNT/xdir
-  if y_check_dryrun_not ; then 
+  if y_check_dryrun_not ; then
+    test -x $Y_DEV_MNT/bin/bash || 
+      y_fatal_error "Can not execute $Y_DEV_MNT/bin/bash on [$Y_DEV_MNT]"
     y_msg_dest "LOG,STDOUT"
     PORTAGE_TMPDIR=`y_run chroot $Y_DEV_MNT /bin/bash -c \
       '"emerge --info 2>/dev/null | grep PORTAGE_TMPDIR"'`
