@@ -6,7 +6,7 @@ y_start(){ :; }
 y_exit(){ :; }
 y_help(){ :; }
 
-trap y_exit TERM HUP INT EXIT
+trap y_exit TERM HUP INT
 
 # Source the function library
 ylib () {
@@ -15,6 +15,7 @@ ylib () {
   test $? != '0' && { echo Fatal Error!; exit 1; }
   test -r ${LIB} && source ${LIB}
 }
+ylib
 
 # Uncomment this to allow colors on the console
 #USE_COLOR=$YES

@@ -23,7 +23,7 @@ Y_RUN_RET_SUM=0
 unset NORM GOOD ERR BAD WARN ATTEN LINK BLINK BLINKOFF REV REVOFF DRYRUN
 Y_FIXME="FIXME# "
 
-if [ "$USE_COLOR" = "$YES" -o "$USE_COLOR" = "$TRUE" ] ; then
+if [ "$USE_COLOR" = $YES -o "$USE_COLOR" = $TRUE ] ; then
   NORM=$'\e[0m'
   GOOD=$'\e[0m\e[32m'
   ERR=$'\e[01;31m'

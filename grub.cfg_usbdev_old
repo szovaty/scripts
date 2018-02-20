@@ -6,5 +6,5 @@ insmod gzio
 insmod part_gpt
 insmod ext2
 set root='hd0,gpt2'
-linux /vmlinuz.dev root=PARTUUID=0DD79CA1-260C-425D-A039-4F5C20D31BBC ro rootdelay=5
+linux /vmlinuz.dev root=PARTUUID=63F4B55B-ADEA-49D0-851C-5D3DC430503C ro rootdelay=5
 boot

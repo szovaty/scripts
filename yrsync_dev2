@@ -1,0 +1,194 @@
+#!/bin/bash
+# vim:set ts=2 sw=2:
+# Base template2.src version 1.0 last modified 2018.01.11 by y
+
+y_start(){ :; }
+y_exit(){ :; }
+y_help(){ :; }
+
+trap y_exit TERM HUP INT
+
+# Source the function library
+ylib () {
+  FSH="y_bash_lib"
+  LIB=`which $FSH`
+  test $? != '0' && { echo Fatal Error!; exit 1; }
+  test -r ${LIB} && source ${LIB}
+}
+ylib
+
+# Uncomment this to allow colors on the console
+USE_COLOR=$YES
+
+# This will enable positioning of a text to the end (-8 char) 
+# of a line independent of window size
+USE_POS=$YES
+
+# Enable bell for warnings and errors
+#USE_BELL=$YES
+
+# define the following to match the program current state
+PROGRAM_NAME="yrsync_dev2"
+VERSION="2.0-rc1"
+LAST_MOD="2018.02.19"
+
+# Define log file here
+LOG="/tmp/${0##*/}.log"
+
+# Uncomment this if you need debug enabled
+#Y_DEBUG=$TRUE
+
+# use these to set cleanup on exit
+#MOUNTED=""             # y_exit will unmount them
+#DELETE_ON_EXIT=""      # y_exit will delete them
+#LAST_CMD=""            # y_exit will run it just before exit
+
+# Uncomment to make script quiet
+#Y_QUIET=$FALSE
+
+# Uncomment to ask for confirmation 
+#Y_CONFIRM=$TRUE
+
+# destination options: LOG,STDOUT,STDERR
+#Y_MSG_DEST="STDOUT,LOG"
+
+ylib
+
+# define backup system mount point
+DEST_ROOT="/mnt"
+
+# define rsync command
+RSYNC_OPT="-arxl --delete"
+
+# usefull defaults
+DEST_MOUNT="/ /opt /var /boot"
+SRC_ROOT="/"
+SRC_DIRS="/"
+EXCL_DIRS="/etc/fstab /root /home /boot /xdir /lost+found"
+FSTAB="/etc/fstab"
+DEV="yes"
+MOUNT="yes"
+DELETE_LIST=""
+
+FSTAB_DEST="/etc/fstab.main"
+BOOT_DIR="/boot"
+DEV_DIR="/dev"
+KERNEL_MAIN="vmlinuz"
+KERNEL_OLD="vmlinuz.old"
+KERNEL_DEV="vmlinuz.dev"
+
+
+#y_init_screen
+y_start
+# ===================================================================================
+HELP="Defaults"
+# read command line parameters
+while [ -n "$1" ] ; do
+  case $1 in
+    --help|-h)	  y_help "[Options]"; y_exit;;    #; Help [HELP]
+    --log|-L)     export LOG="$2"; shift;;        #; Set LOG [LOG]
+    --quiet|-Q)   Y_QUIET="true";;                #; Enable quiet mode [Y_QUIET]
+    --debug|-D)   Y_DEBUG="true";;                #; Enable debug mode [Y_DEBUG]
+    --dry|-N)     Y_DRY_RUN="true";;              #; Execute dry run mode [Y_DRY_RUN]
+    --exit)       Y_EXIT_ON_ERROR=$TRUE;;         #; Exit on error [Y_EXIT_ON_ERROR]
+    --edebug)     Y_DEBUG_ON_ERROR=$TRUE;;        #; Debug on error [Y_DEBUG_ON_ERROR]
+    --nocolor)    USE_COLOR="";;                  #; Disable color output [USE_COLOR]
+    --version|-V) y_version; y_exit;;             #; Display version and exit
+    --droot|-r)   DEST_ROOT="$2"; shift;;         #; Define destination root [DEST_ROOT]
+    --dmount|-m)  DEST_MOUNT="$2"; shift;;        #; Define dest. mounts [DEST_MOUNT]
+    --sroot|-s)   SRC_ROOT="$2"; shift;;          #; Define source root [SRC_ROOT]
+    --sdirs|-d)   SRC_DIRS="$2"; shift ;;         #; Define source dirs to copy [SRC_DIRS]
+    --excl|-e)    EXCL_DIRS="$2"; shift;;         #; Exclude dirs from sync [EXCL_DIRS]
+    --rsync|-r)   RSYNC_OPT="$2"; shift ;;        #; Define rsync options [RSYNC_OPT]
+    --delete|-D)  DELETE_LIST="$2"; shift;;       #; Delete [DELETE_LIST] before rsync run
+    --nomount|-M) MOUNT="no";;                    #; Mount destination dirs [MOUNT]
+    --dfstab|-f)  FSTAB_DEST="$2"; shift ;;       #; Define dest_fstab [FSTAB_DEST]
+    --lilo)       LILO=$YES;;                     #; Update lilo bootloader [LILO]
+    --grub)       GRUB=$YES;;                     #; Update grub bootloader [GRUB]
+    --nodev)      DEV="no";;                      #; Create core devices under /dev [DEV]
+  esac
+  shift
+done
+
+y_set_default Y_MSG_DEST "STDOUT,LOG"
+y_set_default USE_COLOR $TRUE
+y_set_default Y_DEBUG_ON_ERROR $FALSE
+y_set_default Y_EXIT_ON_ERROR $FALSE
+ylib
+
+RSYNC="rsync $RSYNC_OPT"
+
+test -n "$FSTAB_DEST" && { 
+  test -r "$FSTAB_DEST"  || y_fatal_error "Invalid fstab defined [$FSTAB_DEST]"
+}
+
+# mount destination directories
+test "$MOUNT" = "yes" && {
+  y_progress_nl Mount destination dirs...
+  for i in $DEST_MOUNT ; do
+    x=`grep -E $i'($|\s)' $FSTAB_DEST`
+    M_DEV=`echo $x | awk '{print $1}'`
+    M_PATH=${DEST_ROOT}`echo $x | awk '{print $2}'`
+    test -z "$M_DEV" -o -z "$M_PATH" && y_fatal_error Invalid mount [$i]
+    y_run mkdir -p $M_PATH
+    y_mount $M_DEV $M_PATH
+  done
+  y_progress_end
+}
+
+# create exclude list
+for i in $EXCL_DIRS ; do
+  EXCLUDE="$EXCLUDE --exclude=$i"
+done
+
+for i in $DELETE_LIST ; do
+  y_progress_nl "Delete ${DEST_ROOT}${i}/ ..."
+  y_run rm -r -f --one-file-system ${DEST_ROOT}${i}/*
+  y_progress_end
+done
+
+# sync the filesystems
+for i in $SRC_DIRS ; do
+  s=`printf "%-12s" $i`
+  y_progress_nl "Sync $s -> ${DEST_ROOT}${i} ..."
+  y_run $RSYNC $EXCLUDE $i $DEST_ROOT$i
+  y_progress_end
+done
+
+# adjust backup system
+test "$DEV" = "yes" && {
+  y_progress_nl Create basic devices...
+  test -e "${DEST_ROOT}${DEV_DIR}/console" || 
+    y_run mknod ${DEST_ROOT}${DEV_DIR}/console c 5 1
+  test -e "${DEST_ROOT}${DEV_DIR}/null" || 
+    y_run mknod ${DEST_ROOT}${DEV_DIR}/null c 1 3
+  test -e "${DEST_ROOT}${DEV_DIR}/tty1" || 
+    y_run mknod ${DEST_ROOT}${DEV_DIR}/tty1 c 4 1
+  y_progress_end
+}
+
+test "$LILO" = $YES && {
+  y_progress_nl Update lilo...
+  y_mount -T ${DEST_ROOT}${FSTAB_DEST} $BOOT_DIR
+  y_mount -o remount,rw $BOOT_DIR
+  y_mount --bind $BOOT_DIR ${DEST_ROOT}${BOOT_DIR}
+  y_mount --bind $DEV_DIR ${DEST_ROOT}${DEV_DIR}
+  y_run cp ${DEST_ROOT}${BOOT_DIR}/$KERNEL_MAIN ${DEST_ROOT}${BOOT_DIR}/$KERNEL_OLD
+  y_run cp ${DEST_ROOT}${BOOT_DIR}/$KERNEL_DEV ${DEST_ROOT}${BOOT_DIR}/$KERNEL_MAIN
+  y_run lilo -r $DEST_ROOT
+  y_run mount -o remount,ro $BOOT_DIR
+  y_progress_end
+}
+
+test "$GRUB" = $YES && {
+  y_progress_nl Update grub...
+  y_run cp /boot/vmlinuz.dev $DEST_ROOT/boot/
+  test -e $DEST_ROOT/boot/vmlinuz-latest && 
+    y_run rm $DEST_ROOT/boot/vmlinuz-latest
+  y_run ln -r -s $DEST_ROOT/boot/vmlinuz.dev $DEST_ROOT/boot/vmlinuz-latest
+  y_progress_end
+}
+
+# ===================================================================================
+# Leave this as the last line
+y_exit

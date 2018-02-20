@@ -36,7 +36,7 @@ DIR_LIST="/usr /var /opt"
 RSYNC_OPT="-arx --delete"
 
 # other definitions
-FSTAB="/etc/fstab.1"
+FSTAB="/etc/fstab.xos"
 DEV="yes"
 MOUNT="yes"
 
