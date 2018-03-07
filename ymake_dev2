@@ -29,8 +29,8 @@ USE_POS=$YES
 
 # define the following to match the program current state
 PROGRAM_NAME="ynew_dev2"
-VERSION="0.2"
-LAST_MOD="2018.02.13"
+VERSION="0.3"
+LAST_MOD="2018.03.07"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -55,12 +55,14 @@ Y_RUN_RET_SUM=0
 
 # -------------- configuration defaults -----------------------
 Y_MOUNT_DEV="$FALSE"
-Y_DEV_DEV="/dev/sdb3"
-Y_DEV_MNT="/xy"
-Y_SRC_DIRS="/usr /var /opt /boot /home"
+Y_DEV_MNT="/mnt"
+Y_SRC_DIRS="/usr /var /opt /boot /home /xdir/gentoo"
 Y_SRC_FSTAB="/etc/fstab.dev"
-Y_GRUB_CFG="/tmp/grub.cfg_usbdev"
-Y_PART_GENTOO="/dev/sdb2"
+Y_GRUB_CFG="/boot/grub/grub.cfg_usbdev"
+Y_DEL_RSYNC="/etc/runlevels/default/xdm \
+  /etc/runlevels/boot/dmcrypt \
+  /home/*/.config/autostart/insync.desktop"
+Y_DEV_NAME="/etc/conf.d/hostname.dev"
 
 ylib
 #y_init_screen
@@ -81,6 +83,7 @@ while [ -n "$1" ] ; do
     --dev|-d)   Y_DEV_DEV="$2"; shift;;         #; Set device [Y_DEV_DEV]
     --mnt|-M)   Y_DEV_MNT="$2"; shift;;         #; Set DEV root [Y_DEV_MNT]
     --mountdev) Y_MOUNT_DEV="$2"; shift;;       #; Mount DEV FS [Y_MOUNT_DEV]
+    --mountmisc) Y_MOUNT_MISC=$TRUE;;           #; Mount misc. devs [Y_MOUNT_MISC]
     --src_dirs) Y_SRC_DIRS="$2"; shift;;        #; Source dirs [Y_SRC_DIRS]
     --src_fstab) Y_SRC_FSTAB="$2";shift;;       #; fstab to as source [Y_SRC_FSTAB]
     --gentoo)   Y_GENTOO_DIR="$2";shift;;       #; Gentoo dir location [Y_GENTOO_DIR]
@@ -170,12 +173,17 @@ test "$Y_MOUNT_DEV" != $FALSE && {
 # sync DEV install from current install 
 test -n "$Y_SYNC" && {
   y_progress_nl "Sync DEV system with current install..."
+  y_run mkdir -p $Y_DEV_MNT$Y_GENTOO_DIR
   y_run yrsync_xos -x "$Y_DEV_MNT" -f /etc/fstab.dev -d \"$Y_SRC_DIRS\" -m
+  y_run cp $Y_DEV_NAME $Y_DEV_MNT/etc/conf.d/hostname
+  for i in $Y_DEL_RSYNC ; do
+    y_run rm -f $Y_DEV_MNT$i
+  done
   y_progress_end
 }  
 
 # mount presudo fs and support dirs on DEV
-test "$Y_MOUNT_DEV" != $FALSE && {
+test "$Y_MOUNT_MISC" = $TRUE && {
   y_progress_nl "Mount DEV misc. devices..."
   y_run mkdir -p $Y_DEV_MNT/dev
   y_mount --bind /dev $Y_DEV_MNT/dev
