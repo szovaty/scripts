@@ -86,7 +86,6 @@ while [ -n "$1" ] ; do
     --mountmisc) Y_MOUNT_MISC=$TRUE;;           #; Mount misc. devs [Y_MOUNT_MISC]
     --src_dirs) Y_SRC_DIRS="$2"; shift;;        #; Source dirs [Y_SRC_DIRS]
     --src_fstab) Y_SRC_FSTAB="$2";shift;;       #; fstab to as source [Y_SRC_FSTAB]
-    --gentoo)   Y_GENTOO_DIR="$2";shift;;       #; Gentoo dir location [Y_GENTOO_DIR]
     --noclean)  Y_NOCLEAN=$TRUE;;               #; Do not clean-up on exit [Y_NOCLEAN]
     --sync)     Y_SYNC=$TRUE;;                  #; Sync gentoo files [Y_SYNC]
     --update)   Y_UPDATE=$TRUE;;                #; Update Gentoo [Y_UPDATE]
@@ -120,7 +119,7 @@ y_check_cmds "lsblk chroot grep emerge parted mkfs.vfat mkfs.ext2 mkfs.ext4 mksw
 # initialize a new device to be used
 #  tune partitions and filesystem config below
 test -n "$Y_NEW_DEV" && {
-  y_msg_dest "LOG"
+  y_msg_dest LOG
   DEV=${Y_DEV_DEV%*[[:digit:]]}
   test -b $DEV || y_fatal_error "Invalid [$DEV] block device"
   y_progress_nl "Initialize device [$DEV]"
@@ -173,8 +172,7 @@ test "$Y_MOUNT_DEV" != $FALSE && {
 # sync DEV install from current install 
 test -n "$Y_SYNC" && {
   y_progress_nl "Sync DEV system with current install..."
-  y_run mkdir -p $Y_DEV_MNT$Y_GENTOO_DIR
-  y_run yrsync_xos -x "$Y_DEV_MNT" -f /etc/fstab.dev -d \"$Y_SRC_DIRS\" -m
+  y_run yrsync_xos -x "$Y_DEV_MNT" -f /etc/fstab.dev -d \"$Y_SRC_DIRS\" -m -r \"-arxK --delete\"
   y_run cp $Y_DEV_NAME $Y_DEV_MNT/etc/conf.d/hostname
   for i in $Y_DEL_RSYNC ; do
     y_run rm -f $Y_DEV_MNT$i
@@ -191,8 +189,6 @@ test "$Y_MOUNT_MISC" = $TRUE && {
   y_mount --bind /dev/pts $Y_DEV_MNT/dev/pts
   y_run mkdir -p $Y_DEV_MNT/proc
   y_mount -t proc proc $Y_DEV_MNT/proc
-  y_run mkdir -p $Y_DEV_MNT/xdir
-  y_mount --bind /xdir $Y_DEV_MNT/xdir
   if y_check_dryrun_not ; then
     test -x $Y_DEV_MNT/bin/bash || 
       y_fatal_error "Can not execute $Y_DEV_MNT/bin/bash on [$Y_DEV_MNT]"
@@ -216,14 +212,16 @@ test "$Y_MOUNT_MISC" = $TRUE && {
 # clean up gentoo files: packages and distfiles
 test -n "$Y_CGENTOO" && {
     y_progress_nl "Clear Gentoo build files...."
+    y_msg_dest LOG
     y_run eclean-pkg
+    y_msg_dest_restore
     y_progress_end
 }
 
 # update build system on DEV: emerge --sync
 test -n "$Y_UPDATE" && {
   y_progress_nl "Gentoo sync and portage update..."
-  y_msg_dest "LOG"
+  y_msg_dest LOG
   #y_run chroot $Y_DEV_MNT emerge --sync
   y_run chroot $Y_DEV_MNT emaint -a sync
   y_run chroot $Y_DEV_MNT emerge -1q portage
@@ -234,7 +232,7 @@ test -n "$Y_UPDATE" && {
 # check if it would build: emerge -pvuDN world
 test -n "$Y_CHECK" && {
     y_progress_nl "Pre-Check build..."
-    y_msg_dest ="LOG"
+    y_msg_dest LOG
     y_run chroot $Y_DEV_MNT emerge -pvuDN --verbose-conflicts --changed-deps world
     y_msg_dest_restore
     y_progress_end
@@ -242,7 +240,7 @@ test -n "$Y_CHECK" && {
 
 # build system on DEV: emerge -qubDN world
 test -n "$Y_BUILD" && {
-    y_msg_dest "LOG"
+    y_msg_dest LOG
     y_progress_nl "Build/update DEV system..."
     y_run chroot $Y_DEV_MNT emerge -quDN --changed-deps world
     y_msg_dest_restore
@@ -290,7 +288,7 @@ test -n "$Y_GRUB_INSTALL" && {
   y_progress_nl "Grub EFI install..."
   DEV=`lsblk -no pkname $Y_DEV_DEV`
   test -b /dev/$DEV || y_fatal_error "Invalid block device [$DEV]"
-  y_msg_dest "LOG"
+  y_msg_dest LOG
   y_run mount -o remount,rw /sys/firmware/efi/efivars
   y_run grub-install --root-directory=$Y_DEV_MNT --removable \
     --target=x86_64-efi --efi-directory=$Y_DEV_MNT/boot/efi /dev/$DEV
@@ -310,7 +308,7 @@ test -n "$Y_GRUB" && {
 test -n "$Y_REBUILD" && {
   y_progress_nl "Check and clean-up system..."
   y_progress_nl "  Chech build integrity..."
-  y_msg_dest "LOG"
+  y_msg_dest LOG
   y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge -quDN --changed-deps world"'
   y_progress_nl "  Remove unused packages '--depclean'..."
   y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge --depclean -q"'
@@ -332,7 +330,7 @@ test -n "$Y_REBUILD" && {
 test -n "$Y_QUICKTEST" && {
   y_progress_nl "Quick test new system..."
   y_msg_dest "STDOUT,STDERR,LOG"
-  y_run cp /x_proj/jenov/scripts/yrsync_dev $Y_DEV_MNT/usr/local/bin
+  y_run cp /x_proj/jenov/scripts/yrsync_dev2 $Y_DEV_MNT/usr/local/bin
   y_run chroot $Y_DEV_MNT bash --rcfile $Y_CONSOLE -i
   y_msg_dest_restore
   y_progress_end

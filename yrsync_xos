@@ -48,7 +48,6 @@ MOUNT="yes"
 y_start
 # ===================================================================================
 # there is a bug in y_functions around y_help, it can not display RSYNC_OPT well
-#y_info "Default rsync options: $RSYNC_OPT"
 
 # read command line parameters
 while [ -n "$1" ] ; do
@@ -67,6 +66,8 @@ while [ -n "$1" ] ; do
 done
 
 RSYNC="rsync $RSYNC_OPT"
+
+y_info "$RSYNC_OPT"
 
 test -n "$FSTAB" && { 
 	test -r "$FSTAB"  || y_fatal_error "Invalid fstab defined [$FSTAB]"
