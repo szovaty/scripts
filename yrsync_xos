@@ -17,8 +17,8 @@ test -r ${FUNCTIONS} && source ${FUNCTIONS}
 
 # define the following to match the program current state
 PROGRAM_NAME="yrsync_xos"
-VERSION="0.4"
-LAST_MOD="2011.07.06"
+VERSION="0.5"
+LAST_MOD="2018.03.08"
 
 # Define log file here
 LOG="/var/log/${0##*/}.log"
@@ -33,7 +33,7 @@ XOS_DIR="/xos"
 DIR_LIST="/usr /var /opt"
 
 # define rsync command
-RSYNC_OPT="-arx --delete"
+RSYNC_OPT="-arxK --delete"
 
 # other definitions
 FSTAB="/etc/fstab.xos"
@@ -52,22 +52,22 @@ y_start
 # read command line parameters
 while [ -n "$1" ] ; do
     case $1 in
-	--help|-h)	y_help "[Oprions]"; y_exit;;	#; Help
-	--xos|-x)	XOS_DIR="$2"; shift ;;			#; Define xos_dir [XOS_DIR]
-	--dirs|-d)	DIR_LIST="$2"; shift ;;			#; Define dirs to copy [DIR_LIST]
-	--rsync|-r)	RSYNC_OPT="$2"; shift ;;		#; Define rsync options [RSYNC_OPT]
-	--nocolor|-C) USE_COLOR="no";;				#; Color display [USE_COLOR]
-	--nomount|-m)	MOUNT="no";;				#; Mount target dir [MOUNT]
-	--fstab|-f) FSTAB="$2"; shift ;;			#; Define new fstab [FSTAB]
-	--nofstab|-F) FSTAB="";;					#; Disable fstab modification
-	--nodev|-D)	DEV="no";;						#; Create core devices under /dev [DEV]
+	--help|-h)	    y_help "[Oprions]"; y_exit;;	#; Help
+	--xos|-x)	    XOS_DIR="$2"; shift ;;			#; Define xos_dir [XOS_DIR]
+	--dirs|-d)	    DIR_LIST="$2"; shift ;;			#; Define dirs to copy [DIR_LIST]
+	--rsync|-r)	    RSYNC_OPT="$2"; shift ;;		#; Define rsync options [RSYNC_OPT]
+	--nocolor|-C)   USE_COLOR="no";;				#; Color display [USE_COLOR]
+	--nomount|-m)	MOUNT="no";;    				#; Mount target dir [MOUNT]
+	--fstab|-f)     FSTAB="$2"; shift ;;			#; Define new fstab [FSTAB]
+	--nofstab|-F)   FSTAB="";;		    			#; Disable fstab modification
+	--nodev|-D)	    DEV="no";;						#; Create core devices under /dev [DEV]
     esac
     shift
 done
 
 RSYNC="rsync $RSYNC_OPT"
 
-y_info "$RSYNC_OPT"
+y_debug "$RSYNC_OPT"
 
 test -n "$FSTAB" && { 
 	test -r "$FSTAB"  || y_fatal_error "Invalid fstab defined [$FSTAB]"
