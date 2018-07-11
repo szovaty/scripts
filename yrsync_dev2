@@ -29,8 +29,8 @@ USE_POS=$YES
 
 # define the following to match the program current state
 PROGRAM_NAME="yrsync_dev2"
-VERSION="2.0-rc2"
-LAST_MOD="2018.03.07"
+VERSION="2.0-rc3"
+LAST_MOD="2018.07.06"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -99,8 +99,8 @@ while [ -n "$1" ] ; do
     --sroot|-s)   SRC_ROOT="$2"; shift;;          #; Define source root [SRC_ROOT]
     --sdirs|-d)   SRC_DIRS="$2"; shift ;;         #; Define source dirs to copy [SRC_DIRS]
     --excl|-e)    EXCL_DIRS="$2"; shift;;         #; Exclude dirs from sync [EXCL_DIRS]
-    --rsync|-r)   RSYNC_OPT="$2"; shift ;;        #; Define rsync options [RSYNC_OPT]
-    --delete|-D)  DELETE_LIST="$2"; shift;;       #; Delete [DELETE_LIST] before rsync run
+    --rsync|-R)   RSYNC_OPT="$2"; shift ;;        #; Define rsync options [RSYNC_OPT]
+    --delete)     DELETE_LIST="$2"; shift;;       #; Delete [DELETE_LIST] before rsync run
     --nomount|-M) MOUNT="no";;                    #; Mount destination dirs [MOUNT]
     --dfstab|-f)  FSTAB_DEST="$2"; shift ;;       #; Define dest_fstab [FSTAB_DEST]
     --lilo)       LILO=$YES;;                     #; Update lilo bootloader [LILO]

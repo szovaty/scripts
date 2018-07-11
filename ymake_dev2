@@ -91,6 +91,7 @@ while [ -n "$1" ] ; do
     --update)   Y_UPDATE=$TRUE;;                #; Update Gentoo [Y_UPDATE]
     --check)    Y_CHECK=$TRUE;;                 #; Pre-check build [Y_CHECK]
     --build)    Y_BUILD=$TRUE;;                 #; Build/update DEV system [Y_BUILD]
+    --resume)   Y_BUILD_RESUME=$TRUE;;          #; Resume system build [Y_BUILD_RESUME]
     --ckernel)  Y_CONFIG_KERNEL=$TRUE;;         #; Config kernel [Y_CONFIG_KERNEL]
     --bkernel)  Y_BUILD_KERNEL=$TRUE;;          #; Build kernel [Y_BUILD_KERNEL]
     --lilo)     Y_LILO=$TRUE;;                  #; Update bootloader [Y_LILO]
@@ -243,6 +244,18 @@ test -n "$Y_BUILD" && {
     y_msg_dest LOG
     y_progress_nl "Build/update DEV system..."
     y_run chroot $Y_DEV_MNT emerge -quDN --changed-deps world
+    y_msg_dest_restore
+    y_msg_dest "STDOUT,LOG"
+    y_run chroot $Y_DEV_MNT etc-update
+    y_msg_dest_restore
+    y_progress_end
+}
+
+# build system on DEV: emerge --resume
+test -n "$Y_BUILD_RESUME" && {
+    y_msg_dest LOG
+    y_progress_nl "Build/update DEV system..."
+    y_run chroot $Y_DEV_MNT emerge --resume
     y_msg_dest_restore
     y_msg_dest "STDOUT,LOG"
     y_run chroot $Y_DEV_MNT etc-update

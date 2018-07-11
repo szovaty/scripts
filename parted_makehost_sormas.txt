@@ -1,0 +1,21 @@
+parted --script /dev/sda \
+mklabel gpt \
+mkpart primary fat16 2MiB 4MiB \
+mkpart primary ext2 4MiB 537MiB \
+mkpart primary ext2 537MiB 16GiB \
+mkpart primary ext2 16GiB 32GiB \
+mkpart primary linux-swap 32GiB 48GiB \
+mkpart primary reiserfs 48GiB 49GiB \
+mkpart primary ext2 49GiB 50GiB \
+mkpart primary ext2 50GiB 82GiB \
+mkpart primary ext2 82GiB 100% \
+name 1 efi \
+name 2 grub \
+name 3 rootfs \
+name 4 xos \
+name 5 swap \
+name 6 var \
+name 7 opt \
+name 8 home \
+name 9 xdir \
+set 1 esp on 
