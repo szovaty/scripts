@@ -58,7 +58,7 @@ ylib
 DEST_ROOT="/mnt"
 
 # define rsync command
-RSYNC_OPT="-arxl --delete"
+RSYNC_OPT="-arx --delete"
 
 # usefull defaults
 DEST_MOUNT="/ /opt /var /boot"
@@ -68,7 +68,8 @@ EXCL_DIRS="/gentoo /etc/fstab* /etc/conf.d/hotname /root /home /boot /xdir /lost
 FSTAB="/etc/fstab"
 DEV="yes"
 MOUNT="yes"
-DELETE_LIST="/var/lib /var/db /var/cache"
+#DELETE_LIST="/var/lib /var/db /var/cache"
+DELETE_LIST=""
 
 FSTAB_DEST="/etc/fstab.main"
 BOOT_DIR="/boot"
