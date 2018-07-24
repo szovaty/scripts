@@ -1,5 +1,7 @@
 #/bin/bash
+DEF_COMM="update"
+test -n "$1" && DEF_COMM=$1
 
 git add .
-git commit -m "$1"
+git commit -m "$DEF_COMM"
 git push
