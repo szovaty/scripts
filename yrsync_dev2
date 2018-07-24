@@ -31,7 +31,6 @@ USE_POS=$YES
 PROGRAM_NAME="yrsync_dev2"
 VERSION="2.0-rc4"
 LAST_MOD="2018.07.24"
-# add comment here
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
