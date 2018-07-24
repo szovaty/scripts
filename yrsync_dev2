@@ -29,8 +29,9 @@ USE_POS=$YES
 
 # define the following to match the program current state
 PROGRAM_NAME="yrsync_dev2"
-VERSION="2.0-rc3"
-LAST_MOD="2018.07.06"
+VERSION="2.0-rc4"
+LAST_MOD="2018.07.24"
+# add comment here
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -68,7 +69,7 @@ EXCL_DIRS="/gentoo /etc/fstab* /etc/conf.d/hotname /root /home /boot /xdir /lost
 FSTAB="/etc/fstab"
 DEV="yes"
 MOUNT="yes"
-DELETE_LIST="/var"
+DELETE_LIST="/var/lib /var/db /var/cache"
 
 FSTAB_DEST="/etc/fstab.main"
 BOOT_DIR="/boot"

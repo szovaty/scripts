@@ -29,7 +29,7 @@ USE_POS=$YES
 
 # define the following to match the program current state
 PROGRAM_NAME="ynew_dev2"
-VERSION="0.3"
+VERSION="0.4-rc1"
 LAST_MOD="2018.03.07"
 
 # Define log file here
@@ -129,16 +129,20 @@ test -n "$Y_NEW_DEV" && {
     mkpart primary 2MiB 4MiB \
     mkpart primary ext2 4MiB 1024MiB \
     mkpart primary linux-swap 1GiB 10GiB \
-    mkpart primary ext4 10GiB 100% \
+    mkpart primary ext4 10GiB 100GiB \
+    mkpart primary ext4 100GiB 100% \
     name 1 efi \
     name 2 grub \
     name 3 swap \
     name 4 rootfs \
+    name 5 xdir \
     set 1 esp on 
+  y_run partprobe ${DEV}
   y_run mkfs.vfat ${DEV}1
   y_run mkfs.ext2 ${DEV}2
   y_run mkswap ${DEV}3
   y_run mkfs.ext4 ${DEV}4
+  y_run mkfs.ext4 ${DEV}5
   y_msg_dest_restore
   y_progress_end
 }
@@ -299,8 +303,11 @@ test -n "$Y_LILO" && {
 # grub install
 test -n "$Y_GRUB_INSTALL" && {
   y_progress_nl "Grub EFI install..."
-  DEV=`lsblk -no pkname $Y_DEV_DEV`
-  test -b /dev/$DEV || y_fatal_error "Invalid block device [$DEV]"
+  DEV="DEV"
+  y_check_dryrun_not && {
+    DEV=`lsblk -no pkname $Y_DEV_DEV`
+    test -b /dev/$DEV || y_fatal_error "Invalid block device [$DEV]"
+  }  
   y_msg_dest LOG
   y_run mount -o remount,rw /sys/firmware/efi/efivars
   y_run grub-install --root-directory=$Y_DEV_MNT --removable \
