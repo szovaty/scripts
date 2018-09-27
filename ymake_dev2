@@ -260,7 +260,7 @@ test -n "$Y_BUILD" && {
 # build system on DEV: emerge --resume
 test -n "$Y_BUILD_RESUME" && {
     y_msg_dest LOG
-    y_progress_nl "Build/update DEV system..."
+    y_progress_nl "Resume build/update DEV system..."
     y_run chroot $Y_DEV_MNT emerge --resume
     y_msg_dest_restore
     y_msg_dest "STDOUT,LOG"
