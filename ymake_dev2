@@ -177,11 +177,13 @@ test "$Y_MOUNT_DEV" != $FALSE && {
 # sync DEV install from current install 
 test -n "$Y_SYNC" && {
   y_progress_nl "Sync DEV system with current install..."
+  y_msg_dest LOG
   y_run yrsync_xos -x "$Y_DEV_MNT" -f /etc/fstab.dev -d \"$Y_SRC_DIRS\" -m -r \"-arxK --delete\"
   y_run cp $Y_DEV_NAME $Y_DEV_MNT/etc/conf.d/hostname
   for i in $Y_DEL_RSYNC ; do
     y_run rm -f $Y_DEV_MNT$i
   done
+  y_msg_dest_restore
   y_progress_end
 }  
 
