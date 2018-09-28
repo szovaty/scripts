@@ -240,7 +240,7 @@ test -n "$Y_UPDATE" && {
 test -n "$Y_CHECK" && {
     y_progress_nl "Pre-Check build..."
     y_msg_dest LOG
-    y_run chroot $Y_DEV_MNT emerge -pvuDN --verbose-conflicts --changed-deps world
+    y_run chroot $Y_DEV_MNT emerge -pvuDN world
     y_msg_dest_restore
     y_progress_end
 }
@@ -249,7 +249,7 @@ test -n "$Y_CHECK" && {
 test -n "$Y_BUILD" && {
     y_msg_dest LOG
     y_progress_nl "Build/update DEV system..."
-    y_run chroot $Y_DEV_MNT emerge -quDN --changed-deps world
+    y_run chroot $Y_DEV_MNT emerge -quDN world
     y_msg_dest_restore
     y_msg_dest "STDOUT,LOG"
     y_run chroot $Y_DEV_MNT etc-update
