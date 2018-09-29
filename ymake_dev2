@@ -236,7 +236,7 @@ test -n "$Y_UPDATE" && {
   y_progress_end
 }
 
-# check if it would build: emerge -pvuDN world
+# check if it would build
 test -n "$Y_CHECK" && {
     y_progress_nl "Pre-Check build..."
     y_msg_dest LOG
@@ -245,7 +245,7 @@ test -n "$Y_CHECK" && {
     y_progress_end
 }
 
-# build system on DEV: emerge -qubDN world
+# build system on DEV
 test -n "$Y_BUILD" && {
     y_msg_dest LOG
     y_progress_nl "Build/update DEV system..."
@@ -257,7 +257,7 @@ test -n "$Y_BUILD" && {
     y_progress_end
 }
 
-# build system on DEV: emerge --resume
+# resume build system on DEV
 test -n "$Y_BUILD_RESUME" && {
     y_msg_dest LOG
     y_progress_nl "Resume build/update DEV system..."
@@ -331,11 +331,11 @@ test -n "$Y_REBUILD" && {
   y_progress_nl "Check and clean-up system..."
   y_progress_nl "  Chech build integrity..."
   y_msg_dest LOG
-  y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge -quDN --changed-deps world"'
-  y_progress_nl "  Remove unused packages '--depclean'..."
+  y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge -quDN world"'
+  y_progress_nl "  Remove unused packages 'depclean'..."
   y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge --depclean -q"'
   y_progress_nl "  Chech build after depclean..."
-  y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge -quDN --changed-deps world"'
+  y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge -quDN world"'
   y_progress_nl "  Rebuild preserved packages..."
   y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge @preserved-rebuild -q"'
   y_progress_nl "  Rebuild X11 modules..."
