@@ -85,7 +85,7 @@ while [ -n "$1" ] ; do
     --mountdev) Y_MOUNT_DEV="$2"; shift;;       #; Mount DEV FS [Y_MOUNT_DEV]
     --mountmisc) Y_MOUNT_MISC=$TRUE;;           #; Mount misc. devs [Y_MOUNT_MISC]
     --src_dirs) Y_SRC_DIRS="$2"; shift;;        #; Source dirs [Y_SRC_DIRS]
-    --src_fstab) Y_SRC_FSTAB="$2";shift;;       #; fstab to as source [Y_SRC_FSTAB]
+    --src_fstab) Y_SRC_FSTAB="$2";shift;;       #; host side fstab to use [Y_SRC_FSTAB]
     --noclean)  Y_NOCLEAN=$TRUE;;               #; Do not clean-up on exit [Y_NOCLEAN]
     --sync)     Y_SYNC=$TRUE;;                  #; Sync gentoo files [Y_SYNC]
     --update)   Y_UPDATE=$TRUE;;                #; Update Gentoo [Y_UPDATE]
@@ -178,7 +178,7 @@ test "$Y_MOUNT_DEV" != $FALSE && {
 test -n "$Y_SYNC" && {
   y_progress_nl "Sync DEV system with current install..."
   y_msg_dest LOG
-  y_run yrsync_xos -x "$Y_DEV_MNT" -f /etc/fstab.dev -d \"$Y_SRC_DIRS\" -m -r \"-arxK --delete\"
+  y_run yrsync_xos -x "$Y_DEV_MNT" -f $Y_SRC_FSTAB -d \"$Y_SRC_DIRS\" -m -r \"-arxK --delete\"
   y_run cp $Y_DEV_NAME $Y_DEV_MNT/etc/conf.d/hostname
   for i in $Y_DEL_RSYNC ; do
     y_run rm -f $Y_DEV_MNT$i

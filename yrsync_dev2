@@ -69,7 +69,7 @@ FSTAB="/etc/fstab"
 DEV=$YES
 MOUNT=$YES
 #DELETE_LIST="/var/lib /var/db /var/cache"
-DELETE_LIST=""
+DELETE_LIST="/var/db /var/cache/edb"
 
 FSTAB_DEST="/etc/fstab.main"
 BOOT_DIR="/boot"
