@@ -29,8 +29,8 @@ USE_POS=$YES
 
 # define the following to match the program current state
 PROGRAM_NAME="yrsync_dev2"
-VERSION="2.0-rc6"
-LAST_MOD="2018.07.27"
+VERSION="2.0-rc7"
+LAST_MOD="2018.10.01"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -66,8 +66,8 @@ SRC_ROOT="/"
 SRC_DIRS="/"
 EXCL_DIRS="/gentoo /etc/fstab* /etc/conf.d/hostname /root /home /boot /xdir /lost+found"
 FSTAB="/etc/fstab"
-DEV="yes"
-MOUNT="yes"
+DEV=$YES
+MOUNT=$YES
 #DELETE_LIST="/var/lib /var/db /var/cache"
 DELETE_LIST=""
 
@@ -77,7 +77,8 @@ DEV_DIR="/dev"
 KERNEL_MAIN="vmlinuz"
 KERNEL_OLD="vmlinuz.old"
 KERNEL_DEV="vmlinuz.dev"
-
+GRUB=$YES
+LILO=$NO
 
 #y_init_screen
 y_start
