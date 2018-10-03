@@ -30,7 +30,7 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="yrsync_dev2"
 VERSION="2.0-rc7"
-LAST_MOD="2018.10.01"
+LAST_MOD="2018.10.03"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -77,6 +77,8 @@ DEV_DIR="/dev"
 KERNEL_MAIN="vmlinuz"
 KERNEL_OLD="vmlinuz.old"
 KERNEL_DEV="vmlinuz.dev"
+GENTOO="/xdir/gentoo/"
+GENTOO_BACKUP="/xdir/gentoo_saved/"
 GRUB=$YES
 LILO=$NO
 
@@ -108,6 +110,7 @@ while [ -n "$1" ] ; do
     --lilo)       LILO=$YES; GRUB=$NO;;           #; Update lilo bootloader [LILO]
     --grub)       GRUB=$YES; LILO=$NO;;           #; Update grub bootloader [GRUB]
     --nodev)      DEV="no";;                      #; Create core devices under /dev [DEV]
+    --gentoo)     SAVE_GENTOO=$YES;;              #; Backup gentoo [SAVE_GENTOO]
   esac
   shift
 done
@@ -188,6 +191,13 @@ test "$GRUB" = $YES && {
   test -e $DEST_ROOT/boot/vmlinuz-latest && 
     y_run rm $DEST_ROOT/boot/vmlinuz-latest
   y_run ln -r -s $DEST_ROOT/boot/vmlinuz.dev $DEST_ROOT/boot/vmlinuz-latest
+  y_progress_end
+}
+
+test "$SAVE_GENTOO" = $YES && {
+  y_progress_nl Backup gentoo...
+  y_run rm -f -r -d $DEST_ROOT/$GENTOO_BACKUP
+  y_run rsync -arx $GENTOO $DEST_ROOT/$GENTOO_BACKUP
   y_progress_end
 }
 

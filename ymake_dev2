@@ -382,7 +382,7 @@ test -n "$Y_SYSTEST" -o -n "$Y_SYSMERGE" && {
 }
 
 #y_debug_console
-
+y_run date +%Y_%m_%d > $Y_DEV_MNT/BUILD
 
 # ===================================================================================
 # Leave this as the last line
