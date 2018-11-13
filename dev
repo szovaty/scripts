@@ -26,4 +26,4 @@ test -z "$CURRENT" -o "$CURRENT" = "$1" && {
 cp $PROJ $DEST1 1>/dev/null
 cp $LIB $DEST2 1>/dev/null
 DEV="b"
-$CMD --mountdev /dev/sd${DEV}2=/boot,/dev/sd${DEV}1=/boot/efi,/dev/sd${DEV}5=/xdir --dev /dev/sd${DEV}4 --mnt /mnt $CURRENT $*
+$CMD --prechg --src_fstab /etc/fstab.dev_usb --mountdev /dev/sd${DEV}2=/boot,/dev/sd${DEV}1=/boot/efi,/dev/sd${DEV}5=/xdir --dev /dev/sd${DEV}4 --mnt /mnt $CURRENT $*

@@ -1,10 +1,10 @@
 # vim:set ts=8:
 
-UUID="574e307f-f879-40eb-8c50-f0a7cf0b2930"	/boot		ext2	defaults,noatime	1 2
-UUID="E219-07E5"	                        /boot/efi	vfat	noauto,noatime		1 2
-UUID="fd751b70-7e63-44dc-89ee-57a36e4009dd"	none    	swap	sw			0 0
-UUID="c62d620d-ace9-4cfa-be55-d571acd1def6"	/		ext4	noatime,discard		0 1
-UUID="e87eb539-93c0-4e96-835d-c2a37bca044b"     /xdir           ext4    noatime,discard         1 2
+UUID="cd53b33c-15cb-4300-b394-1e612237aa4c"	/boot		ext2	defaults,noatime	1 2
+UUID="6FE8-BA2C"	                        /boot/efi	vfat	noauto,noatime		1 2
+UUID="7bed1ab4-e634-4298-bfc5-42eac558f854"	none    	swap	sw			0 0
+UUID="2a228028-de43-46d0-a131-e434eeafc7c7"	/		ext4	noatime,discard		0 1
+UUID="94ada4af-ed9d-411e-abab-51469fac35f3"     /xdir           ext4    noatime,discard         1 2
 #/dev/sda4	/xos		ext4	noauto,noatime,discard	0 2
 #/dev/sda6	/var		reiserfs noatime		0 2
 #/dev/sda7	/opt		ext4	noatime,discard		0 2

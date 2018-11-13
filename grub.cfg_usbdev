@@ -5,7 +5,7 @@ set gfxpayload=keep
 insmod gzio
 insmod part_gpt
 insmod ext2
-set root='hd0,gpt2'
-search --no-floppy --fs-uuid --set=root GRUB_ROOT
-linux /vmlinuz.dev root=PARTUUID=0DD79CA1-260C-425D-A039-4F5C20D31BBC ro rootdelay=5
+#set root='hd0,gpt2'
+search --no-floppy --fs-uuid cd53b33c-15cb-4300-b394-1e612237aa4c --set=root
+linux /vmlinuz.dev root=PARTUUID=3ce5aa3c-337a-4c5c-8ca3-b2c587d86289 ro rootdelay=5
 boot

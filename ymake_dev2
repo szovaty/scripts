@@ -28,9 +28,10 @@ USE_POS=$YES
 #USE_BELL=$YES
 
 # define the following to match the program current state
-PROGRAM_NAME="ynew_dev2"
-VERSION="0.4-rc1"
-LAST_MOD="2018.03.07"
+PROGRAM_NAME="ymake_dev2"
+PROG_DESC="Utility to manage a gentoo based host install and update."
+VERSION="0.5-0rc1"
+LAST_MOD="2018.11.13"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -61,18 +62,21 @@ Y_SRC_FSTAB="/etc/fstab.dev"
 Y_GRUB_CFG="/boot/grub/grub.cfg_usbdev"
 Y_DEL_RSYNC="/etc/runlevels/default/xdm \
   /etc/runlevels/boot/dmcrypt \
-  /home/*/.config/autostart/insync.desktop"
+  '/home/*/.config/autostart/insync.desktop'"
 Y_DEV_NAME="/etc/conf.d/hostname.dev"
 
 ylib
+
 #y_init_screen
 y_start
+CMD="$@"
+
 # ===================================================================================
 HELP="Defaults"
 # read command line parameters
 while [ -n "$1" ] ; do
   case $1 in
-    --help|-h)	y_help "[Options]"; y_exit;;    #; Help [HELP]
+    --help|-h)	y_help $PROG_DESC; y_exit;;    #; Help [HELP]
     --quiet|-Q) Y_QUIET=$TRUE;;                 #; Enable quiet mode [Y_QUIET]
     --debug|-D) Y_DEBUG=$TRUE;;                 #; Enable debug mode [Y_DEBUG]
     --dry|-N)   Y_DRY_RUN=$TRUE;;               #; Execute dry run mode [Y_DRY_RUN]
@@ -88,6 +92,7 @@ while [ -n "$1" ] ; do
     --src_fstab) Y_SRC_FSTAB="$2";shift;;       #; host side fstab to use [Y_SRC_FSTAB]
     --noclean)  Y_NOCLEAN=$TRUE;;               #; Do not clean-up on exit [Y_NOCLEAN]
     --sync)     Y_SYNC=$TRUE;;                  #; Sync gentoo files [Y_SYNC]
+    --prechg)   Y_PRECHG_DEV=$TRUE;;            #; Enable change before update [Y_PRECHG_DEV]
     --update)   Y_UPDATE=$TRUE;;                #; Update Gentoo [Y_UPDATE]
     --check)    Y_CHECK=$TRUE;;                 #; Pre-check build [Y_CHECK]
     --build)    Y_BUILD=$TRUE;;                 #; Build/update DEV system [Y_BUILD]
@@ -105,6 +110,9 @@ while [ -n "$1" ] ; do
   esac
   shift
 done
+
+# log command line parameters
+y_debug $0 $CMD
 
 # set some sane defaults if not set already
 y_set_default Y_MSG_DEST "LOG,STDOUT,STDERR"
@@ -178,7 +186,7 @@ test "$Y_MOUNT_DEV" != $FALSE && {
 test -n "$Y_SYNC" && {
   y_progress_nl "Sync DEV system with current install..."
   y_msg_dest LOG
-  y_run yrsync_xos -x "$Y_DEV_MNT" -f $Y_SRC_FSTAB -d \"$Y_SRC_DIRS\" -m -r \"-arxK --delete\"
+  y_run yrsync_xos -x $Y_DEV_MNT -f $Y_SRC_FSTAB -d \"$Y_SRC_DIRS\" -m -r \"-arxK --delete\"
   y_run cp $Y_DEV_NAME $Y_DEV_MNT/etc/conf.d/hostname
   for i in $Y_DEL_RSYNC ; do
     y_run rm -f $Y_DEV_MNT$i
@@ -211,9 +219,16 @@ test "$Y_MOUNT_MISC" = $TRUE && {
     y_mount --bind /tmp $Y_DEV_MNT$P_TMP
     y_run chmod 1777 $Y_DEV_MNT$P_TMP
   else
-    y_dryrun Mount tmp_fs
+    y_dryrun Mount tmp_fs for gentoo
   fi
   y_progress_end
+}
+
+# Make changes to DEV before starting update
+test "$Y_PRECHG_DEV" = $TRUE && {
+  y_msg_dest "STDOUT,STDERR,LOG"
+  y_run chroot $Y_DEV_MNT bash --rcfile $Y_CONSOLE -i
+  y_msg_dest_restore
 }
 
 # clean up gentoo files: packages and distfiles

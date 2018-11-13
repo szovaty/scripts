@@ -3,8 +3,8 @@
 # Bash generic function script by Y
 #  it is a refactored version of y_functions.sh
 
-Y_BASH_LIB_VER="1.0-rc6"
-Y_LASTMOD="2018.02.13"
+Y_BASH_LIB_VER="1.0-rc7"
+Y_LASTMOD="2018.11.13"
 
 # set below control variables before sourcing this file in your script!
 
@@ -192,7 +192,10 @@ y_help (){
   Y_MSG_TYPE="HELP"
   X=$Y_MSG_DEST
   Y_MSG_DEST="STDOUT"
-  y_msg "${0##*/} V$VERSION; $LAST_MOD \\n`echo $*; y_help_opt`"
+  y_msg "${0##*/} V$VERSION; $LAST_MOD "
+  y_info $*
+  y_usage Options
+  y_help_opt
   Y_MSG_DEST=$X
 }
 y_msg () {
@@ -210,35 +213,13 @@ y_msg () {
     DEBUG)	  MESG_COLOR=$NORM ;;
     DRYRUN)	  MESG_COLOR=$DRYRUN ;;
     INFO)	    MESG_COLOR=$NORM ;;
-    USAGE)	  MESG_COLOR=$WARN ;;
+    USAGE)	  MESG_COLOR=$NORM ;;
     HELP)	    MESG_COLOR=$NORM ;;
     *)        return $ERROR
   esac
 
-test "x" = "xx" && {  
-  STDPUT=$STD_OUT
-  if [ "$Y_QUIET" = $TRUE -a $Y_MSG_TYPE != "HELP" ]; then
-    STDOUT=/dev/null
-  else
-    STDOUT=$STD_OUT
-  fi
-
   MSG_HEADER_LOG=`printf "%020s(%05d) %08s" ${0##*/} $$ $Y_MSG_TYPE`
-  MSG_HEADER_STD=`printf "%08s"$Y_MSG_TYPE`
-
-  echo "$Y_MSG_DEST" | grep STDOUT > /dev/null
-  test $?  -eq 0 &&
-    echo -e "  ${MESG_COLOR}$MSG_HEADER_STD: $*${NORM}" >> $STDOUT
-  echo "$Y_MSG_DEST" | grep STDERR > /dev/null
-  test $? -eq 0 &&
-    echo -e "  ${MESG_COLOR}$MSG_HEADER_STD: $*${NORM}" >> $STD_ERR
-  echo "$Y_MSG_DEST" | grep LOG > /dev/null
-  test $? -eq 0 && 
-    echo -e "  `$Y_DATE` $MSG_HEADER_LOG: $*" >> $LOG
-}
-
-  MSG_HEADER_LOG=`printf "%020s(%05d) %08s" ${0##*/} $$ $Y_MSG_TYPE`
-  MSG_HEADER_STD=`printf "%08s"$Y_MSG_TYPE`
+  MSG_HEADER_STD=`printf "%02s"$Y_MSG_TYPE`
 
   if [ "$Y_QUIET" = $TRUE ] ; then
     STDOUT="2>&1 >> $LOG"

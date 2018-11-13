@@ -27,6 +27,7 @@ int main(int argc, char *argv[]){
     unsigned char crc_low, crc_high;
     unsigned short int crc;
     
+    if(
     crc=ModRTU_CRC(argv[1],strnlen(argv[1],32));
     crc_low=crc&0x00FF;
     crc_high=crc>>8;
