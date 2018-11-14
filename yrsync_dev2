@@ -29,6 +29,7 @@ USE_POS=$YES
 
 # define the following to match the program current state
 PROGRAM_NAME="yrsync_dev2"
+PROG_DESC="Install a new system based on current host"
 VERSION="2.0-rc7"
 LAST_MOD="2018.10.03"
 
@@ -82,6 +83,7 @@ GENTOO_BACKUP="/xdir/gentoo_saved/"
 GRUB=$YES
 LILO=$NO
 
+CMD="$@"
 #y_init_screen
 y_start
 # ===================================================================================
@@ -114,6 +116,9 @@ while [ -n "$1" ] ; do
   esac
   shift
 done
+
+# log command line parameters
+y_debug $0 $CMD
 
 y_set_default Y_MSG_DEST "STDOUT,LOG"
 y_set_default USE_COLOR $TRUE
