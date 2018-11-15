@@ -305,7 +305,7 @@ test -n "$Y_BUILD_KERNEL" && {
     y_msg_dest "STDERR,LOG"
     y_run chroot $Y_DEV_MNT /bin/bash -c \
       '"cd /usr/src/linux; make bzImage modules modules_install install"'
-#    y_run cp $Y_DEV_MNT/usr/src/linux/arch/x86/boot/bzImage $Y_DEV_MNT/boot/vmlinuz.dev
+    y_run cp $Y_DEV_MNT/usr/src/linux/arch/x86/boot/bzImage $Y_DEV_MNT/boot/vmlinuz.dev
     y_msg_dest_restore
     y_progress_end
 }

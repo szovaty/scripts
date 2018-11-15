@@ -2,11 +2,14 @@
 # vim: ts=4 sw=4:
 
 # remote testing session
-PROJ="/x_proj/jenov/scripts/ymake_dev2"
+SDIR="/x_proj/jenov/scripts"
+BIN="ymake_dev2"
 CMD="ymake_dev2"
-LIB="/x_proj/jenov/scripts/y_bash_lib"
-DEST1="/usr/local/bin"
-DEST2="/usr/local/bin"
+GRUB="grub.cfg_usbdev"
+LIB="y_bash_lib"
+DEST_LIB="/usr/local/bin"
+DEST_BIN="/usr/local/bin"
+DEST_GRUB="/boot/grub"
 
 DEF_SYNC="       -new_dev  -mountmisc --sync  -clgentoo  -update           -check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst --grub  -rebuild  -qtest  -systest -D"
 DEF_CHECK="      -new_dev --mountmisc  -sync  -clgentoo --update          --check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst  -grub  -rebuild  -qtest  -systest -D"
@@ -23,7 +26,8 @@ test -z "$CURRENT" -o "$CURRENT" = "$1" && {
     env | grep DEF_
     exit 1; 
 }
-cp $PROJ $DEST1 1>/dev/null
-cp $LIB $DEST2 1>/dev/null
+cp $SDIR/$BIN $DEST_BIN 1>/dev/null
+cp $SDIR/$LIB $DEST_LIB 1>/dev/null
+cp $SDIR/$GRUB $DEST_GRUB 1>/dev/null
 DEV="c"
 $CMD --src_fstab /etc/fstab.dev_usb --mountdev /dev/sd${DEV}2=/boot,/dev/sd${DEV}1=/boot/efi,/dev/sd${DEV}5=/xdir --dev /dev/sd${DEV}4 --mnt /mnt $CURRENT $*
