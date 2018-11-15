@@ -38,12 +38,15 @@ if [ "$USE_COLOR" = $YES -o "$USE_COLOR" = $TRUE ] ; then
   REVOFF=$'\e[27m'
   Y_FIXME="\[\033[01;31m\]${Y_FIXME}\[\033[00m\]"
   Y_CON_PS2="\[\033[00;34m\]DEV#\[\033[00m\] "
+  Y_CHROOT_PS2="\[\033[00;32m\]CHROOT#\[\033[00m\] "
 fi
 
 Y_FIXME_PS1="/tmp/yps1"
 echo PS1=\"$Y_FIXME\" > $Y_FIXME_PS1
 Y_CONSOLE="/tmp/yps2"
 echo PS1=\"$Y_CON_PS2\" > $Y_CONSOLE
+Y_CHROOT="/tmp/yps3"
+echo PS1=\"$Y_CHROOT_PS2\" > $Y_CHROOT
 
 #Defaults
 test -z "$LOG" && LOG="/dev/null"

@@ -304,8 +304,8 @@ test -n "$Y_BUILD_KERNEL" && {
     y_progress_nl "Build kernel..."
     y_msg_dest "STDERR,LOG"
     y_run chroot $Y_DEV_MNT /bin/bash -c \
-      '"cd /usr/src/linux; make bzImage modules modules_install"'
-    y_run cp $Y_DEV_MNT/usr/src/linux/arch/x86/boot/bzImage $Y_DEV_MNT/boot/vmlinuz.dev
+      '"cd /usr/src/linux; make bzImage modules modules_install install"'
+#    y_run cp $Y_DEV_MNT/usr/src/linux/arch/x86/boot/bzImage $Y_DEV_MNT/boot/vmlinuz.dev
     y_msg_dest_restore
     y_progress_end
 }
@@ -372,7 +372,7 @@ test -n "$Y_QUICKTEST" && {
   y_run cp /x_proj/jenov/scripts/yrsync_dev2 $Y_DEV_MNT/usr/local/bin
   # fix permition issue
   y_run chmod u+s $Y_DEV_MNT/sbin/unix_chkpwd
-  y_run chroot $Y_DEV_MNT bash --rcfile $Y_CONSOLE -i
+  y_run chroot $Y_DEV_MNT bash --rcfile $Y_CHROOT -i
   y_msg_dest_restore
   y_progress_end
 }
