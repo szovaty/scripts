@@ -62,7 +62,7 @@ DEST_ROOT="/mnt"
 RSYNC_OPT="-arx --delete"
 
 # usefull defaults
-DEST_MOUNT="/ /opt /var /boot"
+DEST_MOUNT="/ /opt /var /boot /boot/efi"
 SRC_ROOT="/"
 SRC_DIRS="/"
 EXCL_DIRS="/gentoo /etc/fstab* /etc/conf.d/hostname /root /home /boot /xdir /lost+found"
@@ -122,7 +122,7 @@ y_debug $0 $CMD
 
 y_set_default Y_MSG_DEST "STDOUT,LOG"
 y_set_default USE_COLOR $TRUE
-y_set_default Y_DEBUG_ON_ERROR $FALSE
+y_set_default Y_DEBUG_ON_ERROR $TRUE
 y_set_default Y_EXIT_ON_ERROR $FALSE
 ylib
 
@@ -192,10 +192,25 @@ test "$LILO" = $YES && {
 
 test "$GRUB" = $YES && {
   y_progress_nl Update grub...
-  y_run cp /boot/vmlinuz.dev $DEST_ROOT/boot/
-  test -e $DEST_ROOT/boot/vmlinuz-latest && 
-    y_run rm $DEST_ROOT/boot/vmlinuz-latest
-  y_run ln -r -s $DEST_ROOT/boot/vmlinuz.dev $DEST_ROOT/boot/vmlinuz-latest
+  DEV="DEV"
+  y_check_dryrun_not && {
+    x=`grep -E /'($|\s)' $FSTAB_DEST`
+    M_DEV=`echo $x | awk '{print $1}'`
+    test -z "$M_DEV" && y_fatal_error Invalid root device [$M_DEV]
+    DEV=`lsblk -no pkname $M_DEV`
+    test -b /dev/$DEV || y_fatal_error "Invalid block device [$DEV]"
+  }
+  y_msg_dest LOG
+  y_run mount -o remount,rw /sys/firmware/efi/efivars
+  y_run grub-install --root-directory=$DEST_ROOT --removable \
+    --target=x86_64-efi --efi-directory=$DEST_ROOT/boot/efi /dev/$DEV
+  y_run mount -o remount,ro /sys/firmware/efi/efivars
+  y_msg_dest_restore
+
+  #y_run cp /boot/vmlinuz.dev $DEST_ROOT/boot/
+  #test -e $DEST_ROOT/boot/vmlinuz-latest && 
+  #  y_run rm $DEST_ROOT/boot/vmlinuz-latest
+  #y_run ln -r -s $DEST_ROOT/boot/vmlinuz.dev $DEST_ROOT/boot/vmlinuz-latest
   y_progress_end
 }
 
