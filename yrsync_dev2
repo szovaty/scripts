@@ -29,9 +29,9 @@ USE_POS=$YES
 
 # define the following to match the program current state
 PROGRAM_NAME="yrsync_dev2"
-PROG_DESC="Install a new system based on current host"
-VERSION="2.0-rc7"
-LAST_MOD="2018.10.03"
+PROG_DESC="Install/update a system based on current host"
+VERSION="3.0-rc0"
+LAST_MOD="2018.11.22"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -72,7 +72,9 @@ MOUNT=$YES
 #DELETE_LIST="/var/lib /var/db /var/cache"
 DELETE_LIST="/var/db /var/cache/edb"
 
-FSTAB_DEST="/etc/fstab.main"
+MODE_NEW="new"
+MODE_UPDATE="update"
+FSTAB_DEST="/etc/fstab.main_usb"
 BOOT_DIR="/boot"
 DEV_DIR="/dev"
 KERNEL_MAIN="vmlinuz"
@@ -83,8 +85,30 @@ GENTOO_BACKUP="/xdir/gentoo_saved/"
 GRUB=$YES
 LILO=$NO
 
+# 256GB disk partitioning
+Y_PARTED_PAR_256="
+  mklabel gpt \
+  mkpart primary fat16 2MiB 4MiB \
+  mkpart primary ext2 4MiB 537MiB \
+  mkpart primary ext2 537MiB 16GiB \
+  mkpart primary ext2 16GiB 32GiB \
+  mkpart primary linux-swap 32GiB 48GiB \
+  mkpart primary reiserfs 48GiB 49GiB \
+  mkpart primary ext2 49GiB 50GiB \
+  mkpart primary ext2 50GiB 82GiB \
+  mkpart primary ext2 82GiB 100% \
+  name 1 efi \
+  name 2 grub \
+  name 3 rootfs \
+  name 4 xos \
+  name 5 swap \
+  name 6 var \
+  name 7 opt \
+  name 8 home \
+  name 9 xdir \
+  set 1 esp on
+"
 CMD="$@"
-#y_init_screen
 y_start
 # ===================================================================================
 HELP="Defaults"
@@ -92,14 +116,17 @@ HELP="Defaults"
 while [ -n "$1" ] ; do
   case $1 in
     --help|-h)	  y_help "[Options]"; y_exit;;    #; Help [HELP]
+    --mode)       Y_MODE="$2"; shift;;            #; Select mode [Y_MODE]
     --log|-L)     export LOG="$2"; shift;;        #; Set LOG [LOG]
     --quiet|-Q)   Y_QUIET="true";;                #; Enable quiet mode [Y_QUIET]
     --debug|-D)   Y_DEBUG="true";;                #; Enable debug mode [Y_DEBUG]
     --dry|-N)     Y_DRY_RUN="true";;              #; Execute dry run mode [Y_DRY_RUN]
-    --exit)       Y_EXIT_ON_ERROR=$TRUE;;         #; Exit on error [Y_EXIT_ON_ERROR]
+    --eexit)      Y_EXIT_ON_ERROR=$TRUE;;         #; Exit on error [Y_EXIT_ON_ERROR]
     --edebug)     Y_DEBUG_ON_ERROR=$TRUE;;        #; Debug on error [Y_DEBUG_ON_ERROR]
     --nocolor)    USE_COLOR="";;                  #; Disable color output [USE_COLOR]
     --version|-V) y_version; y_exit;;             #; Display version and exit
+    --blkdev)     Y_BLKDEV="$2"; shift;;          #; Set block device for system [Y_BLKDEV]
+    --parted)     Y_PPAR="$2"; shift;;            #; Select parted option [PPAR]
     --droot|-r)   DEST_ROOT="$2"; shift;;         #; Define destination root [DEST_ROOT]
     --dmount|-m)  DEST_MOUNT="$2"; shift;;        #; Define dest. mounts [DEST_MOUNT]
     --sroot|-s)   SRC_ROOT="$2"; shift;;          #; Define source root [SRC_ROOT]
@@ -127,23 +154,60 @@ y_set_default Y_EXIT_ON_ERROR $FALSE
 ylib
 
 RSYNC="rsync $RSYNC_OPT"
+eval Y_PARTED_PAR='$'"Y_PARTED_PAR_"$Y_PPAR
 
 test -n "$FSTAB_DEST" && { 
   test -r "$FSTAB_DEST"  || y_fatal_error "Invalid fstab defined [$FSTAB_DEST]"
 }
 
+# find rootfs block device and check it if matches fstab definition
+# also see what it's parent block device [DEV]
+
+y_msg_dest "LOG,STDOUT"
+M_DEV=`y_run grep -E /"'($|\s)'" $FSTAB_DEST`
+M_DEV=`echo $M_DEV`
+M_DEV=${M_DEV%%' '*}
+y_check_dryrun_not && 
+  test -z "$M_DEV" && y_fatal_error Invalid fstab root [$M_DEV]
+
+if [ -n "$Y_BLKDEV" ] ; then
+  y_check_dryrun_not &&
+    test "$Y_BLKDEV" != "$M_DEV" && y_fatal_error parameter [$Y_BLKDEV] != [$M_DEV] from fstab
+else
+  Y_BLKDEV=$M_DEV
+fi
+
+DEV=`y_run lsblk -no pkname $Y_BLKDEV`
+y_msg_dest_restore
+
+# create partitions on new system
+test "$Y_MODE"="$MODE_NEW" &&
+  y_progress_nl Create new partition table ...
+  y_run parted --script /dev/$DEV $Y_PARTED_PAR
+  y_progress_end
+
 # mount destination directories
 test "$MOUNT" = "yes" && {
+  y_msg_dest "LOG"
   y_progress_nl Mount destination dirs...
   for i in $DEST_MOUNT ; do
+    y_progress_nl "  $i"
     x=`grep -E $i'($|\s)' $FSTAB_DEST`
     M_DEV=`echo $x | awk '{print $1}'`
     M_PATH=${DEST_ROOT}`echo $x | awk '{print $2}'`
+    M_FS=`echo $x | awk '{print $3}'`
     test -z "$M_DEV" -o -z "$M_PATH" && y_fatal_error Invalid mount [$i]
+    test "$Y_MODE" = "$MODE_NEW" && {
+      PAR="-q -F"
+      test "$M_FS" = "vfat" &&  PAR=""
+      test "$M_FS" = "reiserfs" &&  PAR="-q"
+      y_run mkfs."$M_FS" "$PAR" $M_DEV
+    }
     y_run mkdir -p $M_PATH
     y_mount $M_DEV $M_PATH
   done
   y_progress_end
+  y_msg_dest_restore
 }
 
 # create exclude list
@@ -161,11 +225,11 @@ done
 for i in $SRC_DIRS ; do
   s=`printf "%-12s" $i`
   y_progress_nl "Sync $s -> ${DEST_ROOT}${i} ..."
-  y_run $RSYNC $EXCLUDE $i $DEST_ROOT$i
+  #y_run $RSYNC $EXCLUDE $i $DEST_ROOT$i
   y_progress_end
 done
 
-# adjust backup system
+# create basic devices
 test "$DEV" = "yes" && {
   y_progress_nl Create basic devices...
   test -e "${DEST_ROOT}${DEV_DIR}/console" || 
@@ -192,17 +256,17 @@ test "$LILO" = $YES && {
 
 test "$GRUB" = $YES && {
   y_progress_nl Update grub...
-  DEV="DEV"
-  y_check_dryrun_not && {
-    x=`grep -E /'($|\s)' $FSTAB_DEST`
-    M_DEV=`echo $x | awk '{print $1}'`
-    test -z "$M_DEV" && y_fatal_error Invalid root device [$M_DEV]
-    DEV=`lsblk -no pkname $M_DEV`
-    test -b /dev/$DEV || y_fatal_error "Invalid block device [$DEV]"
-  }
+  #DEV="DEV"
+  #y_check_dryrun_not && {
+  #  x=`grep -E /'($|\s)' $FSTAB_DEST`
+  #  M_DEV=`echo $x | awk '{print $1}'`
+  #  test -z "$M_DEV" && y_fatal_error Invalid root device [$M_DEV]
+  #  DEV=`lsblk -no pkname $M_DEV`
+  #  test -b /dev/$DEV || y_fatal_error "Invalid block device [$DEV]"
+  #}
   y_msg_dest LOG
   y_run mount -o remount,rw /sys/firmware/efi/efivars
-  y_run grub-install --root-directory=$DEST_ROOT --removable \
+  y_run grub-install --root-directory=$DEST_ROOT/boot --removable \
     --target=x86_64-efi --efi-directory=$DEST_ROOT/boot/efi /dev/$DEV
   y_run mount -o remount,ro /sys/firmware/efi/efivars
   y_msg_dest_restore
