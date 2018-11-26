@@ -55,6 +55,9 @@ LOG="/tmp/${0##*/}.log"
 
 ylib
 
+MODE_NEW="new"
+MODE_UPDATE="update"
+
 # define backup system mount point
 DEST_ROOT="/mnt"
 
@@ -62,18 +65,18 @@ DEST_ROOT="/mnt"
 RSYNC_OPT="-arx --delete"
 
 # usefull defaults
+
 DEST_MOUNT="/ /opt /var /boot /boot/efi"
 SRC_ROOT="/"
-SRC_DIRS="/"
-EXCL_DIRS="/gentoo /etc/fstab* /etc/conf.d/hostname /root /home /boot /xdir /lost+found"
+SRC_DIRS_UPDATE="/"
+SRC_DIRS_NEW="/ /boot/ /boot/efi/ /home/"
+EXCL_DIRS_UPDATE="/gentoo /etc/fstab* /etc/conf.d/hostname /root /home /boot /xdir /lost+found"
+EXCL_DIRS_NEW="/etc/conf.d/hostname"
 FSTAB="/etc/fstab"
 DEV=$YES
 MOUNT=$YES
 #DELETE_LIST="/var/lib /var/db /var/cache"
 DELETE_LIST="/var/db /var/cache/edb"
-
-MODE_NEW="new"
-MODE_UPDATE="update"
 FSTAB_DEST="/etc/fstab.main_usb"
 BOOT_DIR="/boot"
 DEV_DIR="/dev"
@@ -156,6 +159,15 @@ ylib
 RSYNC="rsync $RSYNC_OPT"
 eval Y_PARTED_PAR='$'"Y_PARTED_PAR_"$Y_PPAR
 
+#set default depends on MODE
+SRC_DIRS=$SRC_DIRS_UPDATE
+EXCL_DIRS=$EXCL_DIRS_UPDATE
+test "$Y_MODE" = "$MODE_NEW" && {
+  SRC_DIRS=$SRC_DIRS_NEW
+  EXCL_DIRS=$EXCL_DIRS_NEW
+}
+
+# check fstab
 test -n "$FSTAB_DEST" && { 
   test -r "$FSTAB_DEST"  || y_fatal_error "Invalid fstab defined [$FSTAB_DEST]"
 }
@@ -181,9 +193,12 @@ DEV=`y_run lsblk -no pkname $Y_BLKDEV`
 y_msg_dest_restore
 
 # create partitions on new system
-test "$Y_MODE"="$MODE_NEW" &&
+test "$Y_MODE" = "$MODE_NEW" &&
   y_progress_nl Create new partition table ...
+  #y_run dd if=/dev/zero of=/dev/$DEV count=1k
   y_run parted --script /dev/$DEV $Y_PARTED_PAR
+  # without sleep first mkfs.xxx will fail
+  y_run sleep 1
   y_progress_end
 
 # mount destination directories
@@ -201,7 +216,11 @@ test "$MOUNT" = "yes" && {
       PAR="-q -F"
       test "$M_FS" = "vfat" &&  PAR=""
       test "$M_FS" = "reiserfs" &&  PAR="-q"
-      y_run mkfs."$M_FS" "$PAR" $M_DEV
+      if [ "$M_FS" != "swap" ] ; then 
+        y_run mkfs."$M_FS" "$PAR" $M_DEV
+      else
+        y_run mkswap $M_DEV
+      fi
     }
     y_run mkdir -p $M_PATH
     y_mount $M_DEV $M_PATH
@@ -225,8 +244,15 @@ done
 for i in $SRC_DIRS ; do
   s=`printf "%-12s" $i`
   y_progress_nl "Sync $s -> ${DEST_ROOT}${i} ..."
-  #y_run $RSYNC $EXCLUDE $i $DEST_ROOT$i
+  y_run $RSYNC $EXCLUDE $i $DEST_ROOT$i
   y_progress_end
+  test "$Y_MODE" = "$MODE_NEW" && {
+    y_progress_nl Config new system ...
+    y_run mkdir -p $DEST_ROOT/etc/conf.d
+    y_run cp $FSTAB_DEST $DEST_ROOT/etc/fstab
+    y_run echo 'hostname="test`date +%H%M%S`" > $DEST_ROOT/etc/conf.d/hostname'
+    y_progress_end
+  }
 done
 
 # create basic devices
@@ -256,25 +282,12 @@ test "$LILO" = $YES && {
 
 test "$GRUB" = $YES && {
   y_progress_nl Update grub...
-  #DEV="DEV"
-  #y_check_dryrun_not && {
-  #  x=`grep -E /'($|\s)' $FSTAB_DEST`
-  #  M_DEV=`echo $x | awk '{print $1}'`
-  #  test -z "$M_DEV" && y_fatal_error Invalid root device [$M_DEV]
-  #  DEV=`lsblk -no pkname $M_DEV`
-  #  test -b /dev/$DEV || y_fatal_error "Invalid block device [$DEV]"
-  #}
   y_msg_dest LOG
   y_run mount -o remount,rw /sys/firmware/efi/efivars
-  y_run grub-install --root-directory=$DEST_ROOT/boot --removable \
+  y_run grub-install --root-directory=$DEST_ROOT --removable \
     --target=x86_64-efi --efi-directory=$DEST_ROOT/boot/efi /dev/$DEV
   y_run mount -o remount,ro /sys/firmware/efi/efivars
   y_msg_dest_restore
-
-  #y_run cp /boot/vmlinuz.dev $DEST_ROOT/boot/
-  #test -e $DEST_ROOT/boot/vmlinuz-latest && 
-  #  y_run rm $DEST_ROOT/boot/vmlinuz-latest
-  #y_run ln -r -s $DEST_ROOT/boot/vmlinuz.dev $DEST_ROOT/boot/vmlinuz-latest
   y_progress_end
 }
 
@@ -287,4 +300,5 @@ test "$SAVE_GENTOO" = $YES && {
 
 # ===================================================================================
 # Leave this as the last line
+y_run bash --rcfile $Y_CONSOLE -i
 y_exit
