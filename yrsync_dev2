@@ -30,8 +30,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="yrsync_dev2"
 PROG_DESC="Install/update a system based on current host"
-VERSION="3.0-rc0"
-LAST_MOD="2018.11.22"
+VERSION="3.0-rc1"
+LAST_MOD="2018.11.26"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -246,14 +246,16 @@ for i in $SRC_DIRS ; do
   y_progress_nl "Sync $s -> ${DEST_ROOT}${i} ..."
   y_run $RSYNC $EXCLUDE $i $DEST_ROOT$i
   y_progress_end
-  test "$Y_MODE" = "$MODE_NEW" && {
-    y_progress_nl Config new system ...
-    y_run mkdir -p $DEST_ROOT/etc/conf.d
-    y_run cp $FSTAB_DEST $DEST_ROOT/etc/fstab
-    y_run echo 'hostname="test`date +%H%M%S`" > $DEST_ROOT/etc/conf.d/hostname'
-    y_progress_end
-  }
 done
+
+test "$Y_MODE" = "$MODE_NEW" && {
+  y_progress_nl Config new system ...
+  y_run cp $DEST_ROOT/boot/grub/grub.cfg_main $DEST_ROOT/boot/grub/grub.cfg
+  y_run mkdir -p $DEST_ROOT/etc/conf.d
+  y_run cp $FSTAB_DEST $DEST_ROOT/etc/fstab
+  y_run echo 'hostname="test`date +%H%M%S`" > $DEST_ROOT/etc/conf.d/hostname'
+  y_progress_end
+}
 
 # create basic devices
 test "$DEV" = "yes" && {
