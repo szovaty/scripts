@@ -1,6 +1,8 @@
 #!/bin/bash
 # vim:set ts=2 sw=2:
 # Base template2.src version 1.0 last modified 2018.01.11 by y
+# TODO: grub setup does not work! makes new system unbootable
+
 
 y_start(){ :; }
 y_exit(){ :; }
@@ -30,8 +32,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="yrsync_dev2"
 PROG_DESC="Install/update a system based on current host"
-VERSION="3.0-rc1"
-LAST_MOD="2018.11.26"
+VERSION="3.0-rc2"
+LAST_MOD="2019.05.29"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -66,7 +68,7 @@ RSYNC_OPT="-arx --delete"
 
 # usefull defaults
 
-DEST_MOUNT="/ /opt /var /boot /boot/efi"
+DEST_MOUNT="/ /opt /var /xdir /boot /boot/efi"
 SRC_ROOT="/"
 SRC_DIRS_UPDATE="/"
 SRC_DIRS_NEW="/ /boot/ /boot/efi/ /home/"
@@ -295,8 +297,9 @@ test "$GRUB" = $YES && {
 
 test "$SAVE_GENTOO" = $YES && {
   y_progress_nl Backup gentoo...
-  y_run rm -f -r -d $DEST_ROOT/$GENTOO_BACKUP
-  y_run rsync -arx $GENTOO $DEST_ROOT/$GENTOO_BACKUP
+#  y_run rm -f -r -d $DEST_ROOT/$GENTOO_BACKUP
+  y_run mv $DEST_ROOT/$GENTOO $DEST_ROOT/$GENTOO_BACKUP
+  y_run rsync -arx $GENTOO $DEST_ROOT/$GENTOO
   y_progress_end
 }
 

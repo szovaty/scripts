@@ -14,11 +14,11 @@ DEST_GRUB="/boot/grub"
 DEF_SYNC="       -new_dev  -mountmisc --sync  -clgentoo  -update           -check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst --grub  -rebuild  -qtest  -systest -D"
 DEF_CHECK="      -new_dev --mountmisc  -sync  -clgentoo --update          --check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst  -grub  -rebuild  -qtest  -systest -D"
 DEF_NEW_KERNEL=" -new_dev --mountmisc  -sync  -clgentoo  -update           -check  -build  -resume  -ckernel  --bkernel  -lilo  -grub_inst  -grub --rebuild --qtest  -systest -D"
-DEF_TEST="       -new_dev --mountmisc  -sync  -clgentoo  -update           -check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst  -grub  -rebuild --qtest  -systest -D"
+DEF_TEST="       -new_dev --mountmisc  -sync  -clgentoo --update          --check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst  -grub  -rebuild  -qtest  -systest -D"
 DEF_BUILD="      -new_dev --mountmisc  -sync  -clgentoo --update --prechg --check --build  -resume  -ckernel   -bkernel  -lilo --grub_inst  -grub  -rebuild  -qtest  -systest -D"
 DEF_ALL="        -new_dev --mountmisc --sync --clgentoo --update --prechg --check --build  -resume --ckernel  --bkernel  -lilo --grub_inst --grub --rebuild --qtest  -systest -D"
 
-DEF_RESUME="     -new_dev --mountmisc -sync -clgentoo --update --check --build -resume --ckernel --bkernel -lilo --grub_inst --grub --rebuild --qtest -systest -D"
+DEF_RESUME="     -new_dev --mountmisc -sync -clgentoo -update -check -build -resume -ckernel -bkernel -lilo -grub_inst -grub -rebuild --qtest -systest -D"
 
 test -n "$1" && eval CURRENT='$'"DEF_"$1
 test -z "$CURRENT" -o "$CURRENT" = "$1" && { 
