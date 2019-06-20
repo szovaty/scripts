@@ -287,9 +287,15 @@ test "$LILO" = $YES && {
 test "$GRUB" = $YES && {
   y_progress_nl Update grub...
   y_msg_dest LOG
+  # find boot device
+  _X=`grep -E /'($|\s)' $FSTAB_DEST | awk '{print $1}'`
+  BOOT_DEV=${_X%%[[:digit:]]*}
+  y_debug BOOT_DEV [$BOOT_DEV]
+  y_msg_dest_restore
+  test -b $BOOT_DEV || y_fatal_error "Invalid boot device [$BOOT_DEV]"
   y_run mount -o remount,rw /sys/firmware/efi/efivars
   y_run grub-install --root-directory=$DEST_ROOT --removable \
-    --target=x86_64-efi --efi-directory=$DEST_ROOT/boot/efi /dev/$DEV
+    --target=x86_64-efi --efi-directory=$DEST_ROOT/boot/efi $BOOT_DEV
   y_run mount -o remount,ro /sys/firmware/efi/efivars
   y_msg_dest_restore
   y_progress_end
