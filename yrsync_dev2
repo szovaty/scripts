@@ -32,8 +32,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="yrsync_dev2"
 PROG_DESC="Install/update a system based on current host"
-VERSION="3.0-rc2"
-LAST_MOD="2019.05.29"
+VERSION="3.0-rc4"
+LAST_MOD="2019.07.03"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -89,6 +89,7 @@ GENTOO="/xdir/gentoo/"
 GENTOO_BACKUP="/xdir/gentoo_saved/"
 GRUB=$YES
 LILO=$NO
+Y_PPAR="256"
 
 # 256GB disk partitioning
 Y_PARTED_PAR_256="
@@ -185,20 +186,21 @@ y_check_dryrun_not &&
   test -z "$M_DEV" && y_fatal_error Invalid fstab root [$M_DEV]
 
 if [ -n "$Y_BLKDEV" ] ; then
-  y_check_dryrun_not &&
+  y_check_dryrun_not && test "$Y_MODE" != "$MODE_NEW" &&
     test "$Y_BLKDEV" != "$M_DEV" && y_fatal_error parameter [$Y_BLKDEV] != [$M_DEV] from fstab
 else
   Y_BLKDEV=$M_DEV
 fi
 
-DEV=`y_run lsblk -no pkname $Y_BLKDEV`
+#DEV=`y_run lsblk -no pkname $Y_BLKDEV`
 y_msg_dest_restore
 
 # create partitions on new system
 test "$Y_MODE" = "$MODE_NEW" &&
   y_progress_nl Create new partition table ...
   #y_run dd if=/dev/zero of=/dev/$DEV count=1k
-  y_run parted --script /dev/$DEV $Y_PARTED_PAR
+  test -z "$Y_PARTED_PAR" && y_fatal_error Partition table not defined!
+  y_run parted --script $Y_BLKDEV $Y_PARTED_PAR
   # without sleep first mkfs.xxx will fail
   y_run sleep 1
   y_progress_end
@@ -304,7 +306,7 @@ test "$GRUB" = $YES && {
 test "$SAVE_GENTOO" = $YES && {
   y_progress_nl Backup gentoo...
 #  y_run rm -f -r -d $DEST_ROOT/$GENTOO_BACKUP
-  y_run mv $DEST_ROOT/$GENTOO $DEST_ROOT/$GENTOO_BACKUP
+  test -d "$DEST_ROOT/$GENTOO" && y_run mv $DEST_ROOT/$GENTOO $DEST_ROOT/$GENTOO_BACKUP
   y_run rsync -arx $GENTOO $DEST_ROOT/$GENTOO
   y_progress_end
 }
