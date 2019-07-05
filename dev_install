@@ -1,0 +1,8 @@
+# install/update a system from a ymake_dev2 updated source using yrsync_dev2
+
+# update a system
+#yrsync_dev2 --mode update --blkdev /dev/sda -f /etc/fstab.main_sda --gentoo $*
+
+# new install on a 256GB disk
+#yrsync_dev2 --mode new --blkdev /dev/sda -f /etc/fstab.main_sda --parted 256 --gentoo $*
+

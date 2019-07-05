@@ -214,7 +214,7 @@ test "$Y_MOUNT_MISC" = $TRUE && {
     P_TMP=${PORTAGE_TMPDIR##*PORTAGE_TMPDIR=\"}
     P_TMP=${P_TMP%*\"}
     test "PORTAGE_TMPDIR=\"$P_TMP\"" != "$PORTAGE_TMPDIR" && 
-      y_fatal_error Portage TMP dir [$P_TMP] not what expected!
+      y_fatal_error "Portage TMP dir [$P_TMP] not what expected!"
     y_run mkdir -p ${Y_DEV_MNT}${P_TMP}
     y_mount --bind /tmp $Y_DEV_MNT$P_TMP
     y_run chmod 1777 $Y_DEV_MNT$P_TMP
