@@ -100,8 +100,8 @@ Y_PARTED_PAR_256="
   mkpart primary ext2 16GiB 32GiB \
   mkpart primary linux-swap 32GiB 48GiB \
   mkpart primary reiserfs 48GiB 49GiB \
-  mkpart primary ext2 49GiB 50GiB \
-  mkpart primary ext2 50GiB 82GiB \
+  mkpart primary ext2 49GiB 51GiB \
+  mkpart primary ext2 51GiB 82GiB \
   mkpart primary ext2 82GiB 100% \
   name 1 efi \
   name 2 grub \
@@ -187,7 +187,8 @@ y_check_dryrun_not &&
 
 if [ -n "$Y_BLKDEV" ] ; then
   y_check_dryrun_not && test "$Y_MODE" != "$MODE_NEW" &&
-    test "$Y_BLKDEV" != "$M_DEV" && y_fatal_error parameter [$Y_BLKDEV] != [$M_DEV] from fstab
+    test "${Y_BLKDEV##'/'}" != `lsblk -no pkname $M_DEV` && 
+      y_fatal_error parameter [$Y_BLKDEV] != [$M_DEV] from fstab
 else
   Y_BLKDEV=$M_DEV
 fi
