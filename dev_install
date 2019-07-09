@@ -6,3 +6,4 @@ test "$1" = "update" && yrsync_dev2 --mode update --blkdev /dev/sda -f /etc/fsta
 # new install on a 256GB disk
 test "$1" = "new" && yrsync_dev2 --mode new --blkdev /dev/sda -f /etc/fstab.main_sda --parted 256 --gentoo $*
 
+test -z "$1" && echo "Usage: $0 [new|update]"

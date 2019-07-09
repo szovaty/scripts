@@ -258,7 +258,7 @@ test "$Y_MODE" = "$MODE_NEW" && {
   y_run cp $DEST_ROOT/boot/grub/grub.cfg_main $DEST_ROOT/boot/grub/grub.cfg
   y_run mkdir -p $DEST_ROOT/etc/conf.d
   y_run cp $FSTAB_DEST $DEST_ROOT/etc/fstab
-  y_run echo 'hostname="test`date +%H%M%S`" > $DEST_ROOT/etc/conf.d/hostname'
+  y_run echo 'hostname="test`date +%n%d`" > $DEST_ROOT/etc/conf.d/hostname'
   y_progress_end
 }
 
