@@ -32,8 +32,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="yrsync_dev2"
 PROG_DESC="Install/update a system based on current host"
-VERSION="3.0-rc4"
-LAST_MOD="2019.07.03"
+VERSION="3.1"
+LAST_MOD="2019.07.10"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -197,7 +197,7 @@ fi
 y_msg_dest_restore
 
 # create partitions on new system
-test "$Y_MODE" = "$MODE_NEW" &&
+test "$Y_MODE" = "$MODE_NEW" && {
   y_progress_nl Create new partition table ...
   #y_run dd if=/dev/zero of=/dev/$DEV count=1k
   test -z "$Y_PARTED_PAR" && y_fatal_error Partition table not defined!
@@ -205,6 +205,7 @@ test "$Y_MODE" = "$MODE_NEW" &&
   # without sleep first mkfs.xxx will fail
   y_run sleep 1
   y_progress_end
+}      
 
 # mount destination directories
 test "$MOUNT" = "yes" && {
@@ -258,7 +259,7 @@ test "$Y_MODE" = "$MODE_NEW" && {
   y_run cp $DEST_ROOT/boot/grub/grub.cfg_main $DEST_ROOT/boot/grub/grub.cfg
   y_run mkdir -p $DEST_ROOT/etc/conf.d
   y_run cp $FSTAB_DEST $DEST_ROOT/etc/fstab
-  y_run echo 'hostname="test`date +%n%d`" > $DEST_ROOT/etc/conf.d/hostname'
+  y_run echo `hostname="test`date +%n%d`" > $DEST_ROOT/etc/conf.d/hostname`
   y_progress_end
 }
 

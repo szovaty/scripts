@@ -1,9 +1,18 @@
-# install/update a system from a ymake_dev2 updated source using yrsync_dev2
+# install/update a system created by the ymake_dev2 utility using the yrsync_dev2 helper
+
+test -z "$1" && {
+    echo "Usage: $0 [new|update]"
+    exit 1
+}
+
+# only needed if you want gentoo update and it is not mounted auto from fstab
+mount /dev/sdb5 /xdir
 
 # update a system
-test "$1" = "update" && yrsync_dev2 --mode update --blkdev /dev/sda -f /etc/fstab.main_sda --gentoo $*
+test "$1" = "update" && 
+    yrsync_dev2 --mode update --blkdev /dev/sda -f /etc/fstab.main_sda --gentoo $*
 
 # new install on a 256GB disk
-test "$1" = "new" && yrsync_dev2 --mode new --blkdev /dev/sda -f /etc/fstab.main_sda --parted 256 --gentoo $*
+test "$1" = "new" && 
+    yrsync_dev2 --mode new --blkdev /dev/sda -f /etc/fstab.main_sda --parted 256 --gentoo $*
 
-test -z "$1" && echo "Usage: $0 [new|update]"
