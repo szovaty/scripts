@@ -16,7 +16,7 @@ DEF_CHECK="      -new_dev --mountmisc  -sync  -clgentoo --update          --chec
 DEF_NEW_KERNEL=" -new_dev --mountmisc  -sync  -clgentoo  -update           -check  -build  -resume  -ckernel  --bkernel  -lilo  -grub_inst  -grub --rebuild --qtest  -systest -D"
 DEF_TEST="       -new_dev --mountmisc  -sync  -clgentoo --update          --check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst  -grub  -rebuild  -qtest  -systest -D"
 DEF_BUILD="      -new_dev --mountmisc  -sync  -clgentoo --update --prechg --check --build  -resume  -ckernel   -bkernel  -lilo --grub_inst  -grub  -rebuild  -qtest  -systest -D"
-DEF_ALL="        -new_dev --mountmisc  -sync  -clgentoo  -update  -prechg --check --build  -resume --ckernel  --bkernel  -lilo --grub_inst --grub --rebuild --qtest  -systest -D"
+DEF_ALL="        -new_dev --mountmisc  -sync  -clgentoo  -update --prechg --check --build  -resume --ckernel  --bkernel  -lilo --grub_inst --grub --rebuild --qtest  -systest -D"
 
 DEF_RESUME="     -new_dev --mountmisc -sync -clgentoo -update -check -build -resume --ckernel --bkernel -lilo --grub_inst --grub --rebuild --qtest -systest -D"
 

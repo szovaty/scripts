@@ -2,5 +2,5 @@ FONT=7
 xfce4-terminal --font=$FONT --hide-borders --tab --geometry=204x15-0+41
 xfce4-terminal --font=$FONT --hide-borders --tab --geometry=88x15+728+321
 xfce4-terminal --font=$FONT --hide-borders --tab --geometry=88x45+728+610
-xfce4-terminal --font=$FONT --hide-borders --tab --geometry=116x61-0+319
+xfce4-terminal --font=$FONT --hide-borders --tab --geometry=116x61-0+330
 xfce4-terminal --font=$FONT --hide-borders --tab --geometry=81x24+0+982

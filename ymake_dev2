@@ -80,7 +80,7 @@ while [ -n "$1" ] ; do
     --quiet|-Q) Y_QUIET=$TRUE;;                 #; Enable quiet mode [Y_QUIET]
     --debug|-D) Y_DEBUG=$TRUE;;                 #; Enable debug mode [Y_DEBUG]
     --dry|-N)   Y_DRY_RUN=$TRUE;;               #; Execute dry run mode [Y_DRY_RUN]
-    --nocolor)  USE_COLOR="";;                  #; Enable color output [USE_COLOR]
+    --nocolor)  USE_COLOR="";;                  #; Disable color output [USE_COLOR]
     --log|-L)   LOG="$2"; shift;;               #; Set log destination [LOG]
     --version|-V) y_version; y_exit;;           #; Display version and exit
     --new_dev)  Y_NEW_DEV=$TRUE;;               #; Initial new DEV device [Y_NEW_DEV]
