@@ -30,8 +30,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="ymake_dev2"
 PROG_DESC="Utility to manage a gentoo based host install and update."
-VERSION="1.0"
-LAST_MOD="2019.07.10"
+VERSION="1.1"
+LAST_MOD="2019.08.14"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -107,6 +107,7 @@ while [ -n "$1" ] ; do
     --clgentoo) Y_CGENTOO=$TRUE;;               #; Clean Gentoo [Y_CGENTOO]
     --qtest)    Y_QUICKTEST=$TRUE;;             #; Test new sys by chroot [Y_QUICKTEST]
     --systest)  Y_SYSTEST=$TRUE;;               #; Test by reboot into DEV [Y_SYSTEST]
+    --update|-U) Y_UPDATE_TOOLS=$TRUE;          #; Update system tools [Y_UPDATE_TOOLS]
   esac
   shift
 done
@@ -369,10 +370,10 @@ test -n "$Y_REBUILD" && {
 test -n "$Y_QUICKTEST" && {
   y_progress_nl "Quick test new system..."
   y_msg_dest "STDOUT,STDERR"
-  y_run cp /x_proj/jenov/scripts/yrsync_dev2 $Y_DEV_MNT/usr/local/bin
-  y_run cp /x_proj/jenov/scripts/dev_install $Y_DEV_MNT/usr/local/bin
+#  y_run cp /x_proj/jenov/scripts/yrsync_dev2 $Y_DEV_MNT/usr/local/bin
+#  y_run cp /x_proj/jenov/scripts/dev_install $Y_DEV_MNT/usr/local/bin
   # fix permition issue
-  y_run chmod u+s $Y_DEV_MNT/sbin/unix_chkpwd
+#  y_run chmod u+s $Y_DEV_MNT/sbin/unix_chkpwd
   y_run chroot $Y_DEV_MNT bash --rcfile $Y_CHROOT -i
   y_msg_dest_restore
   y_progress_end
@@ -399,8 +400,19 @@ test -n "$Y_SYSTEST" -o -n "$Y_SYSMERGE" && {
     y_progress_end
 }
 
+test -n "$Y_UPDATE_TOOLS" && {
+  y_progress_nl "Update tools..."
+  y_msg_dest "STDOUT,STDERR"
+  y_run cp /x_proj/jenov/scripts/yrsync_dev2 $Y_DEV_MNT/usr/local/bin
+  y_run cp /x_proj/jenov/scripts/dev_install $Y_DEV_MNT/usr/local/bin
+  # fix permition issue
+  y_run chmod u+s $Y_DEV_MNT/sbin/unix_chkpwd
+  y_run date +%Y_%m_%d > $Y_DEV_MNT/BUILD
+  y_progress_end
+}
+
 #y_debug_console
-y_run date +%Y_%m_%d > $Y_DEV_MNT/BUILD
+#y_run date +%Y_%m_%d > $Y_DEV_MNT/BUILD
 
 # ===================================================================================
 # Leave this as the last line

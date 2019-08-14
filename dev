@@ -26,8 +26,9 @@ test -z "$CURRENT" -o "$CURRENT" = "$1" && {
     env | grep DEF_
     exit 1; 
 }
-cp $SDIR/$BIN $DEST_BIN 1>/dev/null
-cp $SDIR/$LIB $DEST_LIB 1>/dev/null
-cp $SDIR/$GRUB $DEST_GRUB 1>/dev/null
+
+test -e $SDIR/$BIN && cp $SDIR/$BIN $DEST_BIN 1>/dev/null
+test -e $SDIR/$LIB && cp $SDIR/$LIB $DEST_LIB 1>/dev/null
+test -e $SDIR/$GRUB && cp $SDIR/$GRUB $DEST_GRUB 1>/dev/null
 DEV="b"
 $CMD --src_fstab /etc/fstab.dev_usb --mountdev /dev/sd${DEV}2=/boot,/dev/sd${DEV}1=/boot/efi,/dev/sd${DEV}5=/xdir --dev /dev/sd${DEV}4 --mnt /mnt $CURRENT $*
