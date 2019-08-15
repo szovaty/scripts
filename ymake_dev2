@@ -30,7 +30,7 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="ymake_dev2"
 PROG_DESC="Utility to manage a gentoo based host install and update."
-VERSION="1.1"
+VERSION="1.1.1"
 LAST_MOD="2019.08.14"
 
 # Define log file here
@@ -323,11 +323,11 @@ test -n "$Y_LILO" && {
 # grub install
 test -n "$Y_GRUB_INSTALL" && {
   y_progress_nl "Grub EFI install..."
-  DEV="DEV"
-  y_check_dryrun_not && {
-    DEV=`lsblk -no pkname $Y_DEV_DEV`
-    test -b /dev/$DEV || y_fatal_error "Invalid block device [$DEV]"
-  }  
+  shopt -s extglob
+  DEV=${Y_DEV_DEV##*/}
+  DEV=${DEV%%+([[:digit:]])}
+  shopt -u extglob
+  test -b /dev/$DEV || y_fatal_error "Invalid block device [$DEV]"
   y_msg_dest LOG
   y_run mount -o remount,rw /sys/firmware/efi/efivars
   y_run grub-install --root-directory=$Y_DEV_MNT --removable \
