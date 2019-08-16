@@ -1,7 +1,7 @@
 #!/bin/bash
 # vim:set ts=2 sw=2:
 # Base template2.src version 1.0 last modified 2018.01.11 by y
-# TODO: grub setup does not work! makes new system unbootable
+# TODO: lsblk does not work replace it
 
 
 y_start(){ :; }
@@ -32,8 +32,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="yrsync_dev2"
 PROG_DESC="Install/update a system based on current host"
-VERSION="3.1"
-LAST_MOD="2019.07.10"
+VERSION="3.2-rc1"
+LAST_MOD="2019.08.16"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -176,24 +176,28 @@ test -n "$FSTAB_DEST" && {
 }
 
 # find rootfs block device and check it if matches fstab definition
-# also see what it's parent block device [DEV]
+# also see what it's parent block device
 
 y_msg_dest "LOG,STDOUT"
-M_DEV=`y_run grep -E /"'($|\s)'" $FSTAB_DEST`
+
+M_DEV=`grep -E /'($|\s)' $FSTAB_DEST`
 M_DEV=`echo $M_DEV`
 M_DEV=${M_DEV%%' '*}
+shopt -s extglob
+M_DEV=${M_DEV%%+([[:digit:]])}
+shopt -u extglob
+
 y_check_dryrun_not && 
   test -z "$M_DEV" && y_fatal_error Invalid fstab root [$M_DEV]
 
 if [ -n "$Y_BLKDEV" ] ; then
-  y_check_dryrun_not && test "$Y_MODE" != "$MODE_NEW" &&
-    test "${Y_BLKDEV##'/'}" != `lsblk -no pkname $M_DEV` && 
+  y_check_dryrun_not &&
+    test "$Y_MODE" != "$MODE_NEW" -a "$Y_BLKDEV" != "$M_DEV" && 
       y_fatal_error parameter [$Y_BLKDEV] != [$M_DEV] from fstab
 else
   Y_BLKDEV=$M_DEV
 fi
 
-#DEV=`y_run lsblk -no pkname $Y_BLKDEV`
 y_msg_dest_restore
 
 # create partitions on new system

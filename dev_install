@@ -1,6 +1,6 @@
-# install/update a system created by the ymake_dev2 utility using the yrsync_dev2 helper
+# install/update a system from a ymake_dev2 updated source using yrsync_dev2
 
-test -z "$1" && {
+test "$1" != "update" -a "$1" != "new" && {
     echo "Usage: $0 [new|update]"
     exit 1
 }
@@ -9,10 +9,14 @@ test -z "$1" && {
 mount /dev/sdb5 /xdir
 
 # update a system
-test "$1" = "update" && 
+test "$1" = "update" && {
+    shift
     yrsync_dev2 --mode update --blkdev /dev/sda -f /etc/fstab.main_sda --gentoo $*
+}
 
 # new install on a 256GB disk
-test "$1" = "new" && 
+test "$1" = "new" && {
+    shift
     yrsync_dev2 --mode new --blkdev /dev/sda -f /etc/fstab.main_sda --parted 256 --gentoo $*
+}
 
