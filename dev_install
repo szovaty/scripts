@@ -11,7 +11,7 @@ mount /dev/sdb5 /xdir
 # update a system
 test "$1" = "update" && {
     shift
-    yrsync_dev2 --mode update --blkdev /dev/sda -f /etc/fstab.main_sda --gentoo $*
+    yrsync_dev2 --mode update --dirs "/boot" --blkdev /dev/sda -f /etc/fstab.main_sda --gentoo $*
 }
 
 # new install on a 256GB disk
