@@ -1,8 +1,6 @@
 #!/bin/bash
 # vim:set ts=2 sw=2:
 # Base template2.src version 1.0 last modified 2018.01.11 by y
-# TODO: lsblk does not work replace it
-
 
 y_start(){ :; }
 y_exit(){ :; }
