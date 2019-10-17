@@ -5,18 +5,17 @@ test "$1" != "update" -a "$1" != "new" && {
     exit 1
 }
 
-# only needed if you want gentoo update and it is not mounted auto from fstab
-mount /dev/sdb5 /xdir
-
 # update a system
 test "$1" = "update" && {
+    mount /dev/sdb5 /xdir
     shift
-    yrsync_dev2 --mode update --dirs "/boot" --blkdev /dev/sda -f /etc/fstab.main_sda --gentoo $*
+    yrsync_dev2 --mode update --nodev --blkdev /dev/sda -f /etc/fstab.main_sda --gentoo $*
+    umount /xdir
 }
 
 # new install on a 256GB disk
 test "$1" = "new" && {
     shift
-    yrsync_dev2 --mode new --blkdev /dev/sda -f /etc/fstab.main_sda --parted 256 --gentoo $*
+    yrsync_dev2 --mode new --blkdev /dev/sda -f /etc/fstab.main_sda --parted 256 --delete "" -e "" -R "-ar" $*
 }
 

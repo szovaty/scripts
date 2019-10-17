@@ -30,8 +30,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="yrsync_dev2"
 PROG_DESC="Install/update a system based on current host"
-VERSION="3.3-rc0"
-LAST_MOD="2019.10.14"
+VERSION="3.3-rc1"
+LAST_MOD="2019.10.15"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -70,7 +70,7 @@ DEST_MOUNT="/ /opt /var /xdir /boot /boot/efi"
 SRC_ROOT="/"
 SRC_DIRS_UPDATE="/ /boot"
 SRC_DIRS_NEW="/ /boot/ /boot/efi/ /home/"
-EXCL_DIRS_UPDATE="/boot/grub/grub.cfg /gentoo /etc/fstab* /etc/conf.d/hostname /root /home /boot /xdir /lost+found"
+EXCL_DIRS_UPDATE="/boot/grub/grub.cfg /gentoo /etc/fstab* /etc/conf.d/hostname /root /home /xdir"
 EXCL_DIRS_NEW="/etc/conf.d/hostname"
 FSTAB="/etc/fstab"
 DEV=$YES
@@ -161,8 +161,12 @@ RSYNC="rsync $RSYNC_OPT"
 eval Y_PARTED_PAR='$'"Y_PARTED_PAR_"$Y_PPAR
 
 #set default depends on MODE
-SRC_DIRS="${SRC_DIRS:-$SRC_DIRS_UPDATE}"
-EXCL_DIRS="${EXCL_DIRS:-$EXCL_DIRS_UPDATE}"
+
+test "$Y_MODE" = "$MODE_UPDATE" && {
+  SRC_DIRS="${SRC_DIRS:-$SRC_DIRS_UPDATE}"
+  EXCL_DIRS="${EXCL_DIRS:-$EXCL_DIRS_UPDATE}"
+}
+
 test "$Y_MODE" = "$MODE_NEW" && {
   SRC_DIRS="${SRC_DIRS:-$SRC_DIRS_NEW}"
   EXCL_DIRS="${EXCL_DIRS:-$EXCL_DIRS_NEW}"
@@ -261,7 +265,9 @@ test "$Y_MODE" = "$MODE_NEW" && {
   y_run cp $DEST_ROOT/boot/grub/grub.cfg_main $DEST_ROOT/boot/grub/grub.cfg
   y_run mkdir -p $DEST_ROOT/etc/conf.d
   y_run cp $FSTAB_DEST $DEST_ROOT/etc/fstab
-  y_run echo `hostname="test`date +%n%d`" > $DEST_ROOT/etc/conf.d/hostname`
+  echo "hostname=\"test`date +%S`\"" > /tmp/hostname
+  y_run cp /tmp/hostname $DEST_ROOT/etc/conf.d/hostname
+  rm -f /tmp/hostname
   y_progress_end
 }
 
