@@ -107,7 +107,7 @@ while [ -n "$1" ] ; do
     --clgentoo) Y_CGENTOO=$TRUE;;               #; Clean Gentoo [Y_CGENTOO]
     --qtest)    Y_QUICKTEST=$TRUE;;             #; Test new sys by chroot [Y_QUICKTEST]
     --systest)  Y_SYSTEST=$TRUE;;               #; Test by reboot into DEV [Y_SYSTEST]
-    --update|-U) Y_UPDATE_TOOLS=$TRUE;          #; Update system tools [Y_UPDATE_TOOLS]
+    --tools|-U) Y_UPDATE_TOOLS=$TRUE;           #; Update system tools [Y_UPDATE_TOOLS]
   esac
   shift
 done

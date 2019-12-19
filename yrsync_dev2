@@ -68,7 +68,7 @@ RSYNC_OPT="-arx --delete"
 
 DEST_MOUNT="/ /opt /var /xdir /boot /boot/efi"
 SRC_ROOT="/"
-SRC_DIRS_UPDATE="/ /boot"
+SRC_DIRS_UPDATE="/ /boot/"
 SRC_DIRS_NEW="/ /boot/ /boot/efi/ /home/"
 EXCL_DIRS_UPDATE="/boot/grub/grub.cfg /gentoo /etc/fstab* /etc/conf.d/hostname /root /home /xdir"
 EXCL_DIRS_NEW="/etc/conf.d/hostname"
