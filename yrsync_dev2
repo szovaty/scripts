@@ -1,6 +1,7 @@
 #!/bin/bash
 # vim:set ts=2 sw=2:
 # Base template2.src version 1.0 last modified 2018.01.11 by y
+# TODO /boot/grub/grub.cfg is incorrect file
 
 y_start(){ :; }
 y_exit(){ :; }
