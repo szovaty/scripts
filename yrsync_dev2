@@ -30,7 +30,7 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="yrsync_dev2"
 PROG_DESC="Install/update a system based on current host"
-VERSION="3.4"
+VERSION="3.4-rc1"
 LAST_MOD="2020.01.06"
 
 # Define log file here
@@ -85,7 +85,7 @@ KERNEL_OLD="vmlinuz.old"
 KERNEL_DEV="vmlinuz.dev"
 GENTOO="/xdir/gentoo/"
 GENTOO_BACKUP="/xdir/gentoo_saved/"
-GRUB=$YES
+GRUB=$NO
 LILO=$NO
 Y_PPAR="256"
 
