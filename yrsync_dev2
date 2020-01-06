@@ -1,7 +1,6 @@
 #!/bin/bash
 # vim:set ts=2 sw=2:
 # Base template2.src version 1.0 last modified 2018.01.11 by y
-# TODO /boot/grub/grub.cfg is incorrect file
 
 y_start(){ :; }
 y_exit(){ :; }
@@ -31,8 +30,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="yrsync_dev2"
 PROG_DESC="Install/update a system based on current host"
-VERSION="3.3-rc1"
-LAST_MOD="2019.10.15"
+VERSION="3.4"
+LAST_MOD="2020.01.06"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -71,7 +70,7 @@ DEST_MOUNT="/ /opt /var /xdir /boot /boot/efi"
 SRC_ROOT="/"
 SRC_DIRS_UPDATE="/ /boot/"
 SRC_DIRS_NEW="/ /boot/ /boot/efi/ /home/"
-EXCL_DIRS_UPDATE="/boot/grub/grub.cfg /gentoo /etc/fstab* /etc/conf.d/hostname /root /home /xdir"
+EXCL_DIRS_UPDATE="/gentoo /etc/fstab* /etc/conf.d/hostname /root /home /xdir"
 EXCL_DIRS_NEW="/etc/conf.d/hostname"
 FSTAB="/etc/fstab"
 DEV=$YES
@@ -263,7 +262,7 @@ done
 
 test "$Y_MODE" = "$MODE_NEW" && {
   y_progress_nl Config new system ...
-  y_run cp $DEST_ROOT/boot/grub/grub.cfg_main $DEST_ROOT/boot/grub/grub.cfg
+  #y_run cp $DEST_ROOT/boot/grub/grub.cfg_main $DEST_ROOT/boot/grub/grub.cfg
   y_run mkdir -p $DEST_ROOT/etc/conf.d
   y_run cp $FSTAB_DEST $DEST_ROOT/etc/fstab
   echo "hostname=\"test`date +%S`\"" > /tmp/hostname
