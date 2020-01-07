@@ -88,6 +88,8 @@ GENTOO_BACKUP="/xdir/gentoo_saved/"
 GRUB=$NO
 LILO=$NO
 Y_PPAR="256"
+LABELS="boot"
+PARTLABELS="rootfs xos swap"
 
 # 256GB disk partitioning
 Y_PARTED_PAR_256="
@@ -102,7 +104,7 @@ Y_PARTED_PAR_256="
   mkpart primary ext2 51GiB 82GiB \
   mkpart primary ext2 82GiB 100% \
   name 1 efi \
-  name 2 grub \
+  name 2 boot \
   name 3 rootfs \
   name 4 xos \
   name 5 swap \
@@ -144,6 +146,7 @@ while [ -n "$1" ] ; do
     --grub)       GRUB=$YES; LILO=$NO;;           #; Update grub bootloader [GRUB]
     --nodev)      DEV="no";;                      #; Create core devices under /dev [DEV]
     --gentoo)     SAVE_GENTOO=$YES;;              #; Backup gentoo [SAVE_GENTOO]
+    --verify)     VERIFY=$YES;;                   #; Verify labels [VERIFY] exists
   esac
   shift
 done
@@ -311,6 +314,18 @@ test "$GRUB" = $YES && {
   y_run mount -o remount,ro /sys/firmware/efi/efivars
   y_msg_dest_restore
   y_progress_end
+}
+
+test "$VERIFY" = $YES && {
+  y_progress_nl Verify labels [$LABELS $PARTLABELS]...
+  OK=""; MISSING="" ; RES=0
+  for i in $PARTLABELS ; do
+    test -e "/dev/disk/by-partlabel/$i" || RES=-1
+  done
+  for i in $LABELS ; do
+     test -e "/dev/disk/by-label/$i" || RES=-1
+  done
+  y_progress_end $RES
 }
 
 test "$SAVE_GENTOO" = $YES && {

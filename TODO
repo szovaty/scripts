@@ -1,0 +1,4 @@
+- grub.cfg make it fail proof: pl. add hint to improve search for boot device
+- grub can boot an incorrect device provide some summary of where it is booting from
+- yrsync_dev2 - check for disk labels if updating boot: if labels not set correctly system will fail boot
+
