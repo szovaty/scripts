@@ -1,0 +1,13 @@
+parted --script /dev/sdc \
+    mklabel gpt \
+    mkpart primary 2MiB 4MiB \
+    mkpart primary ext2 4MiB 100MiB \
+    mkpart primary linux-swap 100MiB 1GiB \
+    mkpart primary ext4 1GiB 14GiB \
+    mkpart primary ext4 14GiB 100% \
+    name 1 efi \
+    name 2 boot \
+    name 3 swap \
+    name 4 rootfs \
+    name 5 xdir \
+    set 1 esp on 
