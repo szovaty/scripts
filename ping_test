@@ -2,19 +2,25 @@
 
 CMD="ping -c 1 -n google.com"
 TMAX=0
-rm dump.txt
+DEBUG=/tmp/pingtest.debug
+rm -f $DEBUG
+touch $DEBUG
 while true ; do
     ETIME=`$CMD | grep "time="`
+    if [[ -z "$ETIME" ]]; then
+        continue
+    fi
     x=${ETIME##*time=}
-    #echo $x >> dump.txt
     x1=${x%%'.'*}
     test -z "$x1" && x1=$x
     x2=${x1%%' '*}
-    #echo [$x2] >> dump.txt
+    if [[ -z "$x2" ]]; then 
+        echo [$ET] >> $DEBUG
+        continue
+    fi
     if [ $TMAX -lt $x2 ] ; then
         TMAX=${x2}
     fi
-    #echo [$TMAX]
     echo -n -e '\r'Max ping time: $TMAX ms
 done
 echo
