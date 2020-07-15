@@ -1,0 +1,12 @@
+#!/bin/bash
+
+EMAIL="bs@bugbash.com"
+PASSWD="Esztergom2521"
+API_BASE="https://lp-master.dev.imbio.com/api/v1/"
+DATA="{\"email\": \"$EMAIL\", \"password\": \"$PASSWD\"}"
+
+#IMBIO_TOKEN=$(curl -H "Content-Type: application/json" ${API_BASE}login/email -d '{"email": "bs@bugbash.com", "password": "Esztergom2521"}' | jq -r .accessToken)
+IMBIO_TOKEN=$(curl -H "Content-Type: application/json" ${API_BASE}login/email -d "$DATA" | jq -r .accessToken)
+
+#echo $IMBIO_TOKEN
+curl -i -H "Authorization: Bearer $IMBIO_TOKEN" https://lp-master.dev.imbio.com/api/v1/jobs/

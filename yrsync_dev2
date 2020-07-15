@@ -91,6 +91,29 @@ Y_PPAR="256"
 LABELS="boot"
 PARTLABELS="rootfs xos swap"
 
+# 128GB disk partitioning
+Y_PARTED_PAR_128="
+  mklabel gpt \
+  mkpart primary fat16 2MiB 4MiB \
+  mkpart primary ext2 4MiB 537MiB \
+  mkpart primary ext2 537MiB 16GiB \
+  mkpart primary ext2 16GiB 17GiB \
+  mkpart primary linux-swap 17GiB 32GiB \
+  mkpart primary reiserfs 32GiB 33GiB \
+  mkpart primary ext2 33GiB 35GiB \
+  mkpart primary ext2 35GiB 41GiB \
+  mkpart primary ext2 41GiB 100% \
+  name 1 efi \
+  name 2 boot \
+  name 3 rootfs \
+  name 4 xos \
+  name 5 swap \
+  name 6 var \
+  name 7 opt \
+  name 8 home \
+  name 9 xdir \
+  set 1 esp on
+"
 # 256GB disk partitioning
 Y_PARTED_PAR_256="
   mklabel gpt \
