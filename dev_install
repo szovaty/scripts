@@ -16,12 +16,14 @@ test "$1" = "update" && {
 # new install on a 128GB disk
 test "$1" = "new_128" && {
     shift
+    mount /boot/efi
     yrsync_dev2 --mode new --blkdev /dev/sda -f /etc/fstab.main_sda --parted 128 --grub --delete "" -e "" -R "-ar" $*
 }
 
 # new install on a 256GB disk
 test "$1" = "new_256" && {
     shift
+    mount /boot/efi
     yrsync_dev2 --mode new --blkdev /dev/sda -f /etc/fstab.main_sda --parted 256 --grub --delete "" -e "" -R "-ar" $*
 }
 
