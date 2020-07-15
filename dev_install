@@ -13,9 +13,15 @@ test "$1" = "update" && {
     umount /xdir
 }
 
-# new install on a 256GB disk
-test "$1" = "new" && {
+# new install on a 128GB disk
+test "$1" = "new_128" && {
     shift
-    yrsync_dev2 --mode new --blkdev /dev/sda -f /etc/fstab.main_sda --parted 256 --delete "" -e "" -R "-ar" $*
+    yrsync_dev2 --mode new --blkdev /dev/sda -f /etc/fstab.main_sda --parted 128 --grub --delete "" -e "" -R "-ar" $*
+}
+
+# new install on a 256GB disk
+test "$1" = "new_256" && {
+    shift
+    yrsync_dev2 --mode new --blkdev /dev/sda -f /etc/fstab.main_sda --parted 256 --grub --delete "" -e "" -R "-ar" $*
 }
 
