@@ -69,7 +69,7 @@ RSYNC_OPT="-arx --delete"
 DEST_MOUNT="/ /opt /var /xdir /boot /boot/efi"
 SRC_ROOT="/"
 SRC_DIRS_UPDATE="/ /boot/"
-SRC_DIRS_NEW="/ /boot/ /boot/efi/ /home/"
+SRC_DIRS_NEW="/ /boot/ /boot/efi/"
 EXCL_DIRS_UPDATE="/gentoo /etc/fstab* /etc/conf.d/hostname /root /home /xdir"
 EXCL_DIRS_NEW=""
 FSTAB="/etc/fstab"
@@ -269,7 +269,7 @@ test "$MOUNT" = "yes" && {
 
 # create exclude list
 for i in $EXCL_DIRS ; do
-  EXCLUDE="$EXCLUDE --exclude=$i"
+  EXCLUDE="$EXCLUDE --exclude $i"
 done
 
 for i in $DELETE_LIST ; do
@@ -282,7 +282,7 @@ done
 for i in $SRC_DIRS ; do
   s=`printf "%-12s" $i`
   y_progress_nl "Sync $s -> ${DEST_ROOT}${i} ..."
-  y_run $RSYNC $EXCLUDE --exclude=${DEST_ROOT}/ $i $DEST_ROOT$i
+  y_run $RSYNC $EXCLUDE --exclude ${DEST_ROOT}/ $i $DEST_ROOT$i
   y_progress_end
 done
 
