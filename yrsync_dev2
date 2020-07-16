@@ -282,7 +282,7 @@ done
 for i in $SRC_DIRS ; do
   s=`printf "%-12s" $i`
   y_progress_nl "Sync $s -> ${DEST_ROOT}${i} ..."
-  y_run $RSYNC $EXCLUDE $i $DEST_ROOT$i
+  y_run $RSYNC $EXCLUDE --exclude=${DEST_ROOT}/ $i $DEST_ROOT$i
   y_progress_end
 done
 
