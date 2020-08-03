@@ -1,0 +1,11 @@
+parted --script /dev/sdc \
+    mklabel gpt \
+    mkpart primary 2MiB 4MiB \
+    mkpart primary ext2 4MiB 500MiB \
+    mkpart primary ext4 500MiB 32GiB \
+    mkpart primary ext4 32GiB 100% \
+    name 1 efi \
+    name 2 boot \
+    name 3 rootfs \
+    name 4 xdir \
+    set 1 esp on 
