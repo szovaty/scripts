@@ -10,19 +10,31 @@ LIB="y_bash_lib"
 DEST_LIB="/usr/local/bin"
 DEST_BIN="/usr/local/bin"
 DEST_GRUB="/boot/grub"
+DEV="c"
+
+#PAR=$*
+MODE=$1
+
+while [ -n "$1" ] ; do
+    case $1 in
+        --DEV|-d) DEV=$2; shift;;
+        *) PAR="$PAR $1";;
+    esac
+    shift
+done
 
 DEF_SYNC="       -new_dev  -mountmisc --sync  -clgentoo  -update           -check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst --grub  -rebuild  -qtest   -tools  -systest -D"
 DEF_CHECK="      -new_dev --mountmisc  -sync  -clgentoo --update          --check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst  -grub  -rebuild  -qtest   -tools  -systest -D"
 DEF_NEW_KERNEL=" -new_dev --mountmisc  -sync  -clgentoo  -update           -check  -build  -resume  -ckernel  --bkernel  -lilo  -grub_inst  -grub --rebuild --qtest   -tools  -systest -D"
-DEF_TEST="       -new_dev --mountmisc  -sync  -clgentoo --update          --check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst  -grub  -rebuild  -qtest   -tools  -systest -D"
+DEF_TEST="       -new_dev --mountmisc  -sync  -clgentoo  -update           -check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst  -grub  -rebuild --qtest   -tools  -systest -D"
 DEF_BUILD="      -new_dev --mountmisc  -sync  -clgentoo --update --prechg --check --build  -resume  -ckernel   -bkernel  -lilo --grub_inst  -grub  -rebuild  -qtest   -tools  -systest -D"
 DEF_TOOLS="      -new_dev --mountmisc  -sync  -clgentoo  -update  -prechg  -check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst  -grub  -rebuild  -qtest  --tools  -systest -D"
 DEF_ALL="        -new_dev --mountmisc  -sync  -clgentoo --update --prechg --check --build  -resume --ckernel  --bkernel  -lilo --grub_inst --grub --rebuild --qtest  --tools  -systest -D"
 
 DEF_RESUME="     -new_dev --mountmisc  -sync  -clgentoo  -update  -prechg  -check  -build --resume --ckernel  --bkernel  -lilo --grub_inst --grub --rebuild --qtest  --tools  -systest -D"
 
-test -n "$1" && eval CURRENT='$'"DEF_"$1
-test -z "$CURRENT" -o "$CURRENT" = "$1" && { 
+test -n "$MODE" && eval CURRENT='$'"DEF_"$MODE
+test -z "$CURRENT" -o "$CURRENT" = "$MODE" && { 
     echo MISSING mode definition
     env | grep DEF_
     exit 1; 
@@ -31,5 +43,4 @@ test -z "$CURRENT" -o "$CURRENT" = "$1" && {
 test -e $SDIR/$BIN && cp $SDIR/$BIN $DEST_BIN 1>/dev/null
 test -e $SDIR/$LIB && cp $SDIR/$LIB $DEST_LIB 1>/dev/null
 test -e $SDIR/$GRUB && cp $SDIR/$GRUB $DEST_GRUB 1>/dev/null
-DEV="b"
-$CMD --src_fstab /etc/fstab.dev_usb --mountdev /dev/sd${DEV}2=/boot,/dev/sd${DEV}1=/boot/efi,/dev/sd${DEV}5=/xdir --dev /dev/sd${DEV}4 --mnt /mnt $CURRENT $*
+echo $CMD --src_fstab /etc/fstab.dev_usb --mountdev /dev/sd${DEV}2=/boot,/dev/sd${DEV}1=/boot/efi,/dev/sd${DEV}5=/xdir --dev /dev/sd${DEV}4 --mnt /mnt $CURRENT $PAR
