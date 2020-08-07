@@ -23,6 +23,11 @@ while [ -n "$1" ] ; do
     shift
 done
 
+test -b /dev/sd${DEV} || {
+    echo Invalid block device (/dev/sd${DEV})
+    exit 1
+}
+
 DEF_SYNC="       -new_dev  -mountmisc --sync  -clgentoo  -update           -check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst --grub  -rebuild  -qtest   -tools  -systest -D"
 DEF_CHECK="      -new_dev --mountmisc  -sync  -clgentoo --update          --check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst  -grub  -rebuild  -qtest   -tools  -systest -D"
 DEF_NEW_KERNEL=" -new_dev --mountmisc  -sync  -clgentoo  -update           -check  -build  -resume  -ckernel  --bkernel  -lilo  -grub_inst  -grub --rebuild --qtest   -tools  -systest -D"
