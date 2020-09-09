@@ -1,0 +1,62 @@
+#!/bin/bash
+# vim:set ts=4:
+
+trap _exit INT HUP TERM
+
+set -e
+
+VERSION="0.0 2020.09.08 by y"
+
+DIR="$HOME/titkok"
+if [ -n "$2" ]; then
+    FILENAME="$DIR/$2"
+    FIN=$3
+else 
+    FILENAME="$DIR/bank"
+    FIN=$2
+fi
+TMPFILE="$HOME/.tmpfile.$$"
+AES=`which aescrypt`
+VIEWER="eog"
+
+test -z "$EDITOR" && EDITOR="vi"
+
+version () {
+    echo $VERSION
+}
+
+help () {
+    echo "USAGE: $0 [option] [output] input"
+    echo "	options:"
+    echo "		--help|-h: 	help message"
+    echo "		--version|-V: 	display version info"
+    echo "		--view|-v: 	display file"
+    echo "		--edit|-e: 	edit file"
+}
+
+unknown_command () {
+    help
+}
+
+_exit () {
+    rm -f $TMPFILE $FILENAME.$$ &>/dev/null
+    exit
+}
+
+test -x "$AES" || { echo "Bin error: $AES"; _exit; }
+
+case "$1" in
+    --version|-V) version ;;
+    --help|-h)	help ;;
+    --view|-v)	
+        $AES -d -o $TMPFILE $FILENAME
+        $VIEWER $TMPFILE
+    ;;
+    --edit|-e)
+        $AES -e -o $FILENAME $FIN
+    ;;
+    *) unknown_command ;;
+esac
+
+_exit
+
