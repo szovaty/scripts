@@ -31,8 +31,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="yrsync_dev2"
 PROG_DESC="Install/update a system based on current host"
-VERSION="3.4-rc2"
-LAST_MOD="2020.07.15"
+VERSION="3.5"
+LAST_MOD="2020.09.10"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -71,7 +71,7 @@ DEST_MOUNT="/ /opt /var /xdir /boot /boot/efi"
 SRC_ROOT="/"
 SRC_DIRS_UPDATE="/ /boot/"
 SRC_DIRS_NEW="/ /boot/ /boot/efi/"
-EXCL_DIRS_UPDATE="/gentoo /boot/grub /etc/fstab* /etc/conf.d/hostname /root /home /xdir"
+EXCL_DIRS_UPDATE="/gentoo /boot/grub/grub.cfg /etc/fstab /etc/conf.d/hostname /root /home /xdir"
 EXCL_DIRS_NEW=""
 FSTAB="/etc/fstab"
 DEV=$YES
