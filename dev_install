@@ -7,6 +7,12 @@ test "$1" != "update" -a "$1" != "new" && {
 
 # update a system
 test "$1" = "update" && {
+    echo "Before start check:"
+    echo "  - yacrhive -s system done"
+    echo "  - yrsync_xos done"
+    echo "  - verified xos is working"
+    read -e -p "OK to run?" -i "no" input
+    test "$input" = "y" || exit
     mount /dev/sdb5 /xdir
     shift
     yrsync_dev2 --mode update --nodev --blkdev /dev/sda -f /etc/fstab.main_sda --gentoo $*
