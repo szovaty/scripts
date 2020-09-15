@@ -1,0 +1,34 @@
+set timeout=3
+set timeout_style=menu
+set default="Latest"
+
+function common_part {
+    insmod all_video
+    set gfxpayload=keep
+    insmod gzio
+    insmod part_gpt
+    insmod ext2
+    search --no-floppy --label boot --set=root
+}
+
+menuentry "Latest" {
+    common_part
+    #search --no-floppy --fs-uuid $UUID_BOOT --set=root
+    linux /vmlinuz-latest root=PARTLABEL=rootfs resume=PARTLABEL=swap ro
+}
+
+menuentry "Safe" {
+    common_part
+    linux /vmlinuz-safe root=PARTLABEL=rootfs noresume ro
+}
+
+menuentry "XOS" {
+    common_part
+    linux /vmlinuz-xos root=/dev/sda4 noresume ro
+}
+
+menuentry "DEV" {
+    common_part
+    linux /vmlinuz.dev root=PARTLABEL=usbroot rootdelay=5 noresume ro
+}
+

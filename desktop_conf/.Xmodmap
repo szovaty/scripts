@@ -1,0 +1,27 @@
+! vim: ts=4 sw=4:
+
+keycode 133 =   Alt_L
+keycode 134 =   Alt_R
+keycode 108 =   Control_R
+keycode  64 =   Mode_switch
+
+keycode  13 =   4           dollar       EuroSign
+
+keycode 111 =   Up          0x0         Home                
+keycode 113 =   Left        0x0         Page_Up                
+keycode 114 =   Right       0x0         Page_Down                
+keycode 116 =   Down        0x0         End             
+keycode  22 =   BackSpace   0x0         Delete
+keycode  51 =   backslash   bar         Insert               
+
+keycode  38 =	a	        A	        aacute		    Aacute
+keycode  26 = 	e	        E	        eacute 		    Eacute
+keycode  31 =	i	        I	        iacute		    Iacute
+keycode  30 =	u	        U	        uacute		    Uacute
+keycode  32 =	o	        O	        oacute		    Oacute
+
+keycode  16 = 	7	        ampersand   udiaeresis      Udiaeresis
+keycode  17 =	8	        asterisk	udoubleacute    Udoubleacute
+keycode  18 =	9	        parenleft	odiaeresis	    Odiaeresis
+keycode  19 =	0	        parenright	odoubleacute	Odoubleacute
+

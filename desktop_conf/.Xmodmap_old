@@ -1,0 +1,52 @@
+! vim: ts=4 sw=4:
+
+keycode 133 =   Alt_L
+keycode 134 =   Alt_R
+keycode 108 =   Control_R
+keycode  64 =   Mode_switch
+
+!keycode  67 = XF86MonBrightnessDown
+!keycode  68 = XF86MonBrightnessUp
+!keycode  69 = XF86LaunchA
+!keycode  70 = XF86LaunchB
+!keycode  71 = XF86KbdBrightnessDown
+!keycode  72 = XF86KbdBrightnessUp
+!keycode  73 = XF86AudioPrev
+!keycode  74 = XF86AudioPlay
+!keycode  75 = XF86AudioNext
+!keycode  76 = XF86AudioMute
+!keycode  95 = XF86AudioLowerVolume
+!keycode  96 = XF86AudioRaiseVolume
+!keycode 232 = F1
+!keycode 233 = F2
+!keycode 128 = F3
+!keycode 212 = F4
+!keycode 237 = F5
+!keycode 238 = F6
+!keycode 173 = F7
+!keycode 172 = F8
+!keycode 171 = F9
+!keycode 121 = F10
+!keycode 122 = F11
+!keycode 123 = F12
+
+keycode  13 =   4           dollar       EuroSign
+
+keycode 111 =   Up          0x0         Home                
+keycode 113 =   Left        0x0         Page_Up                
+keycode 114 =   Right       0x0         Page_Down                
+keycode 116 =   Down        0x0         End             
+keycode  22 =   BackSpace   0x0         Delete
+keycode  51 =   backslash   bar         Insert               
+
+keycode  38 =	a	        A	        aacute		    Aacute
+keycode  26 = 	e	        E	        eacute 		    Eacute
+keycode  31 =	i	        I	        iacute		    Iacute
+keycode  30 =	u	        U	        uacute		    Uacute
+keycode  32 =	o	        O	        oacute		    Oacute
+
+keycode  16 = 	7	        ampersand   udiaeresis      Udiaeresis
+keycode  17 =	8	        asterisk	udoubleacute    Udoubleacute
+keycode  18 =	9	        parenleft	odiaeresis	    Odiaeresis
+keycode  19 =	0	        parenright	odoubleacute	Odoubleacute
+

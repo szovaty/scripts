@@ -1,0 +1,15 @@
+# vim:set ts=8:
+
+#PARTLABEL=boot	        /boot		ext2	defaults,noatime	0 2
+#PARTLABEL=efi	        /boot/efi	vfat	noauto,noatime,ro	0 2
+PARTLABEL=xos   	/		ext4	noatime,discard		0 1
+#PARTLABEL=xos   	/xos		ext4	noauto,noatime,discard	0 2
+#PARTLABEL=var   	/var		reiserfs noatime		0 2
+#PARTLABEL=opt           /opt		ext4	noatime,discard		0 2
+PARTLABEL=swap  	none    	swap	sw			0 0
+PARTLABEL=xdir  	/xdir		ext4	noatime,discard		0 2
+
+#PARTLABEL=home         /home   ext4    defaults,noatime 0 2
+/dev/mapper/home      /home   ext4    defaults,noatime 0 2
+
+tmpfs           /tmp            tmpfs   defaults                0 0

@@ -1,7 +1,7 @@
 # vim:set ts=8:
 
 /dev/sda2	/boot		ext2	defaults,noatime	0 2
-/dev/sda1	/boot/efi	vfat	noauto,noatime,ro	0 2
+/dev/sda1	/boot/efi	vfat	noauto,noatime		0 2
 /dev/sda3	/		ext4	noatime,discard		0 1
 /dev/sda4	/xos		ext4	noauto,noatime,discard	0 2
 /dev/sda6	/var		reiserfs noatime		0 2

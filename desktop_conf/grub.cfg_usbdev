@@ -1,0 +1,14 @@
+insmod all_video
+terminal_input console
+terminal_output console
+set gfxpayload=keep
+insmod gzio
+insmod part_gpt
+insmod ext2
+#search --no-floppy --fs-uuid cd53b33c-15cb-4300-b394-1e612237aa4c --set=root
+search --no-floppy --label boot --set=root
+
+#linux /vmlinuz.dev root=PARTUUID=3ce5aa3c-337a-4c5c-8ca3-b2c587d86289 ro rootdelay=5
+linux /vmlinuz.dev root=PARTLABEL=usbroot rootdelay=5 noresume ro
+
+boot
