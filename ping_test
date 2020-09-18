@@ -5,6 +5,7 @@ TMAX=0
 DEBUG=/tmp/pingtest.debug
 rm -f $DEBUG
 touch $DEBUG
+echo Start: `date` >> $DEBUG
 while true ; do
     ETIME=`$CMD | grep "time="`
     if [[ -z "$ETIME" ]]; then
@@ -15,7 +16,7 @@ while true ; do
     test -z "$x1" && x1=$x
     x2=${x1%%' '*}
     if [[ -z "$x2" ]]; then 
-        echo [$ET] >> $DEBUG
+        echo [$ETIME] >> $DEBUG
         continue
     fi
     if [ $TMAX -lt $x2 ] ; then
