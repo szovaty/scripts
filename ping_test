@@ -2,6 +2,7 @@
 
 CMD="ping -c 1 -n google.com"
 TMAX=0
+TAV=0
 DEBUG=/tmp/pingtest.debug
 rm -f $DEBUG
 touch $DEBUG
@@ -22,6 +23,7 @@ while true ; do
     if [ $TMAX -lt $x2 ] ; then
         TMAX=${x2}
     fi
-    echo -n -e '\r'Max ping time: $TMAX ms
+    printf "Ping times:  %04.d / %-04.d\r" $x2 $TMAX
+    sleep 1
 done
 echo
