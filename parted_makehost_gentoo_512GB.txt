@@ -4,18 +4,20 @@ mkpart primary fat16 2MiB 4MiB \
 mkpart primary ext2 4MiB 512MiB \
 mkpart primary ext2 512MiB 32GiB \
 mkpart primary ext2 32GiB 64GiB \
-mkpart primary linux-swap 64GiB 96GiB \
+mkpart primary ext2 64GiB 96GiB \
 mkpart primary reiserfs 96GiB 100GiB \
-mkpart primary ext2 100GiB 110GiB \
-mkpart primary ext2 110GiB 200GiB \
-mkpart primary ext2 160GiB 100% \
+mkpart primary ext2 100GiB 108GiB \
+mkpart primary linux-swap 108GiB 140GiB \
+mkpart primary ext2 140GiB 200GiB \
+mkpart primary ext2 200GiB 100% \
 name 1 efi \
 name 2 grub \
 name 3 rootfs \
 name 4 xos \
-name 5 swap \
+name 5 xdev \
 name 6 var \
 name 7 opt \
-name 8 home \
-name 9 xdir \
+name 8 swap \
+name 9 home \
+name 10 xdir \
 set 1 esp on 
