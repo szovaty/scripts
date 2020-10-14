@@ -504,7 +504,7 @@ y_umount(){
 
 # test if we are in dry run mode
 y_check_dryrun () {
-  if [ "$Y_DRY_RUN" = $TRUE ] ; then
+  if [ "$Y_DRY_RUN" = "$TRUE" ] ; then
     return 0
   else
     return -1
@@ -513,8 +513,11 @@ y_check_dryrun () {
 
 # same as above with inveted result
 y_check_dryrun_not () { 
-  y_check_dryrun && return -1
-  return 0
+  if [ "$Y_DRY_RUN" = "$TRUE" ] ; then
+    return -1
+  else
+    return 0
+  fi
 }
 
 # check is a device is mounted to the defined directory

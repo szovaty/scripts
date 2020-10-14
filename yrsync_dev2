@@ -250,8 +250,8 @@ if [ -n "$Y_BLKDEV" ] ; then
   y_check_dryrun_not &&
     test "$Y_MODE" != "$MODE_NEW" -a "$Y_BLKDEV" != "$M_DEV" && 
       y_fatal_error parameter [$Y_BLKDEV] != [$M_DEV] from fstab
-else
-  Y_BLKDEV=$M_DEV
+#else
+  #Y_BLKDEV=$M_DEV
 fi
 
 y_msg_dest_restore
@@ -357,14 +357,16 @@ test "$GRUB" = $YES && {
   y_progress_nl Update grub...
   y_msg_dest LOG
   # find boot device
-  _X=`grep -E /'($|\s)' $FSTAB_DEST | awk '{print $1}'`
-  BOOT_DEV=${_X%%[[:digit:]]*}
-  y_debug BOOT_DEV [$BOOT_DEV]
+  #_X=`grep -E /'($|\s)' $FSTAB_DEST | awk '{print $1}'`
+  #BOOT_DEV=${_X%%[[:digit:]]*}
+  y_debug BOOT_DEV [$Y_BLKDEV]
   y_msg_dest_restore
-  test -b $BOOT_DEV || y_fatal_error "Invalid boot device [$BOOT_DEV]"
+#  test -n "$Y_DRY_RUN" || 
+  y_check_dryrun ||
+    test -b $Y_BLKDEV || y_fatal_error "Invalid boot device [$Y_BLKDEV]"
   y_run mount -o remount,rw /sys/firmware/efi/efivars
   y_run grub-install --root-directory=$DEST_ROOT --removable \
-    --target=x86_64-efi --efi-directory=$DEST_ROOT/boot/efi $BOOT_DEV
+    --target=x86_64-efi --efi-directory=$DEST_ROOT/boot/efi $Y_BLKDEV
   y_run mount -o remount,ro /sys/firmware/efi/efivars
   y_msg_dest_restore
   y_progress_end
