@@ -1,0 +1,7 @@
+
+#xfce4-terminal --hide-borders --tab --font=7 --geometry=90x21+0+281
+xfce4-terminal --hide-borders --tab --font=7 --geometry=79x27+0-0
+xfce4-terminal --hide-borders --tab --font=7 --geometry=100x58-0-0
+xfce4-terminal --hide-borders --tab --font=7 --geometry=94x11+556+238
+xfce4-terminal --hide-borders --tab --font=7 --geometry=94x45+557-0
+xfce4-terminal --hide-borders --tab --font=7 --geometry=194x12-3+41
