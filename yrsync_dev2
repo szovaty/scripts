@@ -153,7 +153,7 @@ Y_PARTED_PAR_512="
   mkpart primary ext2 140GiB 200GiB \
   mkpart primary ext2 200GiB 100% \
   name 1 efi \
-  name 2 grub \
+  name 2 boot \
   name 3 rootfs \
   name 4 xos \
   name 5 xdev \

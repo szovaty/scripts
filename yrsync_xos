@@ -52,7 +52,7 @@ y_start
 # read command line parameters
 while [ -n "$1" ] ; do
     case $1 in
-	--help|-h)	    y_help "[Oprions]"; y_exit;;	#; Help
+	--help|-h)	    y_help "[Options]"; y_exit;;	#; Help
 	--xos|-x)	    XOS_DIR="$2"; shift ;;			#; Define xos_dir [XOS_DIR]
 	--dirs|-d)	    DIR_LIST="$2"; shift ;;			#; Define dirs to copy [DIR_LIST]
 	--rsync|-r)	    RSYNC_OPT="$2"; shift ;;		#; Define rsync options [RSYNC_OPT]
