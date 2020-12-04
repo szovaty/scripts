@@ -5,15 +5,15 @@ trap _exit INT HUP TERM
 
 set -e
 
-VERSION="0.0 2020.09.08 by y"
+VERSION="1.0 2020.12.04 by y"
 
 DIR="$HOME/titkok"
-if [ -n "$2" ]; then
-    FILENAME="$DIR/$2"
-    FIN=$3
+if [ -n "$3" ]; then
+    FILENAME="$2"
+    FIN="$3"
 else 
-    FILENAME="$DIR/bank"
-    FIN=$2
+    FILENAME="$DIR/bank.epng"
+    FIN="$2"
 fi
 TMPFILE="$HOME/.tmpfile.$$"
 AES=`which aescrypt`
@@ -26,12 +26,13 @@ version () {
 }
 
 help () {
-    echo "USAGE: $0 [option] [output] input"
+    echo "USAGE: $0 [option] [output] INPUT"
+    echo " default -v $FILENAME"
     echo "	options:"
     echo "		--help|-h: 	help message"
     echo "		--version|-V: 	display version info"
     echo "		--view|-v: 	display file"
-    echo "		--edit|-e: 	edit file"
+    echo "		--edit|-e: 	edit file INPUT"
 }
 
 unknown_command () {
