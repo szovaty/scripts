@@ -92,6 +92,21 @@ Y_PPAR="256"
 LABELS="boot"
 PARTLABELS="rootfs xos swap"
 
+# 512GB USB disk partitioning
+Y_PARTED_PAR_USB512="
+  mklabel gpt \
+  mkpart primary fat16 2MiB 4MiB \
+  mkpart primary ext2 4MiB 537MiB \
+  mkpart primary linux-swap 537MiB 16GiB \
+  mkpart primary ext2 16GiB 64GiB \
+  mkpart primary ext2 64GiB 100% \
+  name 1 efi \
+  name 2 boot \
+  name 3 swap \
+  name 4 rootfs \
+  name 5 xdir \
+  set 1 esp on
+"
 # 128GB disk partitioning
 Y_PARTED_PAR_128="
   mklabel gpt \
