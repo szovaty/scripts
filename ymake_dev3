@@ -1,0 +1,420 @@
+#!/bin/bash
+# vim:set ts=2 sw=2:
+# Base template2.src version 1.0 last modified 2018.01.11 by y
+
+y_start(){ :; }
+y_exit(){ :; }
+y_help(){ :; }
+
+trap y_exit TERM HUP INT
+
+# Source the function library
+ylib () {
+  FSH="y_bash_lib"
+  LIB=`which $FSH`
+  test $? != '0' && { echo Fatal Error!; exit 1; }
+  test -r ${LIB} && source ${LIB}
+}
+ylib
+
+# Uncomment this to allow colors on the console
+USE_COLOR=$YES
+
+# This will enable positioning of a text to the end (-8 char) 
+# of a line independent of window size
+USE_POS=$YES
+
+# Enable bell for warnings and errors
+#USE_BELL=$YES
+
+# define the following to match the program current state
+PROGRAM_NAME="ymake_dev3"
+PROG_DESC="Utility to manage a gentoo based host install and update."
+VERSION="3.0-rc0"
+LAST_MOD="2021.01.21"
+
+# Define log file here
+LOG="/tmp/${0##*/}.log"
+
+# Uncomment this if you need debug enabled
+#Y_DEBUG=$TRUE
+
+# use these to set cleanup on exit
+#MOUNTED=""             # y_exit will unmount them
+#DELETE_ON_EXIT=""      # y_exit will delete them
+#LAST_CMD=""            # y_exit will run it just before exit
+
+# Uncomment to make script quiet
+#Y_QUIET=$FALSE
+
+# Uncomment to ask for confirmation 
+#Y_CONFIRM=$TRUE
+
+# destination options: LOG,STDOUT,STDERR
+#Y_MSG_DEST="LOG"
+Y_RUN_RET_SUM=0
+
+# -------------- configuration defaults -----------------------
+Y_MOUNT_DEV="$FALSE"
+Y_DEV_MNT="/mnt"
+Y_SRC_DIRS="/usr /var /opt /boot /home /xdir/gentoo"
+Y_SRC_FSTAB="/etc/fstab.dev"
+Y_GRUB_CFG="/boot/grub/grub.cfg"
+Y_DEL_RSYNC=" \
+  /etc/runlevels/default/xdm \
+  /etc/runlevels/boot/dmcrypt"
+Y_DEV_NAME="/etc/conf.d/hostname.dev"
+
+ylib
+
+#y_init_screen
+y_start
+CMD="$@"
+
+# ===================================================================================
+HELP="Defaults"
+# read command line parameters
+while [ -n "$1" ] ; do
+  case $1 in
+    --help|-h)	y_help $PROG_DESC; y_exit;;    #; Help [HELP]
+    --quiet|-Q) Y_QUIET=$TRUE;;                 #; Enable quiet mode [Y_QUIET]
+    --debug|-D) Y_DEBUG=$TRUE;;                 #; Enable debug mode [Y_DEBUG]
+    --dry|-N)   Y_DRY_RUN=$TRUE;;               #; Execute dry run mode [Y_DRY_RUN]
+    --nocolor)  USE_COLOR="";;                  #; Disable color output [USE_COLOR]
+    --log|-L)   LOG="$2"; shift;;               #; Set log destination [LOG]
+    --version|-V) y_version; y_exit;;           #; Display version and exit
+    --new_dev)  Y_NEW_DEV=$TRUE;;               #; Initial new DEV device [Y_NEW_DEV]
+    --disk)     Y_DISK="$2"; shift;;            #; Select disk [Y_DISK]
+    --part|-p)  Y_PART="$2"; shift;;            #; Set partition [Y_PART]
+    --mnt|-M)   Y_DEV_MNT="$2"; shift;;         #; Set DEV root [Y_DEV_MNT]
+    --mountdev) Y_MOUNT_DEV="$2"; shift;;       #; Mount DEV FS [Y_MOUNT_DEV]
+    --mountmisc) Y_MOUNT_MISC=$TRUE;;           #; Mount misc. devs [Y_MOUNT_MISC]
+    --src_dirs) Y_SRC_DIRS="$2"; shift;;        #; Source dirs [Y_SRC_DIRS]
+    --src_fstab) Y_SRC_FSTAB="$2";shift;;       #; host side fstab to use [Y_SRC_FSTAB]
+    --noclean)  Y_NOCLEAN=$TRUE;;               #; Do not clean-up on exit [Y_NOCLEAN]
+    --sync)     Y_SYNC=$TRUE;;                  #; Sync gentoo files [Y_SYNC]
+    --prechg)   Y_PRECHG_DEV=$TRUE;;            #; Enable change before update [Y_PRECHG_DEV]
+    --update)   Y_UPDATE=$TRUE;;                #; Update Gentoo [Y_UPDATE]
+    --check)    Y_CHECK=$TRUE;;                 #; Pre-check build [Y_CHECK]
+    --build)    Y_BUILD=$TRUE;;                 #; Build/update DEV system [Y_BUILD]
+    --resume)   Y_BUILD_RESUME=$TRUE;;          #; Resume system build [Y_BUILD_RESUME]
+    --ckernel)  Y_CONFIG_KERNEL=$TRUE;;         #; Config kernel [Y_CONFIG_KERNEL]
+    --bkernel)  Y_BUILD_KERNEL=$TRUE;;          #; Build kernel [Y_BUILD_KERNEL]
+    --lilo)     Y_LILO=$TRUE;;                  #; Update bootloader [Y_LILO]
+    --grub_inst) Y_GRUB_INSTALL=$TRUE;;         #; Install grub [Y_GRUB_INSTALL]
+    --grub)     Y_GRUB=$TRUE;;                  #; Update grub [Y_GRUB]
+    --grub_cfg) Y_GRUB_CFG="$2";shift;;         #; Define grub.cfg file [Y_GRUB_CFG]
+    --rebuild)  Y_REBUILD=$TRUE;;               #; Rebuild system after new kernel
+    --clgentoo) Y_CGENTOO=$TRUE;;               #; Clean Gentoo [Y_CGENTOO]
+    --qtest)    Y_QUICKTEST=$TRUE;;             #; Test new sys by chroot [Y_QUICKTEST]
+    --systest)  Y_SYSTEST=$TRUE;;               #; Test by reboot into DEV [Y_SYSTEST]
+    --tools|-U) Y_UPDATE_TOOLS=$TRUE;           #; Update system tools [Y_UPDATE_TOOLS]
+  esac
+  shift
+done
+
+# log command line parameters
+y_debug $0 $CMD
+
+# set some sane defaults if not set already
+y_set_default Y_MSG_DEST "LOG,STDOUT,STDERR"
+y_set_default Y_DEBUG_ON_ERROR $TRUE
+y_set_default Y_EXIT_ON_ERROR $FALSE
+
+# resource the library to make effect changes in the environment variables
+ylib
+
+# check if required tools are installed
+y_check_cmds "lsblk chroot grep emerge parted mkfs.vfat mkfs.ext2 mkfs.ext4 mkswap"
+
+# initialize a new device to be used
+#  tune partitions and filesystem config below
+test -n "$Y_NEW_DEV" && {
+  y_msg_dest LOG
+  DEV="$Y_DISK"
+  test -b "$DEV" || y_fatal_error "Invalid [$DEV] block device"
+  y_progress_nl "Initialize device [$DEV]"
+  y_run parted --script $DEV \
+    mklabel gpt \
+    mkpart primary 2MiB 4MiB \
+    mkpart primary ext2 4MiB 1024MiB \
+    mkpart primary linux-swap 1GiB 10GiB \
+    mkpart primary ext4 10GiB 100GiB \
+    mkpart primary ext4 100GiB 100% \
+    name 1 efi \
+    name 2 boot \
+    name 3 swap \
+    name 4 rootfs \
+    name 5 xdir \
+    set 1 esp on 
+  y_run partprobe ${DEV}
+  y_run mkfs.vfat ${DEV}${Y_PART}1
+  y_run mkfs.ext2 ${DEV}${Y_PART}2
+  y_run mkswap ${DEV}${Y_PART}3
+  y_run mkfs.ext4 ${DEV}${Y_PART}4
+  y_run mkfs.ext4 ${DEV}${Y_PART}5
+  y_msg_dest_restore
+  y_progress_end
+}
+
+# make sure we run as root
+y_check_dryrun_not && test $(id -u) -ne 0 && 
+  y_fatal_error "Script should run as root!"
+
+# mount DEV ROOTFS if it is not mounted yet
+! y_check_mount "${Y_DISK}${Y_PART}" "$Y_DEV_MNT" && {
+  y_progress_nl "Mount DEV root on $Y_DEV_MNT..."
+  y_run "fsck -p ${Y_DISK}${Y_PART} 2>&1 >> $LOG"
+  y_run mkdir -p $Y_DEV_MNT
+  y_mount ${Y_DISK}${Y_PART} $Y_DEV_MNT
+  y_progress_end
+}
+
+# mount extra block device(s) required to make up DEVFS
+test "$Y_MOUNT_DEV" != $FALSE && {
+  y_progress_nl "Mount required block devices..."
+  OLDIFS=$IFS
+  IFS=","
+  Y_MOUNT_LIST=`echo $Y_MOUNT_DEV`
+  IFS=$OLDIFS
+  for i in $Y_MOUNT_LIST ; do
+    y_run mkdir -p ${Y_DEV_MNT}${i#*=}
+    y_mount ${i%=*} ${Y_DEV_MNT}${i#*=}
+  done
+  y_progress_end
+}
+
+# sync DEV install from current install 
+test -n "$Y_SYNC" && {
+  y_progress_nl "Sync DEV system with current install..."
+  y_msg_dest LOG
+  y_run yrsync_xos -x $Y_DEV_MNT -f $Y_SRC_FSTAB -d \"$Y_SRC_DIRS\" -m -r \"-arxK --delete\"
+  y_run cp $Y_DEV_NAME $Y_DEV_MNT/etc/conf.d/hostname
+  for i in $Y_DEL_RSYNC ; do
+    y_run rm -f $Y_DEV_MNT$i
+  done
+  y_msg_dest_restore
+  y_progress_end
+}  
+
+# mount presudo fs and support dirs on DEV
+test "$Y_MOUNT_MISC" = $TRUE && {
+  y_progress_nl "Mount DEV misc. devices..."
+  y_run mkdir -p $Y_DEV_MNT/dev
+  y_mount --bind /dev $Y_DEV_MNT/dev
+  y_run mkdir -p $Y_DEV_MNT/dev/pts
+  y_mount --bind /dev/pts $Y_DEV_MNT/dev/pts
+  y_run mkdir -p $Y_DEV_MNT/proc
+  y_mount -t proc proc $Y_DEV_MNT/proc
+  if y_check_dryrun_not ; then
+    test -x $Y_DEV_MNT/bin/bash || 
+      y_fatal_error "Can not execute $Y_DEV_MNT/bin/bash on [$Y_DEV_MNT]"
+    y_msg_dest "LOG,STDOUT"
+    PORTAGE_TMPDIR=`y_run chroot $Y_DEV_MNT /bin/bash -c \
+      '"emerge --info 2>/dev/null | grep PORTAGE_TMPDIR"'`
+    y_msg_dest_restore
+    P_TMP=${PORTAGE_TMPDIR##*PORTAGE_TMPDIR=\"}
+    P_TMP=${P_TMP%*\"}
+    test "PORTAGE_TMPDIR=\"$P_TMP\"" != "$PORTAGE_TMPDIR" && 
+      y_fatal_error "Portage TMP dir [$P_TMP] not what expected!"
+    y_run mkdir -p ${Y_DEV_MNT}${P_TMP}
+  # y_mount --bind /tmp $Y_DEV_MNT$P_TMP
+    y_run chmod 1777 $Y_DEV_MNT$P_TMP
+  else
+    y_dryrun Mount tmp_fs for gentoo
+  fi
+  y_progress_end
+}
+
+# Make changes to DEV before starting update
+test "$Y_PRECHG_DEV" = $TRUE && {
+  y_progress_nl "Change DEV before update...."
+  y_msg_dest "STDOUT,STDERR,LOG"
+  y_run chroot $Y_DEV_MNT bash --rcfile $Y_CONSOLE -i
+  y_msg_dest_restore
+  y_progress_end
+}
+
+# clean up gentoo files: packages and distfiles
+test -n "$Y_CGENTOO" && {
+    y_progress_nl "Clear Gentoo build files...."
+    y_msg_dest LOG
+    y_run eclean-pkg
+    y_msg_dest_restore
+    y_progress_end
+}
+
+# update build system on DEV: emerge --sync
+test -n "$Y_UPDATE" && {
+  y_progress_nl "Gentoo sync and portage update..."
+  y_msg_dest LOG
+  #y_run chroot $Y_DEV_MNT emerge --sync
+  y_run chroot $Y_DEV_MNT emaint -a sync
+  y_run chroot $Y_DEV_MNT emerge -1q portage
+  y_msg_dest_restore
+  y_progress_end
+}
+
+# check if it would build
+test -n "$Y_CHECK" && {
+    y_progress_nl "Pre-Check build..."
+    y_msg_dest LOG
+    y_run chroot $Y_DEV_MNT emerge -pvuDN world
+    y_msg_dest_restore
+    y_progress_end
+}
+
+# build system on DEV
+test -n "$Y_BUILD" && {
+    y_msg_dest LOG
+    y_progress_nl "Build/update DEV system..."
+    y_run chroot $Y_DEV_MNT emerge -quDN world
+    y_msg_dest_restore
+    y_msg_dest "STDOUT,LOG"
+    y_run chroot $Y_DEV_MNT etc-update
+    y_msg_dest_restore
+    y_progress_end
+}
+
+# resume build system on DEV
+test -n "$Y_BUILD_RESUME" && {
+    y_msg_dest LOG
+    y_progress_nl "Resume build/update DEV system..."
+    y_run chroot $Y_DEV_MNT emerge --resume
+    y_msg_dest_restore
+    y_msg_dest "STDOUT,LOG"
+    y_run chroot $Y_DEV_MNT etc-update
+    y_msg_dest_restore
+    y_progress_end
+}
+
+# configure kernel
+test -n "$Y_CONFIG_KERNEL" && {
+  y_dryrun "Change the kernel configuration"
+  y_check_dryrun_not && {
+    y_progress_nl "Kernel configuration..."
+    cd $Y_DEV_MNT/usr/src/linux
+    y_msg_dest "STDOUT,STDERR"
+    y_run bash --rcfile $Y_CONSOLE -i
+    y_msg_dest_restore
+    y_progress_end
+  }
+}
+
+# build new kernel
+test -n "$Y_BUILD_KERNEL" && {
+    y_progress_nl "Build kernel..."
+    y_msg_dest "STDERR,LOG"
+    y_run chroot $Y_DEV_MNT /bin/bash -c \
+      '"cd /usr/src/linux; make bzImage modules modules_install install"'
+    y_run cp $Y_DEV_MNT/usr/src/linux/arch/x86/boot/bzImage $Y_DEV_MNT/boot/vmlinuz.dev
+    y_msg_dest_restore
+    y_progress_end
+}
+
+# update lilo bootloader
+test -n "$Y_LILO" && {
+    y_progress_nl "Update bootloader..."
+    y_run mount -o remount,rw /boot
+    y_run lilo
+    y_run mount -o remount,ro /boot
+    y_progress_end
+}    
+
+# grub install
+test -n "$Y_GRUB_INSTALL" && {
+  y_progress_nl "Grub EFI install..."
+  shopt -s extglob
+  DEV=${Y_DEV_DEV##*/}
+  DEV=${DEV%%+([[:digit:]])}
+  shopt -u extglob
+  test -b /dev/$DEV || y_fatal_error "Invalid block device [$DEV]"
+  y_msg_dest LOG
+  y_run mount -o remount,rw /sys/firmware/efi/efivars
+  y_run grub-install --root-directory=$Y_DEV_MNT --removable \
+    --target=x86_64-efi --efi-directory=$Y_DEV_MNT/boot/efi /dev/$DEV
+  y_run mount -o remount,ro /sys/firmware/efi/efivars
+  y_msg_dest_restore
+  y_progress_end
+}
+
+# update grub bootloader
+test -n "$Y_GRUB" && {
+  y_progress_nl "Update grub bootloader..."
+  y_run cp $Y_GRUB_CFG $Y_DEV_MNT/boot/grub/grub.cfg
+  y_progress_end
+}
+
+# rebuild/clean-up system after new kernel
+test -n "$Y_REBUILD" && {
+  y_progress_nl "Check and clean-up system..."
+  y_progress_nl "  Chech build integrity..."
+  y_msg_dest LOG
+  y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge -quDN world"'
+  y_progress_nl "  Remove unused packages 'depclean'..."
+  y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge --depclean -q"'
+  y_progress_nl "  Chech build after depclean..."
+  y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge -quDN world"'
+  y_progress_nl "  Rebuild preserved packages..."
+  y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge @preserved-rebuild -q"'
+  y_progress_nl "  Rebuild X11 modules..."
+  y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge @x11-module-rebuild -q"'
+  y_progress_nl "  Rebuild misc. modules..."
+  y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge @module-rebuild -q"'
+  y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge -q1 udev"'
+  y_msg_dest_restore
+  y_progress_nl "Check and clean-up result"
+  y_progress_end
+}
+
+# quick test new install by chroot and command line
+test -n "$Y_QUICKTEST" && {
+  y_progress_nl "Quick test new system..."
+  y_msg_dest "STDOUT,STDERR"
+#  y_run cp /x_proj/jenov/scripts/yrsync_dev2 $Y_DEV_MNT/usr/local/bin
+#  y_run cp /x_proj/jenov/scripts/dev_install $Y_DEV_MNT/usr/local/bin
+  # fix permition issue
+#  y_run chmod u+s $Y_DEV_MNT/sbin/unix_chkpwd
+  y_run chroot $Y_DEV_MNT bash --rcfile $Y_CHROOT -i
+  y_msg_dest_restore
+  y_progress_end
+}
+
+test -f "$Y_TODO" && y_run_ cp "$Y_TODO" "$Y_DEV_MNT"/__TODO__
+
+# Test new install by hibernating current version and boot into DEV
+test -n "$Y_SYSTEST" -o -n "$Y_SYSMERGE" && {
+    y_progress_nl "System test/merge..."
+    y_progress_nl "  Hibernate current host and boot into DEV..."
+    y_run cp /proj/jenov/scripts/yrsync_dev $Y_DEV_MNT/usr/local/bin
+    y_run y_umount
+    y_run mount -o remount,rw /boot
+    y_run lilo -R DEV noresume
+    y_run mount -o remount,ro /boot
+    y_run y_hibernate reboot
+    y_run pm-hibernate
+    y_run mount -o remount,rw /boot
+    y_run lilo -R
+    y_run mount -o remount,ro /boot
+    y_run y_hibernate shutdown
+    y_progress "All done"
+    y_progress_end
+}
+
+test -n "$Y_UPDATE_TOOLS" && {
+  y_progress_nl "Update tools..."
+  y_msg_dest "STDOUT,STDERR"
+  y_run cp /x_proj/jenov/scripts/yrsync_dev2 $Y_DEV_MNT/usr/local/bin
+  y_run cp /x_proj/jenov/scripts/dev_install $Y_DEV_MNT/usr/local/bin
+  # fix permition issue
+  y_run chmod u+s $Y_DEV_MNT/sbin/unix_chkpwd
+  y_run date +%Y_%m_%d > $Y_DEV_MNT/BUILD
+  y_progress_end
+}
+
+#y_debug_console
+#y_run date +%Y_%m_%d > $Y_DEV_MNT/BUILD
+
+# ===================================================================================
+# Leave this as the last line
+y_exit
