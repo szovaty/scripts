@@ -127,11 +127,14 @@ ylib
 # check if required tools are installed
 y_check_cmds "lsblk chroot grep emerge parted mkfs.vfat mkfs.ext2 mkfs.ext4 mkswap"
 
+# test partition device name format
+test -b "${Y_DISK}${Y_PART}"
+
 # initialize a new device to be used
 #  tune partitions and filesystem config below
 test -n "$Y_NEW_DEV" && {
   y_msg_dest LOG
-  DEV="$Y_DISK"
+  DEV="/dev/$Y_DISK"
   test -b "$DEV" || y_fatal_error "Invalid [$DEV] block device"
   y_progress_nl "Initialize device [$DEV]"
   y_run parted --script $DEV \
@@ -147,7 +150,7 @@ test -n "$Y_NEW_DEV" && {
     name 4 rootfs \
     name 5 xdir \
     set 1 esp on 
-  y_run partprobe ${DEV}
+  y_run partprobe ${DEV}${Y_PART}1
   y_run mkfs.vfat ${DEV}${Y_PART}1
   y_run mkfs.ext2 ${DEV}${Y_PART}2
   y_run mkswap ${DEV}${Y_PART}3
@@ -325,8 +328,7 @@ test -n "$Y_LILO" && {
 test -n "$Y_GRUB_INSTALL" && {
   y_progress_nl "Grub EFI install..."
   shopt -s extglob
-  DEV=${Y_DEV_DEV##*/}
-  DEV=${DEV%%+([[:digit:]])}
+  DEV="$Y_DISK"
   shopt -u extglob
   test -b /dev/$DEV || y_fatal_error "Invalid block device [$DEV]"
   y_msg_dest LOG
@@ -404,10 +406,10 @@ test -n "$Y_SYSTEST" -o -n "$Y_SYSMERGE" && {
 test -n "$Y_UPDATE_TOOLS" && {
   y_progress_nl "Update tools..."
   y_msg_dest "STDOUT,STDERR"
-  y_run cp /x_proj/jenov/scripts/yrsync_dev2 $Y_DEV_MNT/usr/local/bin
+  y_run cp /x_proj/jenov/scripts/yrsync_dev* $Y_DEV_MNT/usr/local/bin
   y_run cp /x_proj/jenov/scripts/dev_install $Y_DEV_MNT/usr/local/bin
-  # fix permition issue
-  y_run chmod u+s $Y_DEV_MNT/sbin/unix_chkpwd
+  # fix permition issue - not a problem any more!
+  # y_run chmod u+s $Y_DEV_MNT/sbin/unix_chkpwd
   y_run date +%Y_%m_%d > $Y_DEV_MNT/BUILD
   y_progress_end
 }
