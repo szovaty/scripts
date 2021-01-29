@@ -1,0 +1,341 @@
+#!/bin/bash
+# vim:set ts=2 sw=2:
+# Base template2.src version 1.0 last modified 2018.01.11 by y
+# TODO add boot label to new disk boot partition (e2label /dev/sda2 boot)
+
+y_start(){ :; }
+y_exit(){ :; }
+y_help(){ :; }
+
+trap y_exit TERM HUP INT
+
+# Source the function library
+ylib () {
+  FSH="y_bash_lib"
+  LIB=`which $FSH`
+  test $? != '0' && { echo Fatal Error!; exit 1; }
+  test -r ${LIB} && source ${LIB}
+}
+ylib
+
+# Uncomment this to allow colors on the console
+USE_COLOR=$YES
+
+# This will enable positioning of a text to the end (-8 char) 
+# of a line independent of window size
+USE_POS=$YES
+
+# Enable bell for warnings and errors
+#USE_BELL=$YES
+
+# define the following to match the program current state
+PROGRAM_NAME="yrsync_dev2"
+PROG_DESC="Install/update a system based on current host"
+VERSION="3.6"
+LAST_MOD="2021.01.29"
+
+# Define log file here
+LOG="/tmp/${0##*/}.log"
+
+# Uncomment this if you need debug enabled
+#Y_DEBUG=$TRUE
+
+# use these to set cleanup on exit
+#MOUNTED=""             # y_exit will unmount them
+#DELETE_ON_EXIT=""      # y_exit will delete them
+#LAST_CMD=""            # y_exit will run it just before exit
+
+# Uncomment to make script quiet
+#Y_QUIET=$FALSE
+
+# Uncomment to ask for confirmation 
+#Y_CONFIRM=$TRUE
+
+# destination options: LOG,STDOUT,STDERR
+#Y_MSG_DEST="STDOUT,LOG"
+
+ylib
+
+MODE_NEW="new"
+MODE_UPDATE="update"
+
+# define backup system mount point
+DEST_ROOT="/mnt"
+
+# define rsync command
+RSYNC_OPT="-arx --delete"
+
+# usefull defaults
+
+DEST_MOUNT="/ /opt /var /xdir /boot /boot/efi"
+SRC_ROOT="/"
+SRC_DIRS_UPDATE="/ /boot/"
+SRC_DIRS_NEW="/ /boot/ /boot/efi/"
+EXCL_DIRS_UPDATE="/gentoo /boot/grub/grub.cfg /etc/fstab /etc/conf.d/hostname /root /home /xdir"
+EXCL_DIRS_NEW=""
+FSTAB="/etc/fstab"
+DEV=$YES
+MOUNT=$YES
+#DELETE_LIST="/var/lib /var/db /var/cache"
+DELETE_LIST="/var/db /var/cache/edb"
+FSTAB_DEST="/etc/fstab.nvme_part"
+BOOT_DIR="/boot"
+DEV_DIR="/dev"
+KERNEL_MAIN="vmlinuz"
+KERNEL_OLD="vmlinuz.old"
+KERNEL_DEV="vmlinuz.dev"
+GENTOO="/xdir/gentoo/"
+GENTOO_BACKUP="/xdir/gentoo_saved/"
+GRUB=$NO
+LILO=$NO
+Y_PPAR="512"
+LABELS="boot"
+PARTLABELS="rootfs xos swap"
+
+CMD="$@"
+y_start
+# ===================================================================================
+HELP="Defaults"
+# read command line parameters
+while [ -n "$1" ] ; do
+  case $1 in
+    --help|-h)	  y_help "[Options]"; y_exit;;    #; Help [HELP]
+    --mode)       Y_MODE="$2"; shift;;            #; Select mode [Y_MODE]
+    --log|-L)     export LOG="$2"; shift;;        #; Set LOG [LOG]
+    --quiet|-Q)   Y_QUIET="true";;                #; Enable quiet mode [Y_QUIET]
+    --debug|-D)   Y_DEBUG="true";;                #; Enable debug mode [Y_DEBUG]
+    --dry|-N)     Y_DRY_RUN="true";;              #; Execute dry run mode [Y_DRY_RUN]
+    --eexit)      Y_EXIT_ON_ERROR=$TRUE;;         #; Exit on error [Y_EXIT_ON_ERROR]
+    --edebug)     Y_DEBUG_ON_ERROR=$TRUE;;        #; Debug on error [Y_DEBUG_ON_ERROR]
+    --nocolor)    USE_COLOR="";;                  #; Disable color output [USE_COLOR]
+    --version|-V) y_version; y_exit;;             #; Display version and exit
+    --blkdev)     Y_BLKDEV="$2"; shift;;          #; Set block device for system [Y_BLKDEV]
+    --parted)     Y_PPAR="$2"; shift;;            #; Select parted option [PPAR]
+    --droot|-r)   DEST_ROOT="$2"; shift;;         #; Define destination root [DEST_ROOT]
+    --dmount|-m)  DEST_MOUNT="$2"; shift;;        #; Define dest. mounts [DEST_MOUNT]
+    --sroot|-s)   SRC_ROOT="$2"; shift;;          #; Define source root [SRC_ROOT]
+    --sdirs|-d)   SRC_DIRS="$2"; shift ;;         #; Define source dirs to copy [SRC_DIRS]
+    --excl|-e)    EXCL_DIRS="$2"; shift;;         #; Exclude dirs from sync [EXCL_DIRS]
+    --rsync|-R)   RSYNC_OPT="$2"; shift ;;        #; Define rsync options [RSYNC_OPT]
+    --delete)     DELETE_LIST="$2"; shift;;       #; Delete [DELETE_LIST] before rsync run
+    --nomount|-M) MOUNT="no";;                    #; Mount destination dirs [MOUNT]
+    --dfstab|-f)  FSTAB_DEST="$2"; shift ;;       #; Define dest_fstab [FSTAB_DEST]
+    --lilo)       LILO=$YES; GRUB=$NO;;           #; Update lilo bootloader [LILO]
+    --grub)       GRUB=$YES; LILO=$NO;;           #; Update grub bootloader [GRUB]
+    --nodev)      DEV="no";;                      #; Create core devices under /dev [DEV]
+    --gentoo)     SAVE_GENTOO=$YES;;              #; Backup gentoo [SAVE_GENTOO]
+    --verify)     VERIFY=$YES;;                   #; Verify labels [VERIFY] exists
+    --par|-P)     Y_PARTED="$2";;                 #; partition def file [Y_PARTED]
+    --dsize)      Y_PPAR="$2";;                  #; disk size [Y_PPAR]
+  esac
+  shift
+done
+
+# log command line parameters
+y_debug $0 $CMD
+
+y_set_default Y_MSG_DEST "STDOUT,LOG"
+y_set_default USE_COLOR $TRUE
+y_set_default Y_DEBUG_ON_ERROR $TRUE
+y_set_default Y_EXIT_ON_ERROR $FALSE
+y_set_default Y_PARTED /usr/local/bin/y_parted
+ylib
+
+RSYNC="rsync $RSYNC_OPT"
+export eval Y_PARTED_PAR='$'"Y_PARTED_PAR_"$Y_PPAR
+
+#set default depends on MODE
+
+test "$Y_MODE" = "$MODE_UPDATE" && {
+  SRC_DIRS="${SRC_DIRS:-$SRC_DIRS_UPDATE}"
+  EXCL_DIRS="${EXCL_DIRS:-$EXCL_DIRS_UPDATE}"
+}
+
+test "$Y_MODE" = "$MODE_NEW" && {
+  SRC_DIRS="${SRC_DIRS:-$SRC_DIRS_NEW}"
+  EXCL_DIRS="${EXCL_DIRS:-$EXCL_DIRS_NEW}"
+}
+
+# check fstab
+test -n "$FSTAB_DEST" && { 
+  test -r "$FSTAB_DEST"  || y_fatal_error "Invalid fstab defined [$FSTAB_DEST]"
+}
+
+# find rootfs block device and check it if matches fstab definition
+# also see what it's parent block device
+
+y_msg_dest "LOG,STDOUT"
+
+M_DEV=`grep -E /'($|\s)' $FSTAB_DEST`
+M_DEV=`echo $M_DEV`
+M_DEV=${M_DEV%%' '*}
+shopt -s extglob
+M_DEV=${M_DEV%%+([[:digit:]])}
+shopt -u extglob
+
+y_check_dryrun_not && 
+  test -z "$M_DEV" && y_fatal_error Invalid fstab root [$M_DEV]
+
+if [ -n "$Y_BLKDEV" ] ; then
+  y_check_dryrun_not &&
+    test "$Y_MODE" != "$MODE_NEW" -a "$Y_BLKDEV" != "$M_DEV" && 
+      y_fatal_error parameter [$Y_BLKDEV] != [$M_DEV] from fstab
+#else
+  #Y_BLKDEV=$M_DEV
+fi
+
+y_msg_dest_restore
+
+# create partitions on new system
+test "$Y_MODE" = "$MODE_NEW" && {
+  y_progress_nl Create new partition table ...
+  #y_run dd if=/dev/zero of=/dev/$DEV count=1k
+  test -f "$Y_PARTED" && source "$Y_PARTED"
+  test -z "$Y_PARTED_PAR" && y_fatal_error Partition table not defined!
+  eval Y_PAR=$Y_PARTED_PAR
+  y_run parted --script $Y_BLKDEV $Y_PAR
+  # without sleep first mkfs.xxx will fail
+  y_run sleep 1
+  y_progress_end
+}      
+
+# mount destination directories
+test "$MOUNT" = "yes" && {
+  y_msg_dest "LOG"
+  y_progress_nl Mount destination dirs...
+  for i in $DEST_MOUNT ; do
+    y_progress_nl "  $i"
+    M_FSTAB=`grep -E $i'($|\s)' $FSTAB_DEST`
+    y_info fstab [$M_FSTAB]
+    M_TMP=`echo $M_FSTAB | awk '{print $1}'`
+    M_TMP=${M_TMP##*=}
+    y_info [$M_TMP]
+    M_DEV=`blkid | grep $M_TMP  `
+    M_DEV=`echo $M_DEV | awk '{print $1}'`
+    M_DEV=${M_DEV%%:}
+    y_info [$M_DEV]
+    #exit
+    M_PATH=${DEST_ROOT}`echo $M_FSTAB | awk '{print $2}'`
+    M_FS=`echo $x | awk '{print $3}'`
+    y_check_dryrun || exit 1
+    #y_check_dryrun && test -z "$M_DEV" -o -z "$M_PATH" && y_fatal_error Invalid mount [$i]
+    test "$Y_MODE" = "$MODE_NEW" && {
+      PAR="-q -F"
+      test "$M_FS" = "vfat" &&  PAR=""
+      test "$M_FS" = "reiserfs" &&  PAR="-q"
+      if [ "$M_FS" != "swap" ] ; then 
+        y_run mkfs."$M_FS" "$PAR" $M_DEV
+      else
+        y_run mkswap $M_DEV
+      fi
+    }
+    y_run mkdir -p $M_PATH
+    y_mount $M_DEV $M_PATH
+  done
+  y_progress_end
+  y_msg_dest_restore
+}
+
+# create exclude list
+for i in $EXCL_DIRS ; do
+  EXCLUDE="$EXCLUDE --exclude $i"
+done
+
+test "$Y_MODE" != "$MODE_NEW" && {
+  for i in $DELETE_LIST ; do
+    y_progress_nl "Delete ${DEST_ROOT}${i}/ ..."
+    y_run rm -r -f --one-file-system ${DEST_ROOT}${i}/*
+    y_progress_end
+  done
+}
+
+
+# sync the filesystems
+for i in $SRC_DIRS ; do
+  s=`printf "%-12s" $i`
+  y_progress_nl "Sync $s -> ${DEST_ROOT}${i} ..."
+  y_run $RSYNC $EXCLUDE --exclude ${DEST_ROOT}/ $i $DEST_ROOT$i
+  y_progress_end
+done
+
+test "$Y_MODE" = "$MODE_NEW" && {
+  y_progress_nl Config new system ...
+  #y_run cp $DEST_ROOT/boot/grub/grub.cfg_main $DEST_ROOT/boot/grub/grub.cfg
+  y_run mkdir -p $DEST_ROOT/etc/conf.d
+  y_run cp $FSTAB_DEST $DEST_ROOT/etc/fstab
+  echo "hostname=\"test`date +%S`\"" > /tmp/hostname
+  y_run cp /tmp/hostname $DEST_ROOT/etc/conf.d/hostname
+  rm -f /tmp/hostname
+  y_progress_end
+}
+
+# create basic devices
+test "$DEV" = "yes" && {
+  y_progress_nl Create basic devices...
+  test -e "${DEST_ROOT}${DEV_DIR}/console" || 
+    y_run mknod ${DEST_ROOT}${DEV_DIR}/console c 5 1
+  test -e "${DEST_ROOT}${DEV_DIR}/null" || 
+    y_run mknod ${DEST_ROOT}${DEV_DIR}/null c 1 3
+  test -e "${DEST_ROOT}${DEV_DIR}/tty1" || 
+    y_run mknod ${DEST_ROOT}${DEV_DIR}/tty1 c 4 1
+  y_progress_end
+}
+
+test "$LILO" = $YES && {
+  y_progress_nl Update lilo...
+  y_mount -T ${DEST_ROOT}${FSTAB_DEST} $BOOT_DIR
+  y_mount -o remount,rw $BOOT_DIR
+  y_mount --bind $BOOT_DIR ${DEST_ROOT}${BOOT_DIR}
+  y_mount --bind $DEV_DIR ${DEST_ROOT}${DEV_DIR}
+  y_run cp ${DEST_ROOT}${BOOT_DIR}/$KERNEL_MAIN ${DEST_ROOT}${BOOT_DIR}/$KERNEL_OLD
+  y_run cp ${DEST_ROOT}${BOOT_DIR}/$KERNEL_DEV ${DEST_ROOT}${BOOT_DIR}/$KERNEL_MAIN
+  y_run lilo -r $DEST_ROOT
+  y_run mount -o remount,ro $BOOT_DIR
+  y_progress_end
+}
+
+test "$GRUB" = $YES && {
+  y_progress_nl Update grub...
+  y_msg_dest LOG
+  # find boot device
+  #_X=`grep -E /'($|\s)' $FSTAB_DEST | awk '{print $1}'`
+  #BOOT_DEV=${_X%%[[:digit:]]*}
+  y_debug BOOT_DEV [$Y_BLKDEV]
+  y_msg_dest_restore
+#  test -n "$Y_DRY_RUN" || 
+  y_check_dryrun ||
+    test -b $Y_BLKDEV || y_fatal_error "Invalid boot device [$Y_BLKDEV]"
+  y_run mount -o remount,rw /sys/firmware/efi/efivars
+  y_run grub-install --root-directory=$DEST_ROOT --removable \
+    --target=x86_64-efi --efi-directory=$DEST_ROOT/boot/efi $Y_BLKDEV
+  y_run mount -o remount,ro /sys/firmware/efi/efivars
+  y_msg_dest_restore
+  y_progress_end
+}
+
+test "$VERIFY" = $YES && {
+  y_progress_nl Verify labels [$LABELS $PARTLABELS]...
+  OK=""; MISSING="" ; RES=0
+  for i in $PARTLABELS ; do
+    test -e "/dev/disk/by-partlabel/$i" || RES=-1
+  done
+  for i in $LABELS ; do
+     test -e "/dev/disk/by-label/$i" || RES=-1
+  done
+  y_progress_end $RES
+}
+
+test "$SAVE_GENTOO" = $YES && {
+  y_progress_nl Backup gentoo...
+  test -d "$DEST_ROOT/$GENTOO" && {
+    test -n "$GENTOO_BACKUP" && y_run rm -r -f -d "$DEST_ROOT/$GENTOO_BACKUP/*"
+    y_run mv $DEST_ROOT/$GENTOO $DEST_ROOT/$GENTOO_BACKUP
+  }
+  y_run rsync -arx $GENTOO $DEST_ROOT/$GENTOO
+  y_progress_end
+}
+
+# ===================================================================================
+# Leave this as the last line
+y_run bash --rcfile $Y_CONSOLE -i
+y_exit

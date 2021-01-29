@@ -1,0 +1,79 @@
+# vim:set ts=2 sw=2:
+
+Y_LABEL="mklablel gpt"
+
+Y_BOOT=" \
+  mkpart primary fat16 2MiB 4MiB \
+  mkpart primary ext2 4MiB 537MiB \
+"
+Y_NAMES_SSD=" \
+  name 1 efi \
+  name 2 boot \
+  name 3 rootfs \
+  name 4 xos \
+  name 5 xdev \
+  name 6 var \
+  name 7 opt \
+  name 8 swap \
+  name 9 home \
+  name 10 xdir \
+  set 1 esp on 
+"
+Y_NAMES_USB=" \
+  name 1 efi \
+  name 2 boot \
+  name 3 swap \
+  name 4 rootfs \
+  name 5 xdir \
+  set 1 esp on
+"
+
+# SSD 512GB disk partitioning
+Y_PARTED_PAR_512="
+  $Y_LABEL
+	$Y_BOOT
+  mkpart primary ext2 			512MiB 	32GiB \
+  mkpart primary ext2 			32GiB 	64GiB \
+  mkpart primary ext2 			64GiB 	96GiB \
+  mkpart primary reiserfs 	96GiB 	100GiB \
+  mkpart primary ext2 			100GiB 	108GiB \
+  mkpart primary linux-swap 108GiB 	140GiB \
+  mkpart primary ext2 			140GiB 	200GiB \
+  mkpart primary ext2 			200GiB 	100% \
+  $Y_NAMES_SSD
+"
+# SSD 256GB disk partitioning
+Y_PARTED_PAR_256="
+  $Y_LABEL
+	$Y_BOOT
+  mkpart primary ext2       537MiB  16GiB \
+  mkpart primary ext2       16GiB   32GiB \
+  mkpart primary linux-swap 32GiB   48GiB \
+  mkpart primary reiserfs   48GiB   49GiB \
+  mkpart primary ext2       49GiB   51GiB \
+  mkpart primary ext2       51GiB   82GiB \
+  mkpart primary ext2       82GiB   100% \
+  $Y_NAMES_SSD
+"
+# SSD 128GB disk partitioning
+Y_PARTED_PAR_128="
+  $Y_LABEL
+	$Y_BOOT
+  mkpart primary ext2       537MiB  16GiB \
+  mkpart primary ext2       16GiB   17GiB \
+  mkpart primary linux-swap 17GiB   32GiB \
+  mkpart primary reiserfs   32GiB   33GiB \
+  mkpart primary ext2       33GiB   35GiB \
+  mkpart primary ext2       35GiB   41GiB \
+  mkpart primary ext2       41GiB   100% \
+  $Y_NAMES_SSD
+"
+#USB disk 512GB partitioning
+Y_PARTED_PAR_USB512="
+  $YLABEL
+  $Y_BOOT
+  mkpart primary linux-swap 537MiB 	16GiB \
+  mkpart primary ext2 			16GiB 	64GiB \
+  mkpart primary ext2 			64GiB 	100% \
+  $Y_NAMES_USB
+"

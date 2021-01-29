@@ -410,7 +410,7 @@ test -n "$Y_UPDATE_TOOLS" && {
   y_run cp /x_proj/jenov/scripts/dev_install $Y_DEV_MNT/usr/local/bin
   # fix permition issue - not a problem any more!
   # y_run chmod u+s $Y_DEV_MNT/sbin/unix_chkpwd
-  y_run date +%Y_%m_%d > $Y_DEV_MNT/BUILD
+  y_run "date +%Y_%m_%d > $Y_DEV_MNT/BUILD"
   y_progress_end
 }
 
