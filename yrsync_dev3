@@ -206,19 +206,15 @@ test "$MOUNT" = "yes" && {
   for i in $DEST_MOUNT ; do
     y_progress_nl "  $i"
     M_FSTAB=`grep -E $i'($|\s)' $FSTAB_DEST`
-    y_info fstab [$M_FSTAB]
     M_TMP=`echo $M_FSTAB | awk '{print $1}'`
     M_TMP=${M_TMP##*=}
-    y_info [$M_TMP]
     M_DEV=`blkid | grep $M_TMP  `
     M_DEV=`echo $M_DEV | awk '{print $1}'`
     M_DEV=${M_DEV%%:}
-    y_info [$M_DEV]
-    #exit
     M_PATH=${DEST_ROOT}`echo $M_FSTAB | awk '{print $2}'`
     M_FS=`echo $x | awk '{print $3}'`
-    y_check_dryrun || exit 1
-    #y_check_dryrun && test -z "$M_DEV" -o -z "$M_PATH" && y_fatal_error Invalid mount [$i]
+    y_check_dryrun_not && 
+      test -z "$M_DEV" -o -z "$M_PATH" && y_fatal_error Invalid mount [$i]
     test "$Y_MODE" = "$MODE_NEW" && {
       PAR="-q -F"
       test "$M_FS" = "vfat" &&  PAR=""
