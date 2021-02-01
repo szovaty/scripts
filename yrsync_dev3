@@ -31,8 +31,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="yrsync_dev2"
 PROG_DESC="Install/update a system based on current host"
-VERSION="3.6"
-LAST_MOD="2021.01.29"
+VERSION="3.6-rc1"
+LAST_MOD="2021.02.01"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -93,7 +93,7 @@ LABELS="boot"
 PARTLABELS="rootfs xos swap"
 
 CMD="$@"
-y_start
+y_start "$CMD"
 # ===================================================================================
 HELP="Defaults"
 # read command line parameters
@@ -126,7 +126,7 @@ while [ -n "$1" ] ; do
     --gentoo)     SAVE_GENTOO=$YES;;              #; Backup gentoo [SAVE_GENTOO]
     --verify)     VERIFY=$YES;;                   #; Verify labels [VERIFY] exists
     --par|-P)     Y_PARTED="$2";;                 #; partition def file [Y_PARTED]
-    --dsize)      Y_PPAR="$2";;                  #; disk size [Y_PPAR]
+    --dsize)      Y_PPAR="$2";;                   #; disk size [Y_PPAR]
   esac
   shift
 done
@@ -142,7 +142,6 @@ y_set_default Y_PARTED /usr/local/bin/y_parted
 ylib
 
 RSYNC="rsync $RSYNC_OPT"
-export eval Y_PARTED_PAR='$'"Y_PARTED_PAR_"$Y_PPAR
 
 #set default depends on MODE
 
@@ -166,13 +165,6 @@ test -n "$FSTAB_DEST" && {
 
 y_msg_dest "LOG,STDOUT"
 
-M_DEV=`grep -E /'($|\s)' $FSTAB_DEST`
-M_DEV=`echo $M_DEV`
-M_DEV=${M_DEV%%' '*}
-shopt -s extglob
-M_DEV=${M_DEV%%+([[:digit:]])}
-shopt -u extglob
-
 y_check_dryrun_not && 
   test -z "$M_DEV" && y_fatal_error Invalid fstab root [$M_DEV]
 
@@ -180,8 +172,6 @@ if [ -n "$Y_BLKDEV" ] ; then
   y_check_dryrun_not &&
     test "$Y_MODE" != "$MODE_NEW" -a "$Y_BLKDEV" != "$M_DEV" && 
       y_fatal_error parameter [$Y_BLKDEV] != [$M_DEV] from fstab
-#else
-  #Y_BLKDEV=$M_DEV
 fi
 
 y_msg_dest_restore
@@ -189,8 +179,8 @@ y_msg_dest_restore
 # create partitions on new system
 test "$Y_MODE" = "$MODE_NEW" && {
   y_progress_nl Create new partition table ...
-  #y_run dd if=/dev/zero of=/dev/$DEV count=1k
   test -f "$Y_PARTED" && source "$Y_PARTED"
+  export eval Y_PARTED_PAR='$'"Y_PARTED_PAR_"$Y_PPAR
   test -z "$Y_PARTED_PAR" && y_fatal_error Partition table not defined!
   eval Y_PAR=$Y_PARTED_PAR
   y_run parted --script $Y_BLKDEV $Y_PAR
@@ -212,15 +202,17 @@ test "$MOUNT" = "yes" && {
     M_DEV=`echo $M_DEV | awk '{print $1}'`
     M_DEV=${M_DEV%%:}
     M_PATH=${DEST_ROOT}`echo $M_FSTAB | awk '{print $2}'`
-    M_FS=`echo $x | awk '{print $3}'`
+    M_FS=`echo $M_FSTAB | awk '{print $3}'`
     y_check_dryrun_not && 
       test -z "$M_DEV" -o -z "$M_PATH" && y_fatal_error Invalid mount [$i]
-    test "$Y_MODE" = "$MODE_NEW" && {
+    y_check_dryrun && 
+      M_DEV=[TBD]
+    test "$Y_MODE" == "$MODE_NEW" && {
       PAR="-q -F"
-      test "$M_FS" = "vfat" &&  PAR=""
-      test "$M_FS" = "reiserfs" &&  PAR="-q"
+      test "$M_FS" == "vfat" &&  PAR=""
+      test "$M_FS" == "reiserfs" &&  PAR="-q"
       if [ "$M_FS" != "swap" ] ; then 
-        y_run mkfs."$M_FS" "$PAR" $M_DEV
+        y_run mkfs.$M_FS $PAR $M_DEV
       else
         y_run mkswap $M_DEV
       fi

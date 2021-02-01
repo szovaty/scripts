@@ -1,9 +1,16 @@
 # install/update a system from a ymake_dev2 updated source using yrsync_dev2
 
-CMD="yrsync_dev3"
+PARTED="./y_parted"
+FSTAB="/etc/fstab.nvme_part"
+DEV="/dev/nvme0n1"
+DSIZE="512"
+MOUNT="/ /opt /var /boot /boot/efi /home /xdir"
+COPY="/ /opt /boot /boot/efi /home /xdir"
+DEL=""
+CMD="./yrsync_dev3 --blkdev $DEV -f $FSTAB -P $PARTED"
 
 test "$1" != "update" -a "$1" != "new" && {
-    echo "Usage: $0 [new|update]"
+    echo "Usage: $0 [new SIZE|update]"
     exit 1
 }
 
@@ -17,20 +24,15 @@ test "$1" = "update" && {
     test "$input" = "y" || exit
     mount /dev/sdb5 /xdir
     shift
-    $CMD --mode update --nodev --blkdev /dev/sda -f /etc/fstab.main_sda --gentoo $*
+    $CMD --mode update --nodev -m "$MOUNT" --gentoo $*
     umount /xdir
 }
 
 # new install
 test "$1" = "new" && {
-    test -n "$2" || {
-        echo "Missing size parameter! [128|256]"
-        exit 1
-    }
-    SIZE="$2"
-    shift; shift
     mount /boot/efi 2&>/dev/null
-    $CMD --mode new --blkdev /dev/nvme0n1 -f /etc/fstab.nvme_part --parted $SIZE --grub --delete "" -e "" -R "-arx " $*
-    umount /boot/efi 2&> /dev/null
+    $CMD --mode new --dsize $DSIZE -m "$MOUNT" -d "$COPY" \
+        --grub --delete "" -e "" -R "-arx " $*
+    #umount /boot/efi 2&> /dev/null
 }
 
