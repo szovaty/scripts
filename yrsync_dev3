@@ -165,8 +165,8 @@ test -n "$FSTAB_DEST" && {
 
 y_msg_dest "LOG,STDOUT"
 
-y_check_dryrun_not && 
-  test -z "$M_DEV" && y_fatal_error Invalid fstab root [$M_DEV]
+#y_check_dryrun_not && 
+#  test -z "$M_DEV" && y_fatal_error Invalid fstab root [$M_DEV]
 
 if [ -n "$Y_BLKDEV" ] ; then
   y_check_dryrun_not &&
@@ -184,6 +184,7 @@ test "$Y_MODE" = "$MODE_NEW" && {
   test -z "$Y_PARTED_PAR" && y_fatal_error Partition table not defined!
   eval Y_PAR=$Y_PARTED_PAR
   y_run parted --script $Y_BLKDEV $Y_PAR
+  #exit 1
   # without sleep first mkfs.xxx will fail
   y_run sleep 1
   y_progress_end
@@ -198,7 +199,8 @@ test "$MOUNT" = "yes" && {
     M_FSTAB=`grep -E $i'($|\s)' $FSTAB_DEST`
     M_TMP=`echo $M_FSTAB | awk '{print $1}'`
     M_TMP=${M_TMP##*=}
-    M_DEV=`blkid | grep $M_TMP  `
+    M_DEV=`blkid | grep \"$M_TMP\" `
+    #y_info 1[$M_DEV]
     M_DEV=`echo $M_DEV | awk '{print $1}'`
     M_DEV=${M_DEV%%:}
     M_PATH=${DEST_ROOT}`echo $M_FSTAB | awk '{print $2}'`

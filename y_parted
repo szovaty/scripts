@@ -1,10 +1,10 @@
 # vim:set ts=2 sw=2:
 
-Y_LABEL="mklablel gpt"
+Y_LABEL="mklabel gpt"
 
 Y_BOOT=" \
   mkpart primary fat16 2MiB 4MiB \
-  mkpart primary ext2 4MiB 537MiB \
+  mkpart primary ext2 4MiB 512MiB \
 "
 Y_NAMES_SSD=" \
   name 1 efi \
@@ -46,7 +46,7 @@ Y_PARTED_PAR_512="
 Y_PARTED_PAR_256="
   $Y_LABEL
 	$Y_BOOT
-  mkpart primary ext2       537MiB  16GiB \
+  mkpart primary ext2       512MiB  16GiB \
   mkpart primary ext2       16GiB   32GiB \
   mkpart primary linux-swap 32GiB   48GiB \
   mkpart primary reiserfs   48GiB   49GiB \
@@ -59,7 +59,7 @@ Y_PARTED_PAR_256="
 Y_PARTED_PAR_128="
   $Y_LABEL
 	$Y_BOOT
-  mkpart primary ext2       537MiB  16GiB \
+  mkpart primary ext2       512MiB  16GiB \
   mkpart primary ext2       16GiB   17GiB \
   mkpart primary linux-swap 17GiB   32GiB \
   mkpart primary reiserfs   32GiB   33GiB \
@@ -72,7 +72,7 @@ Y_PARTED_PAR_128="
 Y_PARTED_PAR_USB512="
   $YLABEL
   $Y_BOOT
-  mkpart primary linux-swap 537MiB 	16GiB \
+  mkpart primary linux-swap 512MiB 	16GiB \
   mkpart primary ext2 			16GiB 	64GiB \
   mkpart primary ext2 			64GiB 	100% \
   $Y_NAMES_USB
