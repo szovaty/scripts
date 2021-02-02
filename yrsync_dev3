@@ -205,11 +205,21 @@ test "$MOUNT" = "yes" && {
     M_DEV=${M_DEV%%:}
     M_PATH=${DEST_ROOT}`echo $M_FSTAB | awk '{print $2}'`
     M_FS=`echo $M_FSTAB | awk '{print $3}'`
-    y_check_dryrun_not && 
-      test -z "$M_DEV" -o -z "$M_PATH" -o "$M_DEV" != "$Y_BLKDEV"* && 
-        y_fatal_error Invalid mount [$i - $M_DEV <-> $Y_BLKDEV]
-    y_check_dryrun && 
-      M_DEV=[TBD]
+    #y_check_dryrun_not && 
+    #  test -z "$M_DEV" -o -z "$M_PATH" &&
+    #    test "$M_DEV" != "$Y_BLKDEV"* && 
+    #      y_fatal_error Invalid mount [$i - $M_DEV <-> $Y_BLKDEV]
+    #y_check_dryrun && 
+    #  M_DEV=[TBD]
+    #y_info [$M_DEV][$M_PATH][$Y_BLKDEV]
+    if [[ y_check_dryrun_not ]] && \
+       [[ -z "$M_DEV" ]] && \
+       [[ -z "$M_PATH" ]] && \
+       [[ "$M_DEV" != "$Y_BLKDEV"* ]]
+    then
+      y_fatal_error Invalid mount [$i - $M_DEV <-> $Y_BLKDEV]
+    fi
+    y_check_dryrun && M_DEV=[TBD]
     test "$Y_MODE" == "$MODE_NEW" && {
       PAR="-q -F"
       test "$M_FS" == "vfat" &&  PAR=""

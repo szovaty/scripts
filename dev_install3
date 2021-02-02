@@ -5,7 +5,7 @@ FSTAB="/etc/fstab.nvme_part"
 DEV="/dev/nvme0n1"
 DSIZE="512"
 MOUNT="/ /opt /var /boot /boot/efi /home /xdir"
-COPY="/ /opt /boot /boot/efi /home /xdir"
+COPY="/ /boot /xdir"
 DEL=""
 CMD="./yrsync_dev3 --blkdev $DEV -f $FSTAB -P $PARTED"
 
