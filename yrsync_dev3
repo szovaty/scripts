@@ -29,10 +29,10 @@ USE_POS=$YES
 #USE_BELL=$YES
 
 # define the following to match the program current state
-PROGRAM_NAME="yrsync_dev2"
+PROGRAM_NAME="yrsync_dev3"
 PROG_DESC="Install/update a system based on current host"
-VERSION="3.6-rc1"
-LAST_MOD="2021.02.01"
+VERSION="3.6-rc2"
+LAST_MOD="2021.02.02"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -206,7 +206,8 @@ test "$MOUNT" = "yes" && {
     M_PATH=${DEST_ROOT}`echo $M_FSTAB | awk '{print $2}'`
     M_FS=`echo $M_FSTAB | awk '{print $3}'`
     y_check_dryrun_not && 
-      test -z "$M_DEV" -o -z "$M_PATH" && y_fatal_error Invalid mount [$i]
+      test -z "$M_DEV" -o -z "$M_PATH" -o "$M_DEV" != "$Y_BLKDEV"* && 
+        y_fatal_error Invalid mount [$i - $M_DEV <-> $Y_BLKDEV]
     y_check_dryrun && 
       M_DEV=[TBD]
     test "$Y_MODE" == "$MODE_NEW" && {
@@ -242,6 +243,7 @@ test "$Y_MODE" != "$MODE_NEW" && {
 
 # sync the filesystems
 for i in $SRC_DIRS ; do
+  i="$i/"
   s=`printf "%-12s" $i`
   y_progress_nl "Sync $s -> ${DEST_ROOT}${i} ..."
   y_run $RSYNC $EXCLUDE --exclude ${DEST_ROOT}/ $i $DEST_ROOT$i
