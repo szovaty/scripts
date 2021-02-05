@@ -66,6 +66,7 @@ HELP="Defaults"
 echo 2
 # read command line parameters
 while [ -n "$1" ] ; do
+  echo 4
   case $1 in
     --help|-h)	y_help "[Options]"; y_exit;;    #; Help [HELP]
     --log|-L)   export LOG="$2"; shift;;        #; Set LOG [LOG]
@@ -78,10 +79,8 @@ while [ -n "$1" ] ; do
     --version|-V) y_version; y_exit;;           #; Display version and exit
     --tdir|-t)  Y_TDIR="$2";;                   #; Target dir [Y_TDIR]
     --sdir|-s)  Y_SDIR="$2";;                   #; Source dir [Y_SDIR]
-    *)          y_fatal_error 2 "Unknown command";;
   esac
   shift
-  echo 3
 done
 
 ylib
