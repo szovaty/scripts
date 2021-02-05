@@ -50,23 +50,20 @@ LOG="/tmp/${0##*/}.log"
 #Y_CONFIRM=$TRUE
 
 # destination options: LOG,STDOUT,STDERR
-#Y_MSG_DEST="STDOUT,LOG"
+Y_MSG_DEST="STDOUT,STDERR,LOG"
 
 ylib
 
 Y_TDIR="/usr/local/bin"
 Y_SDIR="/xdir/proj/jenov/scripts"
+Y_CMD="cp"
 
-echo 1
-#Y_CMD="cp"
 #y_init_screen
 y_start
 # ===================================================================================
 HELP="Defaults"
-echo 2
 # read command line parameters
 while [ -n "$1" ] ; do
-  echo 4
   case $1 in
     --help|-h)	y_help "[Options]"; y_exit;;    #; Help [HELP]
     --log|-L)   export LOG="$2"; shift;;        #; Set LOG [LOG]
@@ -79,6 +76,8 @@ while [ -n "$1" ] ; do
     --version|-V) y_version; y_exit;;           #; Display version and exit
     --tdir|-t)  Y_TDIR="$2";;                   #; Target dir [Y_TDIR]
     --sdir|-s)  Y_SDIR="$2";;                   #; Source dir [Y_SDIR]
+    --cmd|-c)   Y_CMD="$2";;                    #; Command to use [Y_CMD]
+    *)          y_fatal_error "Unknown option [$1]";;
   esac
   shift
 done
@@ -91,9 +90,7 @@ y_set_default Y_DEBUG_ON_ERROR $FALSE
 y_set_default Y_EXIT_ON_ERROR $FALSE
 
 FLIST=`ls $Y_TDIR`
-y_info 1[$FLIST]
 for i in $FLIST ; do
-  y_info $i
   y_run $Y_CMDx $Y_SDIR/$i $Y_TDIR
 done
 

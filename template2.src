@@ -50,7 +50,7 @@ LOG="/tmp/${0##*/}.log"
 #Y_CONFIRM=$TRUE
 
 # destination options: LOG,STDOUT,STDERR
-#Y_MSG_DEST="STDOUT,LOG"
+Y_MSG_DEST="STDOUT,STDERR,LOG"
 
 ylib
 
@@ -70,7 +70,7 @@ while [ -n "$1" ] ; do
     --edebug)   Y_DEBUG_ON_ERROR=$TRUE;;        #; Debug on error [Y_DEBUG_ON_ERROR]
     --nocolor)  USE_COLOR="";;                  #; Enable color output [USE_COLOR]
     --version|-V) y_version; y_exit;;           #; Display version and exit
-    *)          y_fatal_error 2 "Unknown command";;
+    *)          y_fatal_error 2 "Unknown command [$1]";;
   esac
   shift
 done
