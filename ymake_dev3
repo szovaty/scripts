@@ -165,11 +165,11 @@ y_check_dryrun_not && test $(id -u) -ne 0 &&
   y_fatal_error "Script should run as root!"
 
 # mount DEV ROOTFS if it is not mounted yet
-! y_check_mount "${Y_DISK}${Y_PART}" "$Y_DEV_MNT" && {
+! y_check_mount "/dev/${Y_DISK}${Y_PART}" "$Y_DEV_MNT" && {
   y_progress_nl "Mount DEV root on $Y_DEV_MNT..."
-  y_run "fsck -p ${Y_DISK}${Y_PART} 2>&1 >> $LOG"
+  y_run "fsck -p /dev/${Y_DISK}${Y_PART} 2>&1 >> $LOG"
   y_run mkdir -p $Y_DEV_MNT
-  y_mount ${Y_DISK}${Y_PART} $Y_DEV_MNT
+  y_mount /dev/${Y_DISK}${Y_PART} $Y_DEV_MNT
   y_progress_end
 }
 
