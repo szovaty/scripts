@@ -32,7 +32,7 @@ test -b /dev/${DISK} || {
 }
 
 DEF_NEW="       --new_dev --mountmisc  -sync  -clgentoo  -update  -prechg  -check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst  -grub  -rebuild --qtest  --tools  -systest -D"
-DEF_MOUNT="      -new_dev --mountmisc  -sync  -clgentoo  -update --prechg  -check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst  -grub  -rebuild  -qtest   -tools  -systest -D"
+DEF_MOUNT="      -new_dev --mountmisc  -sync  -clgentoo  -update --prechg  -check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst  -grub  -rebuild --qtest   -tools  -systest -D"
 DEF_SYNC="       -new_dev  -mountmisc --sync  -clgentoo  -update           -check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst  -grub  -rebuild  -qtest   -tools  -systest -D"
 DEF_CHECK="      -new_dev --mountmisc  -sync  -clgentoo --update          --check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst  -grub  -rebuild  -qtest   -tools  -systest -D"
 DEF_NEW_KERNEL=" -new_dev --mountmisc  -sync  -clgentoo  -update           -check  -build  -resume  -ckernel  --bkernel  -lilo  -grub_inst  -grub --rebuild --qtest   -tools  -systest -D"
