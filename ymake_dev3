@@ -221,7 +221,11 @@ test "$Y_MOUNT_MISC" = $TRUE && {
     test "PORTAGE_TMPDIR=\"$P_TMP\"" != "$PORTAGE_TMPDIR" && 
       y_fatal_error "Portage TMP dir [$P_TMP] not what expected!"
     y_run mkdir -p ${Y_DEV_MNT}${P_TMP}
-  # y_mount --bind /tmp $Y_DEV_MNT$P_TMP
+    # check if TMP is large enough for a build
+    AV=`df -B 1G ${Y_DEV_MNT}${P_TMP}`
+    
+
+    # y_mount --bind /tmp $Y_DEV_MNT$P_TMP
     y_run chmod 1777 $Y_DEV_MNT$P_TMP
   else
     y_dryrun Mount tmp_fs for gentoo
