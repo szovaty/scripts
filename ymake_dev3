@@ -231,7 +231,7 @@ test "$Y_MOUNT_MISC" = $TRUE && {
     AV=`df -B 1G ${Y_DEV_MNT}${P_TMP} | awk '/[0-9]%/{print $(NF-2)}'`
     y_debug [$AV][$Y_DEV_MNT][$P_TMP]
     if [[ "$AV" -le "$Y_MIN_TMP" ]] ; then
-      y_warning "TMP free space may be too low [$AV]"
+      y_warning "TMP free space may be too low [${AV}GB]"
     fi
     # y_mount --bind /tmp $Y_DEV_MNT$P_TMP
     y_run chmod 1777 $Y_DEV_MNT$P_TMP
