@@ -210,6 +210,8 @@ test "$Y_MOUNT_MISC" = $TRUE && {
   y_mount --bind /dev/pts $Y_DEV_MNT/dev/pts
   y_run mkdir -P $Y_DEV_MNT/xdir/tmp
   y_mount --bind /xdir/tmp $Y_DEV_MNT/xdir/tmp
+  y_run mkdir -P $Y_DEV_MNT/xdir/gentoo
+  y_mount --bind /xdir/gentoo_dev $Y_DEV_MNT/xdir/gentoo
   y_run mkdir -p $Y_DEV_MNT/proc
   y_mount -t proc proc $Y_DEV_MNT/proc
   if y_check_dryrun_not ; then
