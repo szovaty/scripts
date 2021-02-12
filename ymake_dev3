@@ -30,8 +30,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="ymake_dev3"
 PROG_DESC="Utility to manage a gentoo based host install and update."
-VERSION="3.0-rc0"
-LAST_MOD="2021.01.21"
+VERSION="3.0-rc1"
+LAST_MOD="2021.02.12"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -55,6 +55,7 @@ LOG="/tmp/${0##*/}.log"
 Y_RUN_RET_SUM=0
 
 # -------------- configuration defaults -----------------------
+Y_MIN_TMP="10" # GBite
 Y_MOUNT_DEV="$FALSE"
 Y_DEV_MNT="/mnt"
 Y_SRC_DIRS="/usr /var /opt /boot /home /xdir/gentoo"
@@ -221,10 +222,13 @@ test "$Y_MOUNT_MISC" = $TRUE && {
     test "PORTAGE_TMPDIR=\"$P_TMP\"" != "$PORTAGE_TMPDIR" && 
       y_fatal_error "Portage TMP dir [$P_TMP] not what expected!"
     y_run mkdir -p ${Y_DEV_MNT}${P_TMP}
-    # check if TMP is large enough for a build
-    AV=`df -B 1G ${Y_DEV_MNT}${P_TMP}`
-    
 
+    # check if TMP is large enough for a build
+    AV=`df -B 1G ${Y_DEV_MNT}${P_TMP} | awk '/[0-9]%/{print $(NF-2)}'`
+    y_debug [$AV]
+    if [[ "$AV" -le "$Y_MIN_TMP" ]] ; then
+      y_warning "TMP free space may be too low [$AV]"
+    fi
     # y_mount --bind /tmp $Y_DEV_MNT$P_TMP
     y_run chmod 1777 $Y_DEV_MNT$P_TMP
   else
