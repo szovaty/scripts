@@ -385,10 +385,6 @@ test -n "$Y_REBUILD" && {
 test -n "$Y_QUICKTEST" && {
   y_progress_nl "Quick test new system..."
   y_msg_dest "STDOUT,STDERR"
-#  y_run cp /x_proj/jenov/scripts/yrsync_dev2 $Y_DEV_MNT/usr/local/bin
-#  y_run cp /x_proj/jenov/scripts/dev_install $Y_DEV_MNT/usr/local/bin
-  # fix permition issue
-#  y_run chmod u+s $Y_DEV_MNT/sbin/unix_chkpwd
   y_run chroot $Y_DEV_MNT bash --rcfile $Y_CHROOT -i
   y_msg_dest_restore
   y_progress_end
@@ -400,7 +396,6 @@ test -f "$Y_TODO" && y_run_ cp "$Y_TODO" "$Y_DEV_MNT"/__TODO__
 test -n "$Y_SYSTEST" -o -n "$Y_SYSMERGE" && {
     y_progress_nl "System test/merge..."
     y_progress_nl "  Hibernate current host and boot into DEV..."
-    y_run cp /proj/jenov/scripts/yrsync_dev $Y_DEV_MNT/usr/local/bin
     y_run y_umount
     y_run mount -o remount,rw /boot
     y_run lilo -R DEV noresume
@@ -418,10 +413,7 @@ test -n "$Y_SYSTEST" -o -n "$Y_SYSMERGE" && {
 test -n "$Y_UPDATE_TOOLS" && {
   y_progress_nl "Update tools..."
   y_msg_dest "STDOUT,STDERR"
-  y_run cp /x_proj/jenov/scripts/yrsync_dev* $Y_DEV_MNT/usr/local/bin
-  y_run cp /x_proj/jenov/scripts/dev_install $Y_DEV_MNT/usr/local/bin
-  # fix permition issue - not a problem any more!
-  # y_run chmod u+s $Y_DEV_MNT/sbin/unix_chkpwd
+  y_run yupdate_bin 
   y_run "date +%Y_%m_%d > $Y_DEV_MNT/BUILD"
   y_progress_end
 }
