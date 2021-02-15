@@ -95,7 +95,7 @@ while [ -n "$1" ] ; do
     --noclean)  Y_NOCLEAN=$TRUE;;               #; Do not clean-up on exit [Y_NOCLEAN]
     --sync)     Y_SYNC=$TRUE;;                  #; Sync gentoo files [Y_SYNC]
     --prechg)   Y_PRECHG_DEV=$TRUE;;            #; Enable change before update [Y_PRECHG_DEV]
-    --update)   Y_UPDATE=$TRUE;;                #; Update Gentoo [Y_UPDATE]
+    --update|-P) Y_UPDATE=$TRUE;;               #; Update Gentoo [Y_UPDATE]
     --check)    Y_CHECK=$TRUE;;                 #; Pre-check build [Y_CHECK]
     --build)    Y_BUILD=$TRUE;;                 #; Build/update DEV system [Y_BUILD]
     --resume)   Y_BUILD_RESUME=$TRUE;;          #; Resume system build [Y_BUILD_RESUME]
