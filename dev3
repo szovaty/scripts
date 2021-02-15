@@ -39,9 +39,8 @@ DEF_NEW_KERNEL=" -new_dev --mountmisc  -sync  -clgentoo  -update           -chec
 DEF_TEST="       -new_dev --mountmisc  -sync  -clgentoo  -update           -check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst  -grub  -rebuild --qtest   -tools  -systest -D"
 DEF_BUILD="      -new_dev --mountmisc  -sync  -clgentoo --update --prechg --check --build  -resume  -ckernel   -bkernel  -lilo --grub_inst  -grub  -rebuild  -qtest   -tools  -systest -D"
 DEF_TOOLS="      -new_dev --mountmisc  -sync  -clgentoo  -update  -prechg  -check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst  -grub  -rebuild  -qtest  --tools  -systest -D"
-DEF_ALL="        -new_dev --mountmisc  -sync  -clgentoo  -update --prechg --check --build  -resume --ckernel  --bkernel  -lilo  -grub_inst  -grub --rebuild --qtest  --tools  -systest -D"
-
-DEF_RESUME="     -new_dev --mountmisc  -sync  -clgentoo  -update --prechg  -check  -build --resume  -ckernel  --bkernel  -lilo  -grub_inst  -grub --rebuild --qtest  --tools  -systest -D"
+DEF_ALL="        -new_dev --mountmisc  -sync  -clgentoo  -update  -prechg  -check --build  -resume --ckernel  --bkernel  -lilo  -grub_inst  -grub --rebuild --qtest  --tools  -systest -D"
+DEF_RESUME="     -new_dev --mountmisc  -sync  -clgentoo  -update  -prechg  -check  -build --resume  -ckernel  --bkernel  -lilo  -grub_inst  -grub --rebuild --qtest  --tools  -systest -D"
 
 test -n "$MODE" && eval CURRENT='$'"DEF_"$MODE
 test -z "$CURRENT" -o "$CURRENT" = "$MODE" && { 
