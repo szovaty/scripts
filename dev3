@@ -20,7 +20,6 @@ MODE=$1
 while [ -n "$1" ] ; do
     case $1 in
         --DISK|-d) DISK="$2"; shift;;
-        --update) UPDATE="true";;
         *) PAR="$PAR $1";;
     esac
     shift
@@ -49,12 +48,4 @@ test -z "$CURRENT" -o "$CURRENT" = "$MODE" && {
     exit 1; 
 }
 
-test -n "$UPDATE" && {
-    test -e $SDIR/$BIN && cp $SDIR/$BIN $DEST_BIN 1>/dev/null
-    test -e $SDIR/$LIB && cp $SDIR/$LIB $DEST_LIB 1>/dev/null
-    test -e $SDIR/$GRUB && cp $SDIR/$GRUB $DEST_GRUB 1>/dev/null
-}
-
-#$PRE_CMD
 $CMD --src_fstab /etc/fstab.dev --disk $DISK --part $PART  --mnt /mnt $CURRENT $PAR
-#$POST_CMD
