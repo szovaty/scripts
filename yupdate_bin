@@ -100,10 +100,11 @@ for i in $FLIST ; do
     y_run $Y_CMD $Y_SDIR/$i $Y_TDIR
   else
     y_error "cannot find [$i]"
+    ERROR=$TRUE
   fi
 done
 
-y_info "updated [$Y_TDIR] successfully"
+test -z "$ERROR" && y_info "updated [$Y_TDIR] successfully"
 # ===================================================================================
 # Leave this as the last line
 y_exit
