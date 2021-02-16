@@ -30,8 +30,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="ymake_dev3"
 PROG_DESC="Utility to manage a gentoo based host install and update."
-VERSION="3.0-rc1"
-LAST_MOD="2021.02.12"
+VERSION="3.0-rc2"
+LAST_MOD="2021.02.16"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -57,6 +57,7 @@ Y_RUN_RET_SUM=0
 # -------------- configuration defaults -----------------------
 Y_MIN_TMP="10" # GBite
 Y_MOUNT_DEV="$FALSE"
+Y_BMOUNT_DEV="$FALSE"
 Y_DEV_MNT="/mnt"
 Y_SRC_DIRS="/usr /var /opt /boot /home /xdir/gentoo"
 Y_SRC_FSTAB="/etc/fstab.dev"
@@ -89,6 +90,7 @@ while [ -n "$1" ] ; do
     --part|-p)  Y_PART="$2"; shift;;            #; Set partition [Y_PART]
     --mnt|-M)   Y_DEV_MNT="$2"; shift;;         #; Set DEV root [Y_DEV_MNT]
     --mountdev) Y_MOUNT_DEV="$2"; shift;;       #; Mount DEV FS [Y_MOUNT_DEV]
+    --bmountdev) Y_BMOUNT_DEV="$2"; shift;;     #; Mount --bind [Y_BMOUNT_DEV]
     --mountmisc) Y_MOUNT_MISC=$TRUE;;           #; Mount misc. devs [Y_MOUNT_MISC]
     --src_dirs) Y_SRC_DIRS="$2"; shift;;        #; Source dirs [Y_SRC_DIRS]
     --src_fstab) Y_SRC_FSTAB="$2";shift;;       #; host side fstab to use [Y_SRC_FSTAB]
@@ -174,18 +176,19 @@ y_check_dryrun_not && test $(id -u) -ne 0 &&
   y_progress_end
 }
 
-# mount extra block device(s) required to make up DEVFS
-test "$Y_MOUNT_DEV" != $FALSE && {
-  y_progress_nl "Mount required block devices..."
-  for i in $Y_MOUNT_DEV ; do
+# bind mount extra block device(s) required to make up DEVFS
+test "$Y_BMOUNT_DEV" != $FALSE && {
+  y_progress_nl "Mount --bind required block devices..."
+  y_debug [$Y_BMOUNT_DEV]
+  for i in $Y_BMOUNT_DEV ; do
     y_run mkdir -p ${Y_DEV_MNT}${i}
-    y_mount ${i} ${Y_DEV_MNT}${i}
+    y_mount --bind ${i} ${Y_DEV_MNT}${i}
   done
   y_progress_end
 }
 
 # mount extra block device(s) required to make up DEVFS
-test "$Y_MOUNT_DEV1" != $FALSE && {
+test "$Y_MOUNT_DEV" != $FALSE && {
   y_progress_nl "Mount required block devices..."
   OLDIFS=$IFS
   IFS=","
