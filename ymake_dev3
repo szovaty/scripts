@@ -318,7 +318,7 @@ test -n "$Y_BUILD_RESUME" && {
 
 # configure kernel
 test -n "$Y_CONFIG_KERNEL" && {
-  y_dryrun "Change the kernel configuration"
+  y_progress_nl "Change the kernel configuration"
   y_check_dryrun_not && {
     y_progress_nl "Kernel configuration..."
     cd $Y_DEV_MNT/usr/src/linux
