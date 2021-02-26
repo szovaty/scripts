@@ -30,8 +30,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="ymake_dev3"
 PROG_DESC="Utility to manage a gentoo based host install and update."
-VERSION="3.0-rc2"
-LAST_MOD="2021.02.16"
+VERSION="3.0-rc3"
+LAST_MOD="2021.02.26"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
