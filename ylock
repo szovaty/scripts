@@ -1,6 +1,0 @@
-#!/bin/bash
-echo `date +%Y%m%d-%H:%M` "ylock activated" >> /var/log/ydebug.log
-xset dpms force off
-i3lock -c 000000
-echo mem > /sys/power/state
-

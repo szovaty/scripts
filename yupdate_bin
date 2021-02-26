@@ -104,7 +104,7 @@ for i in $FLIST ; do
   fi
 done
 
-test -z "$ERROR" && y_info "updated [$Y_TDIR] successfully"
+test "$ERROR" != "$TRUE" && y_info "updated [$Y_TDIR] successfully"
 # ===================================================================================
 # Leave this as the last line
 y_exit
