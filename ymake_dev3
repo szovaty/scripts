@@ -320,7 +320,7 @@ test -n "$Y_BUILD_RESUME" && {
 test -n "$Y_CONFIG_KERNEL" && {
   y_progress_nl "Change the kernel configuration"
   y_check_dryrun_not && {
-    y_progress_nl "Kernel configuration..."
+    y_progress_nl "Configure the kernel now..."
     cd $Y_DEV_MNT/usr/src/linux
     y_msg_dest "STDOUT,STDERR"
     y_run bash --rcfile $Y_CONSOLE -i
