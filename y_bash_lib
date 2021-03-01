@@ -36,8 +36,8 @@ if [ "$USE_COLOR" = $YES -o "$USE_COLOR" = $TRUE ] ; then
   BLINKOFF=$'\e[25m'
   REV=$'\e[7m'
   REVOFF=$'\e[27m'
-  Y_FIXME="\[\033[01;31m\]${Y_FIXME}\[\033[00m\]"
-  Y_CON_PS2="\[\033[00;34m\]DEV#\[\033[00m\] "
+  Y_FIXME="\e[1;31mFIXME \e[m"
+  Y_CON_PS2="\e[0;34mDEV \e[m "
   Y_CHROOT_PS2="\[\033[00;32m\]CHROOT#\[\033[00m\] "
 fi
 
