@@ -124,6 +124,8 @@ y_set_default Y_MSG_DEST "LOG,STDOUT,STDERR"
 y_set_default Y_DEBUG_ON_ERROR $TRUE
 y_set_default Y_EXIT_ON_ERROR $FALSE
 
+y_init_color
+
 # resource the library to make effect changes in the environment variables
 ylib
 

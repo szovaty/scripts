@@ -34,7 +34,7 @@ Y_CHROOT_FILE="/tmp/yps3"
 # terminal color settings
 unset NORM GOOD ERR BAD WARN ATTEN LINK BLINK BLINKOFF REV REVOFF DRYRUN
 
-init_color(){
+y_init_color(){
   Y_FIXME_PS1="FIXME# "
   Y_CON_PS1="DEV# "
   Y_CHROOT_PS1="CHROOT# "
