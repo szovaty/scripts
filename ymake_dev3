@@ -120,11 +120,12 @@ done
 y_debug $0 $CMD
 
 # set some sane defaults if not set already
+#y_set_default USE_COLOR "$TRUE"
 y_set_default Y_MSG_DEST "LOG,STDOUT,STDERR"
 y_set_default Y_DEBUG_ON_ERROR $TRUE
 y_set_default Y_EXIT_ON_ERROR $FALSE
-
-y_init_color
+y_info [$USE_COLOR]
+#y_init_color
 
 # resource the library to make effect changes in the environment variables
 ylib

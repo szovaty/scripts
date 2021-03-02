@@ -32,20 +32,19 @@ Y_CONSOLE_FILE="/tmp/yps2"
 Y_CHROOT_FILE="/tmp/yps3"
 
 # terminal color settings
-unset NORM GOOD ERR BAD WARN ATTEN LINK BLINK BLINKOFF REV REVOFF DRYRUN
 
 y_init_color(){
   Y_FIXME_PS1="FIXME# "
   Y_CON_PS1="DEV# "
   Y_CHROOT_PS1="CHROOT# "
 
-  if [ "$USE_COLOR" = $YES -o "$USE_COLOR" = $TRUE ] ; then
+  if [ "$USE_COLOR" == $YES -o "$USE_COLOR" == $TRUE ] ; then
     NORM=$'\e[0m'
-    GOOD=$'\e[0m\e[32m'
+    GOOD=$'\e[32m'
     ERR=$'\e[01;31m'
     BAD=$ERR
     WARN=$'\e[01;35m'
-    DRYRUN=$'\e[0m\e[94m'
+    DRYRUN=$'\e[94m'
     ATTEN=$'\e[01;94m'
     LINK=$'\e[01;34m'
     BLINK=$'\e[5m'
@@ -55,11 +54,16 @@ y_init_color(){
     Y_FIXME_PS1="\e[1;31mFIXME#\e[m "
     Y_CON_PS1="\e[1;34mDEV#\e[m "
     Y_CHROOT_PS1="\e[0;32mCHROOT#\e[m "
+  else
+    unset NORM GOOD ERR BAD WARN ATTEN LINK BLINK BLINKOFF REV REVOFF DRYRUN
   fi
+  #printf "%s[%s]%s\n"  $GOOD TEST $NORM
   echo PS1=\"${Y_FIXME_PS1}\" > $Y_FIXME_FILE
   echo PS1=\"${Y_CON_PS1}\" > $Y_CONSOLE_FILE
   echo PS1=\"${Y_CHROOT_PS1}\" > $Y_CHROOT_FILE
 }
+y_init_color
+
 
 # positioning
 if [ "$USE_POS" = $YES ] ; then
