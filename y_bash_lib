@@ -476,7 +476,7 @@ y_run () {
 y_set_default () { 
   local X
   eval X='$'$1
-  test -z "$X" && eval $1='"$2"'
+  test -z ${X} && eval $1='"$2"'
 }
 
 # Mark log file with a string
