@@ -260,7 +260,7 @@ test "$Y_MOUNT_MISC" = $TRUE && {
 test "$Y_PRECHG_DEV" = $TRUE && {
   y_progress_nl "Change DEV before update...."
   y_msg_dest "STDOUT,STDERR,LOG"
-  y_run chroot $Y_DEV_MNT bash --rcfile $Y_CONSOLE -i
+  y_run chroot $Y_DEV_MNT bash --rcfile $Y_CHROOT_FILE -i
   y_msg_dest_restore
   y_progress_end
 }
@@ -325,7 +325,7 @@ test -n "$Y_CONFIG_KERNEL" && {
     y_progress_nl "Configure the kernel now..."
     cd $Y_DEV_MNT/usr/src/linux
     y_msg_dest "STDOUT,STDERR"
-    y_run bash --rcfile $Y_CONSOLE -i
+    y_run bash --rcfile $Y_CONSOLE_FILE -i
     y_msg_dest_restore
     y_progress_end
   }
@@ -401,7 +401,7 @@ test -n "$Y_REBUILD" && {
 test -n "$Y_QUICKTEST" && {
   y_progress_nl "Quicking test new system..."
   y_msg_dest "STDOUT,STDERR"
-  y_run chroot $Y_DEV_MNT bash --rcfile $Y_CHROOT -i
+  y_run chroot $Y_DEV_MNT bash --rcfile $Y_CHROOT_FILE -i
   y_msg_dest_restore
   y_progress_end
 }

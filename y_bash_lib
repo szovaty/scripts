@@ -29,7 +29,6 @@ test -z "$STD_OUT" && STD_OUT="/dev/stdout"
 
 Y_FIXME_FILE="/tmp/yps1"
 Y_CONSOLE_FILE="/tmp/yps2"
-Y_CONSOLE=$Y_CONSOLE_FILE
 Y_CHROOT_FILE="/tmp/yps3"
 
 # terminal color settings
