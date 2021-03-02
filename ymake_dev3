@@ -248,8 +248,10 @@ test "$Y_MOUNT_MISC" = $TRUE && {
     fi
     # y_mount --bind /tmp $Y_DEV_MNT$P_TMP
     y_run chmod 1777 $Y_DEV_MNT$P_TMP
+    y_run cp /tmp/yps* $Y_DEV_MNT/tmp/
   else
     y_dryrun Mount tmp_fs for gentoo
+    y_dryrun Copy PS1 files
   fi
   y_progress_end
 }
