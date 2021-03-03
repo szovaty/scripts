@@ -69,7 +69,7 @@ RSYNC_OPT="-arx --delete"
 
 DEST_MOUNT="/ /opt /var /xdir /boot /boot/efi"
 SRC_ROOT="/"
-SRC_DIRS_UPDATE="/ /boot/"
+SRC_DIRS_UPDATE="/"
 SRC_DIRS_NEW="/ /boot/ /boot/efi/"
 EXCL_DIRS_UPDATE="/gentoo /boot/grub/grub.cfg /etc/fstab /etc/conf.d/hostname /root /home /xdir"
 EXCL_DIRS_NEW=""
@@ -135,7 +135,6 @@ done
 y_debug $0 $CMD
 
 y_set_default Y_MSG_DEST "STDOUT,LOG"
-y_set_default USE_COLOR $TRUE
 y_set_default Y_DEBUG_ON_ERROR $TRUE
 y_set_default Y_EXIT_ON_ERROR $FALSE
 y_set_default Y_PARTED /usr/local/bin/y_parted
@@ -219,7 +218,7 @@ test "$MOUNT" = "yes" && {
     then
       y_fatal_error Invalid mount [$i - $M_DEV <-> $Y_BLKDEV]
     fi
-    y_check_dryrun && M_DEV=[TBD]
+    #y_check_dryrun && M_DEV=[TBD]
     test "$Y_MODE" == "$MODE_NEW" && {
       PAR="-q -F"
       test "$M_FS" == "vfat" &&  PAR=""
@@ -339,5 +338,5 @@ test "$SAVE_GENTOO" = $YES && {
 
 # ===================================================================================
 # Leave this as the last line
-y_run bash --rcfile $Y_CONSOLE -i
+y_run bash --rcfile $Y_CONSOLE_FILE -i
 y_exit
