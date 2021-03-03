@@ -32,7 +32,7 @@ USE_POS=$YES
 PROGRAM_NAME="yrsync_dev3"
 PROG_DESC="Install/update a system based on current host"
 VERSION="3.6-rc2"
-LAST_MOD="2021.02.02"
+LAST_MOD="2021.03.03"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -162,18 +162,18 @@ test -n "$FSTAB_DEST" && {
 # find rootfs block device and check it if matches fstab definition
 # also see what it's parent block device
 
-y_msg_dest "LOG,STDOUT"
+#y_msg_dest "LOG,STDOUT"
 
 #y_check_dryrun_not && 
 #  test -z "$M_DEV" && y_fatal_error Invalid fstab root [$M_DEV]
 
-if [ -n "$Y_BLKDEV" ] ; then
-  y_check_dryrun_not &&
-    test "$Y_MODE" != "$MODE_NEW" -a "$Y_BLKDEV" != "$M_DEV" && 
-      y_fatal_error parameter [$Y_BLKDEV] != [$M_DEV] from fstab
-fi
+#if [ -n "$Y_BLKDEV" ] ; then
+#  y_check_dryrun_not &&
+#    test "$Y_MODE" != "$MODE_NEW" -a "$Y_BLKDEV" != "$M_DEV" && 
+#      y_fatal_error parameter [$Y_BLKDEV] != [$M_DEV] from fstab
+#fi
 
-y_msg_dest_restore
+#y_msg_dest_restore
 
 # create partitions on new system
 test "$Y_MODE" = "$MODE_NEW" && {
