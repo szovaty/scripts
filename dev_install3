@@ -4,7 +4,8 @@ PARTED="./y_parted"
 FSTAB="/etc/fstab.nvme_part"
 DEV="/dev/nvme0n1"
 DSIZE="512"
-MOUNT="/ /opt /var /boot /boot/efi /home /xdir"
+MOUNT_UPDATE="/ /opt /var"
+MOUNT_NEW="/ /opt /var /boot /boot/efi /home /xdir"
 COPY="/ /boot /xdir"
 DEL=""
 CMD="./yrsync_dev3 --blkdev $DEV -f $FSTAB -P $PARTED"
@@ -20,18 +21,18 @@ test "$1" = "update" && {
     echo "  - yacrhive -s system done"
     echo "  - yrsync_xos done"
     echo "  - verified xos is working"
-    read -e -p "OK to run?" -i "no" input
-    test "$input" = "y" || exit
-    mount /dev/sdb5 /xdir
+    #read -e -p "OK to run [y/n]? " -N 1 input
+    #test "$input" = "y" || exit
+    #mount /dev/sdb5 /xdir
     shift
-    $CMD --mode update --nodev -m "$MOUNT" --gentoo $*
-    umount /xdir
+    $CMD --mode update --nodev -m "$MOUNT_UPDATE" --gentoo $*
+    #umount /xdir
 }
 
 # new install
 test "$1" = "new" && {
     mount /boot/efi 2&>/dev/null
-    $CMD --mode new --dsize $DSIZE -m "$MOUNT" -d "$COPY" \
+    $CMD --mode new --dsize $DSIZE -m "$MOUNT_NEW" -d "$COPY" \
         --grub --delete "" -e "" -R "-arx " $*
     #umount /boot/efi 2&> /dev/null
 }
