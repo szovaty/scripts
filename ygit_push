@@ -2,6 +2,7 @@
 DEF_COMM="update"
 test -n "$1" && DEF_COMM=$1
 
+git pull
 git add .
 git commit -m "$DEF_COMM"
 git push
