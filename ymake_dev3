@@ -429,7 +429,8 @@ test -n "$Y_SYSTEST" -o -n "$Y_SYSMERGE" && {
 test -n "$Y_UPDATE_TOOLS" && {
   y_progress_nl "Update tools..."
   y_msg_dest "STDERR,LOG"
-  y_run yupdate_bin --quiet  
+  y_run yupdate_bin --quiet
+  y_run chmod u+s /sbin/unix_chkpwd
   y_run "date +%Y_%m_%d > $Y_DEV_MNT/BUILD"
   y_msg_dest_restore
   y_progress_end
