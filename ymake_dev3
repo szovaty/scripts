@@ -66,6 +66,7 @@ Y_DEL_RSYNC=" \
   /etc/runlevels/default/xdm \
   /etc/runlevels/boot/dmcrypt"
 Y_DEV_NAME="/etc/conf.d/hostname.dev"
+Y_GENTOO_BACKUP="/xdir/gentoo_saved/"
 
 ylib
 
@@ -111,7 +112,8 @@ while [ -n "$1" ] ; do
     --clgentoo) Y_CGENTOO=$TRUE;;               #; Clean Gentoo [Y_CGENTOO]
     --qtest)    Y_QUICKTEST=$TRUE;;             #; Test new sys by chroot [Y_QUICKTEST]
     --systest)  Y_SYSTEST=$TRUE;;               #; Test by reboot into DEV [Y_SYSTEST]
-    --tools|-U) Y_UPDATE_TOOLS=$TRUE;           #; Update system tools [Y_UPDATE_TOOLS]
+    --tools|-U) Y_UPDATE_TOOLS=$TRUE;;          #; Update system tools [Y_UPDATE_TOOLS]
+    --gentoo_save) Y_GENTOO_SAVE=$TRUE;;        #; Save gentoo files [Y_GENTOO_SAVE]
   esac
   shift
 done
@@ -198,6 +200,14 @@ test "$Y_MOUNT_DEV" != $FALSE && {
     y_run mkdir -p ${Y_DEV_MNT}${i#*=}
     y_mount ${i%=*} ${Y_DEV_MNT}${i#*=}
   done
+  y_progress_end
+}
+
+# backup current gentoo files
+test "$Y_GENTOO_SAVE" == $TRUE && {
+  y_progress_nl "Backup gentoo to [$Y_GENTOO_BACKUP].."
+  y_run mkdir -p $Y_GENTOO_BACKUP
+  y_run rsync -arx /gentoo/ $Y_GENTOO_BACKUP
   y_progress_end
 }
 

@@ -4,7 +4,7 @@
 # remote testing session
 SDIR="/x_proj/jenov/scripts"
 BIN="ymake_dev3"
-CMD="ymake_dev3"
+CMD="./ymake_dev3"
 GRUB="grub.cfg"
 LIB="y_bash_lib"
 DEST_LIB="/usr/local/bin"
