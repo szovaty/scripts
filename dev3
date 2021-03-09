@@ -10,8 +10,9 @@ LIB="y_bash_lib"
 DEST_LIB="/usr/local/bin"
 DEST_BIN="/usr/local/bin"
 DEST_GRUB="/boot/grub"
-DISK="nvme0n1"
-PART="p5"
+#DISK="nvme0n1"
+DISK="sda"
+PART="3"
 MODE=$1
 
 test -b /dev/${DISK} || {
