@@ -58,7 +58,10 @@ y_init_color(){
     unset NORM GOOD ERR BAD WARN ATTEN LINK BLINK BLINKOFF REV REVOFF DRYRUN
   fi
   #printf "%s[%s]%s\n"  $GOOD TEST $NORM
-  echo PS1=\"${Y_FIXME_PS1}\" > $Y_FIXME_FILE
+  test -f $Y_FIXME_FILE || {
+    echo PS1=\"${Y_FIXME_PS1}\" > $Y_FIXME_FILE
+    chmod 644 $Y_FIXME_FILE
+  }
   echo PS1=\"${Y_CON_PS1}\" > $Y_CONSOLE_FILE
   echo PS1=\"${Y_CHROOT_PS1}\" > $Y_CHROOT_FILE
 }
