@@ -27,9 +27,10 @@ test -z "$CMD_WHICH" && CMD_WHICH="which"
 test -z "$STD_ERR" && STD_ERR="/dev/stderr"
 test -z "$STD_OUT" && STD_OUT="/dev/stdout"
 
-Y_FIXME_FILE="/tmp/yps1"
-Y_CONSOLE_FILE="/tmp/yps2"
-Y_CHROOT_FILE="/tmp/yps3"
+Y_PSX="/tmp/yps"
+Y_FIXME_FILE=$Y_PSX"1"
+Y_CONSOLE_FILE=$Y_PSX"2"
+Y_CHROOT_FILE=$Y_PSX"3"
 
 # terminal color settings
 
@@ -283,6 +284,7 @@ y_exit () {
   Y_MSG_DEST=$X
 	test -n "$LAST_CMD" && { $LAST_CMD ; EXIT_STAT=$? ; }
 	IFS=$' \t\n'
+  rm -f  ${Y_PSX}*
 	exit $EXIT_STAT
 }
 
