@@ -158,7 +158,7 @@ test "${RC_VERSION}" -lt $RC_VERSION_MIN && y_fatal_error "Config file verion is
 if [ -d "$BACKUP_DEST" ] ; then
     cd $BACKUP_DEST >> $LOG 2>&1
 else
-    y_error "$BACKUP_DEST is not find!"
+    y_warning "$BACKUP_DEST is not find!"
 fi
 test -d "$SOURCE" || error "$SOURCE is not find!"
 test $BLEVELS -ge 0 || error "Backup level=$BLEVELS is too low!" 
@@ -221,9 +221,10 @@ case $CMD in
         test -f "$FILE.0$EXT" && y_run_cmd "cp $FILE.0$EXT $FILE.`date +%Y%m`$EXT"
         ;;
     $BCOPY)
+
         test -f "$FILE.0$EXT" && y_run_cmd "cp -a $FILE.0$EXT $BCOPY_DEST/$FILE.`date +%Y%m`$EXT"
         ;;
-        $CCOPY)
+    $CCOPY)
         test -f "$FILE.0$EXT" && y_run_cmd "cp -a $FILE.0$EXT $BCOPY_DEST"
         ;;
 
