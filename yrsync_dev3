@@ -78,7 +78,7 @@ DEV=$YES
 MOUNT=$YES
 #DELETE_LIST="/var/lib /var/db /var/cache"
 DELETE_LIST="/var/db /var/cache/edb"
-FSTAB_DEST="/etc/fstab.nvme_part"
+FSTAB_DEST="/etc/fstab.main"
 BOOT_DIR="/boot"
 DEV_DIR="/dev"
 KERNEL_MAIN="vmlinuz"
@@ -144,7 +144,7 @@ RSYNC="rsync $RSYNC_OPT"
 
 #set default depends on MODE
 
-test "$Y_MODE" = "$MODE_UPDATE" && {
+test "$Y_MODE" == "$MODE_UPDATE" && {
   SRC_DIRS="${SRC_DIRS:-$SRC_DIRS_UPDATE}"
   EXCL_DIRS="${EXCL_DIRS:-$EXCL_DIRS_UPDATE}"
 }
@@ -238,8 +238,10 @@ test "$MOUNT" = "yes" && {
 
 # create exclude list
 for i in $EXCL_DIRS ; do
-  EXCLUDE="$EXCLUDE --exclude $i"
+  EXCLUDE="$EXCLUDE --exclude=$i"
 done
+
+#y_info [$EXCLUDE]
 
 test "$Y_MODE" != "$MODE_NEW" && {
   for i in $DELETE_LIST ; do
@@ -255,7 +257,7 @@ for i in $SRC_DIRS ; do
   i="$i/"
   s=`printf "%-12s" $i`
   y_progress_nl "Sync $s -> ${DEST_ROOT}${i} ..."
-  y_run $RSYNC $EXCLUDE --exclude ${DEST_ROOT}/ $i $DEST_ROOT$i
+  y_run $RSYNC $EXCLUDE --exclude=${DEST_ROOT}/ $i $DEST_ROOT$i
   y_progress_end
 done
 
