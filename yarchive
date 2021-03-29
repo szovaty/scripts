@@ -158,7 +158,7 @@ test "${RC_VERSION}" -lt $RC_VERSION_MIN && y_fatal_error "Config file verion is
 if [ -d "$BACKUP_DEST" ] ; then
     cd $BACKUP_DEST >> $LOG 2>&1
 else
-    error "$BACKUP_DEST is not find!"
+    y_error "$BACKUP_DEST is not find!"
 fi
 test -d "$SOURCE" || error "$SOURCE is not find!"
 test $BLEVELS -ge 0 || error "Backup level=$BLEVELS is too low!" 
