@@ -58,8 +58,9 @@ Y_RUN_RET_SUM=0
 Y_MIN_TMP="10" # GBite
 Y_MOUNT_DEV="$FALSE"
 Y_BMOUNT_DEV="$FALSE"
-Y_DEV_MNT="/mnt"
-Y_SRC_DIRS="/usr /var /opt /boot /home /xdir/gentoo"
+Y_DEV_MNT="/xdev"
+Y_DISK="nvme0n1"
+Y_SRC_DIRS="/usr /var /opt"
 Y_SRC_FSTAB="/etc/fstab.dev"
 Y_GRUB_CFG="/boot/grub/grub.cfg"
 Y_DEL_RSYNC=" \
@@ -215,7 +216,9 @@ test "$Y_GENTOO_SAVE" == $TRUE && {
 test -n "$Y_SYNC" && {
   y_progress_nl "Sync DEV system with current install..."
   y_msg_dest LOG
-  y_run yrsync_xos -x $Y_DEV_MNT -f $Y_SRC_FSTAB -d \"$Y_SRC_DIRS\" -m -r \"-arxK --delete\"
+  # y_run yrsync_xos -x $Y_DEV_MNT -f $Y_SRC_FSTAB -d \"$Y_SRC_DIRS\" -m -r \"-arxK --delete\"
+  # disable fstab modification
+  y_run yrsync_xos -x $Y_DEV_MNT -F -d \"$Y_SRC_DIRS\" -m -r \"-arxK --delete\"
   y_run cp $Y_DEV_NAME $Y_DEV_MNT/etc/conf.d/hostname
   for i in $Y_DEL_RSYNC ; do
     y_run rm -f $Y_DEV_MNT$i
