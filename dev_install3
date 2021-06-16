@@ -1,7 +1,7 @@
 # install/update a system from a ymake_dev2 updated source using yrsync_dev2
 
 PARTED="./y_parted"
-FSTAB="/etc/fstab.nvme_part"
+FSTAB="/etc/fstab.main"
 DEV="/dev/nvme0n1"
 DSIZE="512"
 MOUNT_UPDATE="/ /opt /var"
