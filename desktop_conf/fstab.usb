@@ -1,0 +1,10 @@
+# vim:set ts=8:
+# dev_usb
+
+PARTLABEL=usbboot       /boot		ext2	defaults,noatime	1 2
+PARTLABEL=usbefi        /boot/efi	vfat	noauto,noatime		1 2
+PARTLABEL=usbswap       none    	swap	sw			0 0
+PARTLABEL=usbroot       /		ext4	noatime,discard		0 1
+PARTLABEL=usbxdir       /xdir           ext4    noatime,discard         0 2
+
+tmpfs                   /tmp            tmpfs   defaults                0 0
