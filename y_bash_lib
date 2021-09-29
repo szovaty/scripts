@@ -423,6 +423,7 @@ y_run_debug_help () {
   echo "  exit  : skip failed command"
   echo "  exit 1: retry failed command"
   echo "  exit 2: terminate execution"
+  echo "  exit 3: replace current cmd with a new one"
   echo "-----------------------------------------"
 }
 
@@ -467,6 +468,12 @@ y_run () {
     y_check_exec $Y_RUN_RET $*
     X=$?
     test $X -eq 2 && y_exit 2
+    # added new feature to replace current commend with a new one
+    test $X -eq 3 && {
+      echo "New command:"
+      read NEW_CMD
+      set -- "$NEW_CMD"
+    }
     test $X -eq 0 && return $X
     test "$Y_DEBUG_ON_ERROR" != $TRUE &&
       return $Y_RUN_RET
