@@ -345,11 +345,17 @@ test -n "$Y_CONFIG_KERNEL" && {
 
 # build new kernel
 test -n "$Y_BUILD_KERNEL" && {
+    VMLINUZ_DEV="/boot/vmlinuz-dev"
+    Y_CONFIRM="$TRUE"
+    test -h "$VMLINUZ_DEV" && {
+      y_warning "$VMLINUZ_DEV is a sym link! Is it OK [$YES]"
+      y_get_confirm
+    }
     y_progress_nl "Building kernel..."
     y_msg_dest "STDERR,LOG"
     y_run chroot $Y_DEV_MNT /bin/bash -c \
       '"cd /usr/src/linux; make bzImage modules modules_install install"'
-    y_run cp $Y_DEV_MNT/usr/src/linux/arch/x86/boot/bzImage /boot/vmlinuz-dev
+    y_run cp $Y_DEV_MNT/usr/src/linux/arch/x86/boot/bzImage $VMLINUZ_DEV
     y_run cp $Y_DEV_MNT/usr/src/linux/.config /boot/config-dev
     y_msg_dest_restore
     y_progress_end
