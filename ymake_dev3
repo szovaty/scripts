@@ -347,7 +347,7 @@ test -n "$Y_CONFIG_KERNEL" && {
 test -n "$Y_BUILD_KERNEL" && {
     VMLINUZ_DEV="/boot/vmlinuz-dev"
     Y_CONFIRM="$TRUE"
-    test -h "$VMLINUZ_DEV" && {
+    test -h "$VMLINUZ_DEV" -a "$Y_QUIET" != $TRUE && {
       y_warning "$VMLINUZ_DEV is a sym link! Is it OK [$YES]"
       y_get_confirm
     }
@@ -453,6 +453,9 @@ test -n "$Y_UPDATE_TOOLS" && {
   y_msg_dest_restore
   y_progress_end
 }
+
+# only for testing new beug console features
+y_debug_console
 
 # ===================================================================================
 # Leave this as the last line
