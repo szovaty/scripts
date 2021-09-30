@@ -1,0 +1,42 @@
+#!/bin/bash
+# vim: ts=4 sw=4:
+
+# local testing session
+SDIR="/x_proj/jenov/scripts"
+BIN="./ymake_dev3"
+CMD=$BIN
+GRUB="grub.cfg"
+LIB="./y_bash_lib"
+DEST_LIB="/usr/local/bin"
+DEST_BIN="/usr/local/bin"
+DEST_GRUB="/boot/grub"
+DISK="nvme0n1"
+#DISK="sda"
+PART="4"
+MODE=$1
+
+test -b /dev/${DISK} || {
+    echo Invalid block device [/dev/${DISK}]
+    exit 1
+}
+
+DEF_NEW="       --new_dev --mountmisc  -sync  -clgentoo  -update  -prechg  -check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst  -grub  -rebuild --qtest  --tools  -systest -D"
+DEF_MOUNT="      -new_dev --mountmisc  -sync  -clgentoo  -update  -prechg  -check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst  -grub  -rebuild --qtest   -tools  -systest -D"
+DEF_SYNC="       -new_dev  -mountmisc --sync  -clgentoo  -update  -prechg  -check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst  -grub  -rebuild  -qtest   -tools  -systest -D"
+DEF_TEST="       -new_dev --mountmisc  -sync  -clgentoo  -update  -prechg  -check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst  -grub  -rebuild  -qtest  --tools  -systest -D"
+DEF_BUILD="      -new_dev --mountmisc  -sync  -clgentoo --update  -prechg --check --build  -resume  -ckernel   -bkernel  -lilo --grub_inst  -grub  -rebuild  -qtest   -tools  -systest -D"
+DEF_ALL="        -new_dev --mountmisc --sync  -clgentoo --update  -prechg --check --build  -resume --ckernel  --bkernel  -lilo  -grub_inst  -grub --rebuild --qtest  --tools  -systest -D"
+
+DEF_RESUME="     -new_dev --mountmisc  -sync  -clgentoo  -update  -prechg  -check --build   -resume --ckernel  --bkernel  -lilo  -grub_inst  -grub --rebuild --qtest  --tools  -systest -D"
+
+DEF_NONE="       -new_dev --mountmisc  -sync  -clgentoo  -update  -prechg  -check  -build  -resume  -ckernel   -bkernel  -lilo  -grub_inst  -grub  -rebuild --qtest   -tools  -systest -D"
+
+test -n "$MODE" && eval CURRENT='$'"DEF_"$MODE
+test -z "$CURRENT" -o "$CURRENT" = "$MODE" && { 
+    echo MISSING mode definition
+    env | grep DEF_
+    exit 1; 
+}
+
+#$CMD --src_fstab /etc/fstab.dev --disk $DISK --part $PART  --mnt /mnt $CURRENT $*
+$CMD $CURRENT $*
