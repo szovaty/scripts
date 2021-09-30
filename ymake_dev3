@@ -455,7 +455,7 @@ test -n "$Y_UPDATE_TOOLS" && {
 }
 
 # only for testing new beug console features
-y_debug_console
+#y_debug_console
 
 # ===================================================================================
 # Leave this as the last line
