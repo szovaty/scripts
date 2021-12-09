@@ -53,4 +53,5 @@ test -n "$UPDATE" && {
     test -e $SDIR/$LIB && cp $SDIR/$LIB $DEST_LIB 1>/dev/null
     test -e $SDIR/$GRUB && cp $SDIR/$GRUB $DEST_GRUB 1>/dev/null
 }
-$CMD --src_fstab /etc/fstab.dev_usb --mountdev /dev/sd${DEV}2=/boot,/dev/sd${DEV}1=/boot/efi,/dev/sd${DEV}9=/xdir --dev /dev/sd${DEV}3 --mnt /mnt $CURRENT $PAR
+$CMD --src_fstab /etc/fstab.usb_partlabel --mountdev /dev/sd${DEV}2=/boot,/dev/sd${DEV}1=/boot/efi,/dev/sd${DEV}9=/xdir --dev /dev/sd${DEV}3 --mnt /mnt $CURRENT $PAR
+#$CMD --src_fstab /etc/fstab.usb_partlabel --dev /dev/sd${DEV}3 --mnt /mnt $CURRENT $PAR
