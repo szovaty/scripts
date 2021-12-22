@@ -1,9 +1,0 @@
-#!/bin/bash
-
-TIME1=23
-TIME2=6
-
-while true; do
-	test `date +%H` -ge $TIME1 -o `date +%H` -le $TIME2 && init 0
-	sleep 10m
-done
