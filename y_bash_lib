@@ -63,8 +63,10 @@ y_init_color(){
     echo PS1=\"${Y_FIXME_PS1}\" > $Y_FIXME_FILE
     chmod 644 $Y_FIXME_FILE
   }
-  echo PS1=\"${Y_CON_PS1}\" > $Y_CONSOLE_FILE
-  echo PS1=\"${Y_CHROOT_PS1}\" > $Y_CHROOT_FILE
+  test -O $Y_CONSOLE_FILE &&
+    echo PS1=\"${Y_CON_PS1}\" > $Y_CONSOLE_FILE
+  test -O $Y_CHROOT_FILE &&
+    echo PS1=\"${Y_CHROOT_PS1}\" > $Y_CHROOT_FILE
 }
 y_init_color
 
@@ -284,7 +286,7 @@ y_exit () {
   Y_MSG_DEST=$X
 	test -n "$LAST_CMD" && { $LAST_CMD ; EXIT_STAT=$? ; }
 	IFS=$' \t\n'
-  rm -f  ${Y_PSX}*
+  test -O ${Y_PSX}1 && rm -f  ${Y_PSX}*
 	exit $EXIT_STAT
 }
 
