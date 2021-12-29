@@ -10,7 +10,7 @@ trap y_exit TERM HUP INT
 
 # Source the function library
 ylib () {
-  FSH="./y_bash_lib"
+  FSH="y_bash_lib"
   LIB=`which $FSH`
   test $? != '0' && { echo Fatal Error!; exit 1; }
   test -r ${LIB} && source ${LIB}

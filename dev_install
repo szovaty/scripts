@@ -13,9 +13,9 @@ test "$1" = "update" && {
     echo "  - verified xos is working"
     read -e -p "OK to run?" -i "no" input
     test "$input" = "y" || exit
-    mount /dev/sdb5 /xdir
+    mount PARTLABEL=xdir /xdir
     shift
-    yrsync_dev2 --mode update --nodev --blkdev /dev/sda -f /etc/fstab.main_sda --gentoo $*
+    yrsync_dev2 --mode update --nodev --blkdev /dev/sda -f /etc/fstab.partlabel --gentoo $*
     umount /xdir
 }
 
