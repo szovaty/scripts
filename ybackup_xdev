@@ -10,7 +10,7 @@ trap y_exit TERM HUP INT
 
 # Source the function library
 ylib () {
-  FSH="./y_bash_lib"
+  FSH="y_bash_lib"
   LIB=`which $FSH`
   test $? != '0' && { echo Fatal Error!; exit 1; }
   test -r ${LIB} && source ${LIB}
@@ -53,7 +53,7 @@ LOG="/tmp/${0##*/}.log"
 Y_MSG_DEST="STDOUT,STDERR,LOG"
 
 # -------------- configuration defaults -----------------------
-Y_FOUT_NAME="/tmp/xdev_"`date +%Y%m%d`.tbz2
+Y_FOUT_NAME="/backup/systems/xdev_"`date +%Y%m%d`.tbz2
 Y_SOURCE_NAME="/xdev"
 
 ylib
@@ -66,8 +66,8 @@ HELP="Defaults"
 while [ -n "$1" ] ; do
   case $1 in
     --help|-h)	y_help "[Options]"; y_exit;;    #; Help [HELP]
-    --source|-s)    Y_SOURCE_NAME="$2"; shift;; #; Source directory nem [Y_SOURCE_NAME]
-    --filename|-f)  Y_FOUT_NAME="$2"; shift;;   #; Default output name [Y_FOUT_NAME]
+    --source|-s)    Y_SOURCE_NAME="$2"; shift;; #; Source directory name [Y_SOURCE_NAME]
+    --dest|-o)  Y_FOUT_NAME="$2"; shift;;       #; Default destination name [Y_FOUT_NAME]
     --log|-L)   export LOG="$2"; shift;;        #; Set LOG [LOG]
     --quiet|-Q) Y_QUIET="true";;                #; Enable quiet mode [Y_QUIET]
     --debug|-D) Y_DEBUG="true";;                #; Enable debug mode [Y_DEBUG]

@@ -396,8 +396,10 @@ test -n "$Y_GRUB" && {
 # rebuild/clean-up system after new kernel
 test -n "$Y_REBUILD" && {
   y_progress_nl "Checking and system clean-up..."
-  y_progress_nl "  Cheching build integrity..."
   y_msg_dest LOG
+  y_progress_nl "  Clean distfiles..."
+  y_run chroot $Y_DEV_MNT /bin/bash -c '"eclean distfiles"'
+  y_progress_nl "  Cheching build integrity..."
   y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge -quDN world"'
   y_progress_nl "  Removing unused packages 'depclean'..."
   y_run chroot $Y_DEV_MNT /bin/bash -c '"emerge --depclean -q"'
