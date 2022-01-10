@@ -30,8 +30,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="ymake_dev3"
 PROG_DESC="Utility to manage a gentoo based host install and update."
-VERSION="3.0-rc3"
-LAST_MOD="2021.02.26"
+VERSION="3.1"
+LAST_MOD="2022.01.10"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -451,7 +451,10 @@ test -n "$Y_UPDATE_TOOLS" && {
   y_msg_dest "STDERR,LOG"
   y_run yupdate_bin --quiet
   y_run chmod u+s /sbin/unix_chkpwd
-  y_run "date +%Y_%m_%d > $Y_DEV_MNT/BUILD"
+  y_run "echo -n $0 ' ' > $Y_DEV_MNT/BUILD"
+  y_run "$0 --version >> $Y_DEV_MNT/BUILD"
+  y_run "echo -n System built date:' '  >> $Y_DEV_MNT/BUILD"
+  y_run "date +%Y_%m_%d >> $Y_DEV_MNT/BUILD"
   y_msg_dest_restore
   y_progress_end
 }

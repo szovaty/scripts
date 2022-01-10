@@ -298,7 +298,7 @@ y_start () {
 }
 
 # print version information
-y_version () { echo "Version: V$VERSION ; Last Mod. $LAST_MOD" ; }
+y_version () { echo "V$VERSION [Last Mod. $LAST_MOD]" ; }
 
 # ask user if OK to continue
 y_get_confirm () {
