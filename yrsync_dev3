@@ -61,6 +61,7 @@ MODE_UPDATE="update"
 
 # define backup system mount point
 DEST_ROOT="/mnt"
+BUILD="/BUILD"
 
 # define rsync command
 RSYNC_OPT="-arx --delete"
@@ -127,6 +128,7 @@ while [ -n "$1" ] ; do
     --verify)     VERIFY=$YES;;                   #; Verify labels [VERIFY] exists
     --par|-P)     Y_PARTED="$2";;                 #; partition def file [Y_PARTED]
     --dsize)      Y_PPAR="$2";;                   #; disk size [Y_PPAR]
+    --mark)       Y_MARK=$YES;;                   #; record install date [Y_MARK]
   esac
   shift
 done
@@ -336,6 +338,11 @@ test "$SAVE_GENTOO" = $YES && {
   }
   y_run rsync -arx $GENTOO $DEST_ROOT/$GENTOO
   y_progress_end
+}
+
+test "$Y_MARK" = $YES && {
+  y_run "$0 --version >> $DEST_ROOT/$BUILD"
+  y_run "date +%Y_%m_%d >> $DEST_ROOT/$BUILD"
 }
 
 # ===================================================================================
