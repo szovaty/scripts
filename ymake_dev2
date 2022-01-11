@@ -57,7 +57,7 @@ Y_RUN_RET_SUM=0
 # -------------- configuration defaults -----------------------
 Y_MOUNT_DEV="$FALSE"
 Y_DEV_MNT="/mnt"
-Y_SRC_DIRS="/usr /var /opt /boot /home /xdir/gentoo"
+Y_SRC_DIRS="/usr /var /opt /xdir/gentoo"
 Y_SRC_FSTAB="/etc/fstab.usb_partlabel"
 Y_GRUB_CFG="/boot/grub/grub.cfg"
 Y_DEL_RSYNC="/etc/runlevels/default/xdm \
