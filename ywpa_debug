@@ -70,6 +70,7 @@ while [ -n "$1" ] ; do
     --edebug)   Y_DEBUG_ON_ERROR=$TRUE;;        #; Debug on error [Y_DEBUG_ON_ERROR]
     --nocolor)  USE_COLOR="";;                  #; Enable color output [USE_COLOR]
     --version|-V) y_version; y_exit;;           #; Display version and exit
+    --)         shift; CMD_ALL=$*;;             #; Pass the rest to command [CMD_ALL]
   esac
   shift
 done
@@ -81,7 +82,8 @@ y_set_default Y_EXIT_ON_ERROR $FALSE
 
 TMPLOG="/tmp/ywpa_debug`date +%d%H_%M%S`"
 
-wpa_supplicant -Dnl80211 -iwlp3s0 -c/etc/wpa_supplicant/wpa_supplicant.conf -d | tee $TMPLOG
+#echo [$CMD_ALL][$Y_DEBUG]
+wpa_supplicant -Dnl80211 -iwnet0 -c/etc/wpa_supplicant/wpa_debug.conf $CMD_ALL | tee $TMPLOG
 
 # ===================================================================================
 # Leave this as the last line
