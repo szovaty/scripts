@@ -1,6 +1,9 @@
 #!/bin/bash
 # vim:set ts=2 sw=2:
 # Base template2.src version 1.0 last modified 2018.01.11 by y
+# TODO: fix /run is not mounted for DEVFS
+# TODO: add kernel auto version compile and increment local version
+# TODO: fix build date marking funtions
 
 y_start(){ :; }
 y_exit(){ :; }
@@ -30,8 +33,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="ymake_dev3"
 PROG_DESC="Utility to manage a gentoo based host install and update."
-VERSION="3.1"
-LAST_MOD="2022.01.10"
+VERSION="3.2"
+LAST_MOD="2022.01.26"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -446,15 +449,17 @@ test -n "$Y_SYSTEST" -o -n "$Y_SYSMERGE" && {
     y_progress_end
 }
 
+# TODO
+# fix build date marking functions
 test -n "$Y_UPDATE_TOOLS" && {
   y_progress_nl "Update tools..."
   y_msg_dest "STDERR,LOG"
   y_run yupdate_bin --quiet
   y_run chmod u+s /sbin/unix_chkpwd
-  y_run "echo -n $0 ' ' > $Y_DEV_MNT/BUILD"
-  y_run "$0 --version >> $Y_DEV_MNT/BUILD"
-  y_run "echo -n System built date:' '  >> $Y_DEV_MNT/BUILD"
-  y_run "date +%Y_%m_%d >> $Y_DEV_MNT/BUILD"
+  #y_run "echo -n $0 ' ' > $Y_DEV_MNT/BUILD"
+  #y_run "$0 --version >> $Y_DEV_MNT/BUILD"
+  #y_run "echo -n System built date:' '  >> $Y_DEV_MNT/BUILD"
+  y_run "date +_%Y_%m_%d > $Y_DEV_MNT/BUILD"
   y_msg_dest_restore
   y_progress_end
 }
