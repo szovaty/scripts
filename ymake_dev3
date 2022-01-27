@@ -1,7 +1,7 @@
 #!/bin/bash
 # vim:set ts=2 sw=2:
 # Base template2.src version 1.0 last modified 2018.01.11 by y
-# TODO: fix /run is not mounted for DEVFS
+# TODO: combine --bmountdev and --mountdev functions
 # TODO: add kernel auto version compile and increment local version
 # TODO: fix build date marking funtions
 
@@ -60,7 +60,8 @@ Y_RUN_RET_SUM=0
 # -------------- configuration defaults -----------------------
 Y_MIN_TMP="10" # GBite
 Y_MOUNT_DEV="$FALSE"
-Y_BMOUNT_DEV="$FALSE"
+#Y_BMOUNT_DEV="$FALSE"
+Y_BMOUNT_DEV="/run"
 Y_DEV_MNT="/xdev"
 Y_DISK="nvme0n1"
 Y_PART="p5"
@@ -195,8 +196,13 @@ test "$Y_BMOUNT_DEV" != $FALSE && {
 }
 
 # mount extra block device(s) required to make up DEVFS
+# format: /host_device=/dev_device,/host2_device=/dev2_device,...
+# format after combine bmount and mount
+#     /Host_device=/dev_device,/host2=B/host2_device,...
+#     bind is '=B'
 test "$Y_MOUNT_DEV" != $FALSE && {
   y_progress_nl "Mount required block devices..."
+  y_debug [$Y_MOUNT_DEV]
   OLDIFS=$IFS
   IFS=","
   Y_MOUNT_LIST=`echo $Y_MOUNT_DEV`
