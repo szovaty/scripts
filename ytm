@@ -2,16 +2,15 @@
 # open xfce4-terminals helper utility
 
 FONT=7
-while [ -n "$1" ] ; do
-    case $1 in
-        --font) FONT=$2; shift; shift;;
-    esac
-done
+case $1 in
+    --font) FONT=$2; shift; shift;;
+esac
 CMD="xfce4-terminal --font=$FONT --hide-borders --tab --geometry="
 
 test -z "$*" && {
     echo missing parameters; exit;
 }
+echo [$*]
 while [ -n "$1" ] ; do 
 	${CMD}$1; shift
 done
