@@ -1,0 +1,14 @@
+#!/bin/bash
+# open xfce4-terminals helper utility
+
+FONT=7
+while [ -n "$1" ] ; do
+    case $1 in
+        --font) FONT=$2; shift; shift;;
+    esac
+done
+CMD="xfce4-terminal --font=$FONT --hide-borders --tab --geometry="
+
+while [ -n "$1" ] ; do 
+	${CMD}$1; shift
+done
