@@ -1,0 +1,8 @@
+#!/bin/bash
+# vim:set ts=2 sw=2:
+
+while true ; do 
+    WD=`xdotool selectwindow`
+    xwininfo -id $WD | grep geometry | sed s/-geometry' '/--geometry=/
+done
+

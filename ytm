@@ -5,12 +5,11 @@ FONT=7
 case $1 in
     --font) FONT=$2; shift; shift;;
 esac
-CMD="xfce4-terminal --font=$FONT --hide-borders --tab --geometry="
+CMD="xfce4-terminal --font=$FONT --hide-borders --tab "
 
 test -z "$*" && {
     echo missing parameters; exit;
 }
-echo [$*]
 while [ -n "$1" ] ; do 
 	${CMD}$1; shift
 done
