@@ -1,6 +1,0 @@
-FONT=7
-xfce4-terminal --font=$FONT --hide-borders --tab --geometry=203x14-0+0
-xfce4-terminal --font=$FONT --hide-borders --tab --geometry=116x66-0+298
-xfce4-terminal --font=$FONT --hide-borders --tab --geometry=81x26+0+982
-xfce4-terminal --font=$FONT --hide-borders --tab --geometry=87x15+730+299
-xfce4-terminal --font=$FONT --hide-borders --tab --geometry=87x49+730+583
