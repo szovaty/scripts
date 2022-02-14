@@ -31,8 +31,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="yrsync_dev3"
 PROG_DESC="Install/update a system based on current host"
-VERSION="3.6-rc2"
-LAST_MOD="2021.03.03"
+VERSION="3.6.1"
+LAST_MOD="2022.02.14"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -68,11 +68,11 @@ RSYNC_OPT="-arx --delete"
 
 # usefull defaults
 
-DEST_MOUNT="/ /opt /var /xdir /boot /boot/efi"
+DEST_MOUNT="/ /opt /var"
 SRC_ROOT="/"
 SRC_DIRS_UPDATE="/"
 SRC_DIRS_NEW="/ /boot/ /boot/efi/"
-EXCL_DIRS_UPDATE="/gentoo /boot/grub/grub.cfg /etc/fstab /etc/conf.d/hostname /root /home /xdir"
+EXCL_DIRS_UPDATE="/gentoo /boot /root /home /etc/fstab /etc/conf.d/hostname"
 EXCL_DIRS_NEW=""
 FSTAB="/etc/fstab"
 DEV=$YES
