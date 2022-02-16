@@ -72,7 +72,7 @@ DEST_MOUNT="/ /opt /var"
 SRC_ROOT="/"
 SRC_DIRS_UPDATE="/"
 SRC_DIRS_NEW="/ /boot/ /boot/efi/"
-EXCL_DIRS_UPDATE="/gentoo /boot /root /home /etc/fstab /etc/conf.d/hostname"
+EXCL_DIRS_UPDATE="/boot /home /root /xdir /xos /tmp /etc/fstab /etc/conf.d/hostname"
 EXCL_DIRS_NEW=""
 FSTAB="/etc/fstab"
 DEV=$YES
@@ -260,6 +260,7 @@ for i in $SRC_DIRS ; do
   s=`printf "%-12s" $i`
   y_progress_nl "Sync $s -> ${DEST_ROOT}${i} ..."
   y_run $RSYNC $EXCLUDE --exclude=${DEST_ROOT}/ $i $DEST_ROOT$i
+  #$RSYNC -v $EXCLUDE --exclude=${DEST_ROOT}/ $i $DEST_ROOT$i
   y_progress_end
 done
 
