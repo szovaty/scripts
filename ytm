@@ -5,7 +5,7 @@ FONT=7
 case $1 in
     --font) FONT=$2; shift; shift;;
 esac
-CMD="xfce4-terminal --font=$FONT --hide-borders --tab "
+CMD="xfce4-terminal --window --tab --font=$FONT --hide-borders "
 
 test -z "$*" && {
     echo missing parameters; exit;
