@@ -1,0 +1,22 @@
+#!/bin/bash
+# open xfce4-terminals helper utility
+
+FONT=7
+
+while [ -n "$1" ] ; do
+    case $1 in
+        --help|-h)  y_help "[Options]"; y_exit;;    #; Help [HELP]
+        --font)     FONT=$2; shift;;                #; set font size {FONT]
+        --conf|-c)  CONF=$2; shift;;
+    esac
+    shift
+done
+CMD="xfce4-terminal --window --tab --font=$FONT --hide-borders "
+
+test -z "$*" && {
+    echo missing parameters; exit;
+}
+#xfce4-terminal --window
+while [ -n "$1" ] ; do 
+	${CMD}$1; shift
+done
