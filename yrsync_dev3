@@ -31,8 +31,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="yrsync_dev3"
 PROG_DESC="Install/update a system based on current host"
-VERSION="3.6.1"
-LAST_MOD="2022.02.14"
+VERSION="3.6.2"
+LAST_MOD="2022.02.18"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -118,6 +118,7 @@ while [ -n "$1" ] ; do
     --sdirs|-d)   SRC_DIRS="$2"; shift ;;         #; Define source dirs to copy [SRC_DIRS]
     --excl|-e)    EXCL_DIRS="$2"; shift;;         #; Exclude dirs from sync [EXCL_DIRS]
     --rsync|-R)   RSYNC_OPT="$2"; shift ;;        #; Define rsync options [RSYNC_OPT]
+    --vn)         RSYNC_OPT1=$TRUE;;              #; Add rsync the -v --dry-run options
     --delete)     DELETE_LIST="$2"; shift;;       #; Delete [DELETE_LIST] before rsync run
     --nomount|-M) MOUNT="no";;                    #; Mount destination dirs [MOUNT]
     --dfstab|-f)  FSTAB_DEST="$2"; shift ;;       #; Define dest_fstab [FSTAB_DEST]
@@ -253,14 +254,16 @@ test "$Y_MODE" != "$MODE_NEW" && {
   done
 }
 
-
 # sync the filesystems
 for i in $SRC_DIRS ; do
   i="$i/"
   s=`printf "%-12s" $i`
   y_progress_nl "Sync $s -> ${DEST_ROOT}${i} ..."
-  y_run $RSYNC $EXCLUDE --exclude=${DEST_ROOT}/ $i $DEST_ROOT$i
-  #$RSYNC -v $EXCLUDE --exclude=${DEST_ROOT}/ $i $DEST_ROOT$i
+  if [[ $RSYNC_OPT1 = $TRUE && y_check_dryrun ]] ; then
+    $RSYNC -v -n $EXCLUDE --exclude=${DEST_ROOT}/ $i $DEST_ROOT$i
+  else
+    y_run $RSYNC $EXCLUDE --exclude=${DEST_ROOT}/ $i $DEST_ROOT$i
+  fi
   y_progress_end
 done
 

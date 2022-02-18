@@ -8,7 +8,7 @@ MOUNT_UPDATE="/ /opt /var"
 MOUNT_NEW="/ /opt /var /boot /boot/efi /home /xdir"
 COPY="/ /boot /xdir"
 DEL=""
-CMD="yrsync_dev3 --blkdev $DEV -f $FSTAB"
+CMD="./yrsync_dev3 --blkdev $DEV -f $FSTAB"
 ERROR=1
 
 test "$1" != "update" -a "$1" != "new" && {

@@ -10,6 +10,7 @@ CMD="xfce4-terminal --window --tab --font=$FONT --hide-borders "
 test -z "$*" && {
     echo missing parameters; exit;
 }
+#xfce4-terminal --window
 while [ -n "$1" ] ; do 
 	${CMD}$1; shift
 done
