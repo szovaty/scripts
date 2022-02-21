@@ -2,6 +2,7 @@
 # vim:set ts=2 sw=2:
 # Base template2.src version 1.0 last modified 2018.01.11 by y
 # TODO: add kernel auto version compile and increment local version
+# TODO: add partition by PARTLABEL
 
 y_start(){ :; }
 y_exit(){ :; }
@@ -31,8 +32,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="ymake_dev3"
 PROG_DESC="Utility to manage a gentoo based host install and update."
-VERSION="3.3"
-LAST_MOD="2022.01.28"
+VERSION="3.3.1"
+LAST_MOD="2022.02.21"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -57,7 +58,8 @@ Y_RUN_RET_SUM=0
 
 # -------------- configuration defaults -----------------------
 Y_MIN_TMP="10" # GBite
-Y_MOUNT_DEV="/run:=/run"
+#Y_MOUNT_DEV="/run:=/run"
+Y_MOUNT_PSEUDO="/dev /dev/pts /run /xdir/tmp /xdir/gentoo_dev:=/xdir/gentoo"
 Y_DEV_MNT="/xdev"
 Y_DISK="nvme0n1"
 Y_PART="p5"
@@ -134,7 +136,9 @@ ylib
 y_check_cmds "lsblk chroot grep emerge parted mkfs.vfat mkfs.ext2 mkfs.ext4 mkswap"
 
 # test partition device name format
-test -b "${Y_DISK}${Y_PART}"
+test -b /dev/disk/by-partlabel/xdev &&
+  y_check_dryrun_no && y_fatal_error "PARTLABEL=xdev not available"
+
 
 # initialize a new device to be used
 #  tune partitions and filesystem config below
@@ -221,11 +225,13 @@ test -n "$Y_SYNC" && {
   y_progress_end
 }  
 
-# mount presudo fs and support dirs on DEV
+# mount pseudo fs and support dirs on DEV
 test "$Y_MOUNT_MISC" = $TRUE && {
   y_progress_nl "Mount DEV misc. devices..."
   y_run mkdir -p $Y_DEV_MNT/dev
   y_mount --bind /dev $Y_DEV_MNT/dev
+  y_run mkdir -p $Y_DEV_MNT/run
+  y_mount --bind /run $Y_DEV_MNT/run
   y_run mkdir -p $Y_DEV_MNT/dev/pts
   y_mount --bind /dev/pts $Y_DEV_MNT/dev/pts
   y_run mkdir -p $Y_DEV_MNT/xdir/tmp
@@ -441,10 +447,8 @@ test -n "$Y_SYSTEST" -o -n "$Y_SYSMERGE" && {
     y_progress_end
 }
 
-# TODO
-# fix build date marking functions
 test -n "$Y_UPDATE_TOOLS" && {
-  y_progress_nl "Update tools..."
+  y_progress_nl "Update tools and BUILD file..."
   y_msg_dest "STDERR,LOG"
   y_run yupdate_bin --quiet
   y_run chmod u+s /sbin/unix_chkpwd

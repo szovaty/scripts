@@ -345,8 +345,7 @@ test "$SAVE_GENTOO" = $YES && {
 }
 
 test "$Y_MARK" = $YES && {
-  y_run "$0 --version >> $DEST_ROOT/$BUILD"
-  y_run "date +%Y_%m_%d >> $DEST_ROOT/$BUILD"
+  y_run "date +=%Y_%m_%d >> $DEST_ROOT/$BUILD"
 }
 
 # ===================================================================================
