@@ -136,7 +136,8 @@ ylib
 y_check_cmds "lsblk chroot grep emerge parted mkfs.vfat mkfs.ext2 mkfs.ext4 mkswap"
 
 # test partition device name format
-y_check_dryrun_not -a -b /dev/disk/by-partlabel/xdev &&
+y_check_dryrun_not &&
+  test ! -b /dev/disk/by-partlabel/xdev &&
     y_fatal_error "PARTLABEL=xdev not available!"
 
 
