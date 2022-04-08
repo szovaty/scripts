@@ -32,8 +32,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="ymake_dev3"
 PROG_DESC="Utility to manage a gentoo based host install and update."
-VERSION="3.3.1"
-LAST_MOD="2022.02.21"
+VERSION="3.3.2"
+LAST_MOD="2022.04.08"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -421,7 +421,7 @@ test -n "$Y_REBUILD" && {
 
 # quick test new install by chroot and command line
 test -n "$Y_QUICKTEST" && {
-  y_progress_nl "Quicking test new system..."
+  y_progress_nl "Quick test new system..."
   y_msg_dest "STDOUT,STDERR"
   y_run chroot $Y_DEV_MNT bash --rcfile $Y_CHROOT_FILE -i
   y_msg_dest_restore
