@@ -17,8 +17,8 @@ test -r ${FUNCTIONS} && source ${FUNCTIONS}
 
 # define the following to match the program current state
 PROGRAM_NAME="yrsync_xos"
-VERSION="0.6"
-LAST_MOD="2021.03.29"
+VERSION="0.7"
+LAST_MOD="2022.05.12"
 
 # Define log file here
 LOG="/var/log/${0##*/}.log"
@@ -30,7 +30,7 @@ LOG="/var/log/${0##*/}.log"
 XOS_DIR="/xos"
 
 # define filesystems to sync
-DIR_LIST="/usr /var /opt"
+DIR_LIST="/usr /var /opt /boot"
 
 # define rsync command
 #RSYNC_OPT="-arxK --delete"
