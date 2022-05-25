@@ -102,7 +102,7 @@ done
 # adjust backup system
 y_progress "Adjust filesystem..."
 test -n "$FSTAB" && y_run_cmd "cp $XOS_DIR/$FSTAB $XOS_DIR/etc/fstab"
-rm -f $XOS_DIR/etc/runlevel/boot/dmcrypt
+rm -f $XOS_DIR/etc/runlevels/boot/dmcrypt
 test "$DEV" = "yes" && {
 	test -e "$XOS_DIR/dev/console" || y_run_cmd "mknod $XOS_DIR/dev/console c 5 1"
 	test -e "$XOS_DIR/dev/null" || y_run_cmd "mknod $XOS_DIR/dev/null c 1 3"
