@@ -30,8 +30,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="ymake_dev2"
 PROG_DESC="Utility to manage a gentoo based host install and update."
-VERSION="1.1.1"
-LAST_MOD="2019.08.14"
+VERSION="1.2"
+LAST_MOD="2022.06.21"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -187,7 +187,7 @@ test "$Y_MOUNT_DEV" != $FALSE && {
 test -n "$Y_SYNC" && {
   y_progress_nl "Sync DEV system with current install..."
   y_msg_dest LOG
-  y_run yrsync_xos -x $Y_DEV_MNT -f $Y_SRC_FSTAB -d \"$Y_SRC_DIRS\" -m -r \"-arxK --delete\"
+  y_run yrsync_xos -x $Y_DEV_MNT -f $Y_SRC_FSTAB -d \"$Y_SRC_DIRS\" -m -r \"-arx --delete\"
   y_run cp $Y_DEV_NAME $Y_DEV_MNT/etc/conf.d/hostname
   for i in $Y_DEL_RSYNC ; do
     y_run rm -f $Y_DEV_MNT$i
