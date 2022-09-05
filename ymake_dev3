@@ -33,7 +33,7 @@ USE_POS=$YES
 PROGRAM_NAME="ymake_dev3"
 PROG_DESC="Utility to manage a gentoo based host install and update."
 VERSION="3.4"
-LAST_MOD="2022.08.24"
+LAST_MOD="2022.09.05"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -337,21 +337,21 @@ test -n "$Y_BUILD_RESUME" && {
 test "$Y_CONFIG_KERNEL" = $TRUE && {
   y_progress_nl "Change the kernel configuration"
   y_check_dryrun_not && {
+    VERSION="CONFIG_LOCALVERSION"
     y_progress_nl "Configure the kernel now..."
     cd $Y_DEV_MNT/usr/src/linux
     y_msg_dest "STDOUT,STDERR"
     test "$Y_KERNEL_VERSION" = "+" && {
-      #y_run "chroot $Y_DEV_MNT grep 'CONFIG_LOCALVERSION=' /usr/src/linux/.config > /tmp/X"
-      #X=`cat /tmp/X`
-      y_run X=$(chroot $Y_DEV_MNT grep 'CONFIG_LOCALVERSION=' /usr/src/linux/.config)
-      test -z "$X" && y_fatal_error
+      X=$(chroot $Y_DEV_MNT sh -c 'grep '${VERSION}=' /usr/src/linux/.config')
+      X=${X##*${VERSION}=}
+      X=${X:1:-1}
+      test -z "${X##*=}" && y_fatal_error
       Y=${X##*-y-?.}
-      #Y=${Y::-1}
       V=${X%%.*}.$((Y +1))
       y_info "$X,$Y,$V"
       #y_run chroot $Y_DEV_MNT "sed -i 's/CONFIG_LOCALVERSION=.*/${X%%.*}.$((Y + 1))\"/g' /usr/src/linux/.config"
     }
-    y_run bash --rcfile $Y_CONSOLE_FILE -i
+    #y_run bash --rcfile $Y_CONSOLE_FILE -i
     y_msg_dest_restore
     y_progress_end
   }
