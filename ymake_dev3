@@ -338,17 +338,23 @@ test "$Y_CONFIG_KERNEL" = $TRUE && {
   y_progress_nl "Change the kernel configuration"
   y_check_dryrun_not && {
     VERSION="CONFIG_LOCALVERSION"
+    CFILE="/usr/src/linux/.config"
+    CMD="grep ${VERSION}= $CFILE"
     y_progress_nl "Configure the kernel now..."
     cd $Y_DEV_MNT/usr/src/linux
     y_msg_dest "STDOUT,STDERR"
     test "$Y_KERNEL_VERSION" = "+" && {
-      X=$(chroot $Y_DEV_MNT sh -c 'grep '${VERSION}=' /usr/src/linux/.config')
+      #CMD="grep ${VERSION}= $CFILE"
+      #echo [$CMD]
+      X=$(chroot $Y_DEV_MNT $CMD)
+      #X=$(chroot $Y_DEV_MNT sh -c 'grep '${VERSION}=' /usr/src/linux/.config')
+      #echo [$X]
       X=${X##*${VERSION}=}
       X=${X:1:-1}
-      test -z "${X##*=}" && y_fatal_error
+      test -z "${X##*=}" && y_fata_error
       Y=${X##*-y-?.}
       V=${X%%.*}.$((Y +1))
-      y_info "$X,$Y,$V"
+      y_info "new local version $V"
       #y_run chroot $Y_DEV_MNT "sed -i 's/CONFIG_LOCALVERSION=.*/${X%%.*}.$((Y + 1))\"/g' /usr/src/linux/.config"
     }
     #y_run bash --rcfile $Y_CONSOLE_FILE -i
