@@ -354,8 +354,8 @@ test "$Y_CONFIG_KERNEL" = $TRUE && {
       test -z "${X##*=}" && y_fata_error
       Y=${X##*-y-?.}
       V=${X%%.*}.$((Y +1))
-      y_info "new local version $V"
-      #y_run chroot $Y_DEV_MNT "sed -i 's/CONFIG_LOCALVERSION=.*/${X%%.*}.$((Y + 1))\"/g' /usr/src/linux/.config"
+      y_info "new local version $V [$X]"
+      echo y_run chroot $Y_DEV_MNT "sed -i 's/$VERSION=.*/$VERSION=\"${X%%.*}.$((Y + 1))\"/g' $CFILE"
     }
     #y_run bash --rcfile $Y_CONSOLE_FILE -i
     y_msg_dest_restore
