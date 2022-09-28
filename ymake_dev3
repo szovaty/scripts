@@ -32,8 +32,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="ymake_dev3"
 PROG_DESC="Utility to manage a gentoo based host install and update."
-VERSION="3.4"
-LAST_MOD="2022.09.05"
+VERSION="3.4.1"
+LAST_MOD="2022.09.28"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -351,9 +351,13 @@ test "$Y_CONFIG_KERNEL" = $TRUE && {
       #echo [$X]
       X=${X##*${VERSION}=}
       X=${X:1:-1}
-      test -z "${X##*=}" && y_fata_error
-      Y=${X##*-y-?.}
-      V=${X%%.*}.$((Y +1))
+      #test -z "${X##*=}" && y_fata_error
+      if [[ -z "${X##*=}" ]] ; then
+        Y=-y-`date +%s`
+      else
+        Y=${X##*-y-?.}
+        V=${X%%.*}.$((Y +1))
+      fi
       y_info "new local version $V [$X]"
       echo y_run chroot $Y_DEV_MNT "sed -i 's/$VERSION=.*/$VERSION=\"${X%%.*}.$((Y + 1))\"/g' $CFILE"
     }
