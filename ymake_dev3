@@ -32,8 +32,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="ymake_dev3"
 PROG_DESC="Utility to manage a gentoo based host install and update."
-VERSION="3.4.1"
-LAST_MOD="2022.09.28"
+VERSION="3.4.2"
+LAST_MOD="2022.09.29"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -342,7 +342,8 @@ test "$Y_CONFIG_KERNEL" = $TRUE && {
     CFILE="/usr/src/linux/.config"
     CMD="grep ${VERSION}= $CFILE"
     y_progress_nl "Configure the kernel now..."
-    cd $Y_DEV_MNT/usr/src/linux
+    y_run bash --rcfile $Y_CONSOLE_FILE -i
+    #cd $Y_DEV_MNT/usr/src/linux
     y_msg_dest "STDOUT,STDERR"
     test "$Y_KERNEL_VERSION" = "+" && {
       X=$(chroot $Y_DEV_MNT $CMD)
@@ -357,7 +358,6 @@ test "$Y_CONFIG_KERNEL" = $TRUE && {
       y_info "new local version $V [$X]"
       y_run chroot $Y_DEV_MNT "sed -i 's/$VERSION=.*/$VERSION=\"$V\"/g' $CFILE"
     }
-    y_run bash --rcfile $Y_CONSOLE_FILE -i
     y_msg_dest_restore
     y_progress_end
   }
