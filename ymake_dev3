@@ -334,6 +334,7 @@ test -n "$Y_BUILD_RESUME" && {
 }
 
 # configure kernel
+# make olddefconfig - for new symbols use it defaults without asking
 test "$Y_CONFIG_KERNEL" = $TRUE && {
   y_progress_nl "Change the kernel configuration"
   y_check_dryrun_not && {
