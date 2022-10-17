@@ -71,7 +71,7 @@ Y_DEL_RSYNC=" \
   /etc/runlevels/boot/dmcrypt"
 Y_DEV_NAME="/etc/conf.d/hostname.dev"
 Y_GENTOO_BACKUP="/xdiri/gentoo_saved/"
-Y_KERNEL_SOUCE_DIR="/usr/src/linux"
+Y_KERNEL_SOURCE_DIR="/usr/src/linux"
 Y_KERNEL_CONFIG_FILE="$Y_KERNEL_SOURCE_DIR/.config"
 Y_KERNEL_CONFIG_BKP_DIR="/usr/src"
 
