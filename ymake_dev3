@@ -381,7 +381,7 @@ test -n "$Y_BUILD_KERNEL" && {
       y_get_confirm
     }
     y_progress_nl "make olddefconfig"
-    y_run chroot $Y_DEV_MNT "cp /usr/src/.config linux/.config; cd /usr/src/linux; make olddefconfig"
+    y_run chroot $Y_DEV_MNT "cp /usr/src/.config /usr/src/linux/.config; cd /usr/src/linux; make olddefconfig"
     y_progress_nl "Building kernel..."
     y_msg_dest "STDERR,LOG"
     y_run chroot $Y_DEV_MNT /bin/bash -c \
