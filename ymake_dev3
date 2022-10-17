@@ -364,7 +364,7 @@ test "$Y_CONFIG_KERNEL" = $TRUE -a "$Y_KERNEL_VERSION" = "+" && {
       }
       test ${SAVE} = "y" && {
         y_run chroot $Y_DEV_MNT "sed -i 's/$VERSION=.*/$VERSION=\"$V\"/g' $CFILE"
-        y_run chroot $Y_DEV_MNT "cp --backup $CFILE .. "
+        y_run chroot $Y_DEV_MNT "cp $CFILE .. "
       }
     }
     y_msg_dest_restore
@@ -381,8 +381,8 @@ test -n "$Y_BUILD_KERNEL" && {
       y_get_confirm
     }
     y_progress_nl "make olddefconfig"
-    #test -f chroot $Y_DEV_MNT ls /usr/src/linux/.config ||
-    y_run chroot $Y_DEV_MNT "cp /usr/src/.config /usr/src/linux/; cd /usr/src/linux; make olddefconfig"
+    test -f chroot $Y_DEV_MNT ls /usr/src/linux/.config ||
+      y_run chroot $Y_DEV_MNT "cp /usr/src/.config /usr/src/linux/; cd /usr/src/linux; make olddefconfig"
     y_progress_nl "Building kernel..."
     y_msg_dest "STDERR,LOG"
     y_run chroot $Y_DEV_MNT /bin/bash -c \
