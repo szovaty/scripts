@@ -348,7 +348,7 @@ if [ "$Y_CONFIG_KERNEL" == $TRUE  -o  "$Y_KERNEL_VERSION" == "+"  ] ; then
     y_msg_dest "STDOUT,STDERR"
     test "$Y_KERNEL_VERSION" = "+" && {
       test -f $Y_DEV_MNT/$CFILE || 
-        y_run cp $_DEV_MNT/usr/src/.config $YDEV_MNT/usr/src/linux
+        y_run cp $Y_DEV_MNT/usr/src/.config $Y_DEV_MNT/usr/src/linux
       X=$(chroot $Y_DEV_MNT $CMD)
       X=${X##*${VERSION}=}
       X=${X:1:-1}
