@@ -364,7 +364,7 @@ test "$Y_CONFIG_KERNEL" = $TRUE -a "$Y_KERNEL_VERSION" = "+" && {
       }
       test ${SAVE} = "y" && {
         y_run chroot $Y_DEV_MNT "sed -i 's/$VERSION=.*/$VERSION=\"$V\"/g' $CFILE"
-        y_run chroot $Y_DEV_MNT "cp $CFILE .. "
+        y_run chroot $Y_DEV_MNT "cp $CFILE /usr/src"
       }
     }
     y_msg_dest_restore
