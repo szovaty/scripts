@@ -32,8 +32,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="ymake_dev3"
 PROG_DESC="Utility to manage a gentoo based host install and update."
-VERSION="3.4.2"
-LAST_MOD="2022.09.29"
+VERSION="3.4.3"
+LAST_MOD="2022.10.17"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -362,8 +362,10 @@ test "$Y_CONFIG_KERNEL" = $TRUE && {
         y_info "Set new version [y]?"
         read -rsn1 SAVE
       }
-      test ${SAVE} = "y" && 
+      test ${SAVE} = "y" && {
         y_run chroot $Y_DEV_MNT "sed -i 's/$VERSION=.*/$VERSION=\"$V\"/g' $CFILE"
+        y_run chroot $Y_DEV_MNT "cp -u --backup=numbered $CFILE .. "
+      }
     }
     y_msg_dest_restore
     y_progress_end
@@ -378,6 +380,8 @@ test -n "$Y_BUILD_KERNEL" && {
       y_warning "$VMLINUZ_DEV is a sym link! Is it OK [$YES]"
       y_get_confirm
     }
+    y_progress_nl "make olddefconfig"
+    y_run chroot $Y_DEV_MNT "cp /usr/src/.config linux/; cd /usr/src/linux; make olddefconfig"
     y_progress_nl "Building kernel..."
     y_msg_dest "STDERR,LOG"
     y_run chroot $Y_DEV_MNT /bin/bash -c \
