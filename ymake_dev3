@@ -70,7 +70,10 @@ Y_DEL_RSYNC=" \
   /etc/runlevels/default/xdm \
   /etc/runlevels/boot/dmcrypt"
 Y_DEV_NAME="/etc/conf.d/hostname.dev"
-Y_GENTOO_BACKUP="/xdir/gentoo_saved/"
+Y_GENTOO_BACKUP="/xdiri/gentoo_saved/"
+Y_KERNEL_SOUCE_DIR="/usr/src/linux"
+Y_KERNEL_CONFIG_FILE="$Y_KERNEL_SOURCE_DIR/.config"
+Y_KERNEL_CONFIG_BKP_DIR="/usr/src"
 
 ylib
 
@@ -340,15 +343,15 @@ if [ "$Y_CONFIG_KERNEL" == $TRUE  -o  "$Y_KERNEL_VERSION" == "+"  ] ; then
   y_check_dryrun_not && {
     VERSION="CONFIG_LOCALVERSION"
     #VERSION=${VERSION}_
-    CFILE="/usr/src/linux/.config"
+    CFILE="$Y_KERNEL_CONFIG_FILE"
     CMD="grep ${VERSION}= $CFILE"
     y_progress_nl "Configure the kernel now..."
     test "$Y_QUIET" != "$TRUE" && y_run bash --rcfile $Y_CONSOLE_FILE -i
     #cd $Y_DEV_MNT/usr/src/linux
     y_msg_dest "STDOUT,STDERR"
     test "$Y_KERNEL_VERSION" = "+" && {
-      test -f $Y_DEV_MNT/$CFILE || 
-        y_run cp $Y_DEV_MNT/usr/src/.config $Y_DEV_MNT/usr/src/linux
+      test -f $Y_DEV_MNT/$CFILE ||
+        y_run chroot $Y_DEV_MNT "cd $Y_KERNEL_CONFIG_FILE; cp ../$(basename $CFILE) ."
       X=$(chroot $Y_DEV_MNT $CMD)
       X=${X##*${VERSION}=}
       X=${X:1:-1}
@@ -366,7 +369,7 @@ if [ "$Y_CONFIG_KERNEL" == $TRUE  -o  "$Y_KERNEL_VERSION" == "+"  ] ; then
       }
       test ${SAVE} = "y" && {
         y_run chroot $Y_DEV_MNT "sed -i 's/$VERSION=.*/$VERSION=\"$V\"/g' $CFILE"
-        y_run chroot $Y_DEV_MNT "cp -u --backup $CFILE /usr/src"
+        y_run chroot $Y_DEV_MNT "cp -u --backup $CFILE $Y_KERNEL_CONFIG_BKP_DIR"
       }
     }
     y_msg_dest_restore
@@ -383,12 +386,12 @@ test -n "$Y_BUILD_KERNEL" && {
       y_get_confirm
     }
     y_progress_nl "make olddefconfig"
-    test -f chroot $Y_DEV_MNT ls /usr/src/linux/.config ||
-      y_run chroot $Y_DEV_MNT "cp /usr/src/.config /usr/src/linux/; cd /usr/src/linux; make olddefconfig"
+    test -f $Y_DEV_MNT/$Y_KERNEL_CONFIG_FILE ||
+      y_run chroot $Y_DEV_MNT "cd $Y_KERNEL_SOURCE_DIR; cp ../$(basename $Y_KERNEL_CONFIG_FILE) .; make olddefconfig"
     y_progress_nl "Building kernel..."
     y_msg_dest "STDERR,LOG"
     y_run chroot $Y_DEV_MNT /bin/bash -c \
-      '"cd /usr/src/linux; make bzImage modules modules_install install"'
+      '"cd $Y_KERNEL_SOURCE_DIR; make bzImage modules modules_install install"'
     y_run cp $Y_DEV_MNT/usr/src/linux/arch/x86/boot/bzImage $VMLINUZ_DEV
     y_run cp $Y_DEV_MNT/usr/src/linux/.config /boot/config-dev
     y_msg_dest_restore
