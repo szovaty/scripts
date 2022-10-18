@@ -366,7 +366,7 @@ if [ "$Y_CONFIG_KERNEL" == $TRUE  -o  "${Y_KERNEL_VERSION:0:1}" == "+"  ] ; then
         V=${X%%.*}.$((Y +1))
       fi
       y_info "new local version $V [$X]"
-      test" $SAVE" == "y" 
+      test "$SAVE" == "y" &&
         y_info "Set new version [y]?"
         read -rsn1 SAVE
       }
