@@ -367,7 +367,7 @@ if [ "$Y_CONFIG_KERNEL" == $TRUE  -o  "${Y_KERNEL_VERSION:0:1}" == "+"  ] ; then
         V=${X%%.*}.$((Y +1))
       fi
       test "$SAVE" == "y" && {
-        y_info "Set new version [y]?"
+        y_info "Set $V version [y]?"
         read -rsn1 SAVE
       }
       test ${SAVE} = "y" && {
