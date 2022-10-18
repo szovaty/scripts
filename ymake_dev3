@@ -341,6 +341,7 @@ test -n "$Y_BUILD_RESUME" && {
 if [ "$Y_CONFIG_KERNEL" == $TRUE  -o  "${Y_KERNEL_VERSION:0:1}" == "+"  ] ; then
   y_progress_nl "Change the kernel configuration [${Y_KERNEL_VERSION:1:2}]"
   y_check_dryrun_not && {
+    SAVE="n"
     VERSION="CONFIG_LOCALVERSION"
     #VERSION=${VERSION}_
     CFILE="$Y_KERNEL_CONFIG_FILE"
@@ -348,6 +349,7 @@ if [ "$Y_CONFIG_KERNEL" == $TRUE  -o  "${Y_KERNEL_VERSION:0:1}" == "+"  ] ; then
     y_progress_nl "Configure the kernel now..."
     if [ "$Y_QUIET" != "$TRUE" -a "${Y_KERNEL_VERSION:1:2}" != "a" ] ; then 
       y_run bash --rcfile $Y_CONSOLE_FILE -i
+      SAVE="y"
     fi
     #cd $Y_DEV_MNT/usr/src/linux
     y_msg_dest "STDOUT,STDERR"
@@ -364,8 +366,7 @@ if [ "$Y_CONFIG_KERNEL" == $TRUE  -o  "${Y_KERNEL_VERSION:0:1}" == "+"  ] ; then
         V=${X%%.*}.$((Y +1))
       fi
       y_info "new local version $V [$X]"
-      SAVE="y"
-      test "$Y_QUIET" != "$TRUE" && {
+      test" $SAVE" == "y" 
         y_info "Set new version [y]?"
         read -rsn1 SAVE
       }
