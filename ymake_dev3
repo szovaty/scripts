@@ -346,8 +346,9 @@ if [ "$Y_CONFIG_KERNEL" == $TRUE  -o  "${Y_KERNEL_VERSION:0:1}" == "+"  ] ; then
     CFILE="$Y_KERNEL_CONFIG_FILE"
     CMD="grep ${VERSION}= $CFILE"
     y_progress_nl "Configure the kernel now..."
-    test "$Y_QUIET" != "$TRUE" -a ${Y_KERNEL_VERSION:1:2} != "a" && 
+    if [ "$Y_QUIET" != "$TRUE" -a ${Y_KERNEL_VERSION:1:2} != "a" ] ; then 
       y_run bash --rcfile $Y_CONSOLE_FILE -i
+    fi
     #cd $Y_DEV_MNT/usr/src/linux
     y_msg_dest "STDOUT,STDERR"
     test "${Y_KERNEL_VERSION:0:1}" = "+" && {
