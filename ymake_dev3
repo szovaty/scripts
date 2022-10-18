@@ -349,7 +349,7 @@ if [ "$Y_CONFIG_KERNEL" == $TRUE  -o  "${Y_KERNEL_VERSION:0:1}" == "+"  ] ; then
     y_progress_nl "Configure the kernel now..."
     if [ "$Y_QUIET" != "$TRUE" -a "${Y_KERNEL_VERSION:1:1}" != "a" ] ; then 
       y_run bash --rcfile $Y_CONSOLE_FILE -i
-      test ${Y_KERNEL_VERSION:2:1} != "q" &&
+      test "${Y_KERNEL_VERSION:2:1}" != "q" &&
         SAVE="y"
     fi
     #cd $Y_DEV_MNT/usr/src/linux
