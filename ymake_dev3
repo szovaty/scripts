@@ -339,7 +339,7 @@ test -n "$Y_BUILD_RESUME" && {
 # configure kernel
 # make olddefconfig - for new symbols use it defaults without asking
 if [ "$Y_CONFIG_KERNEL" == $TRUE  -o  "${Y_KERNEL_VERSION:0:1}" == "+"  ] ; then
-  y_progress_nl "Change the kernel configuration"
+  y_progress_nl "Change the kernel configuration [${Y_KERNEL_VERSION}]"
   y_check_dryrun_not && {
     VERSION="CONFIG_LOCALVERSION"
     #VERSION=${VERSION}_
