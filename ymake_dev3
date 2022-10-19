@@ -355,7 +355,7 @@ if [ "$Y_CONFIG_KERNEL" == $TRUE ] ; then
     CFILE="$Y_KERNEL_CONFIG_FILE"
     CMD="grep ${VERSION}= $CFILE"
     y_progress_nl "Configure the kernel now..."
-    test "$Y_QUIET" != "$TRUE" &&
+    test "$Y_QUIET" == "$TRUE" ||
       y_run bash --rcfile $Y_CONSOLE_FILE -i
     y_msg_dest "STDOUT,STDERR"
     test "$Y_INC_VER" == "$TRUE" && {
