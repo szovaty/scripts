@@ -340,14 +340,13 @@ test -n "$Y_BUILD_RESUME" && {
 # make olddefconfig - for new symbols use it defaults without asking
 
 # config kernel version run
+Y_INC_VER=$FALSE; Y_AUTO_INC=$FALSE; Y_NO_VERY=$FALSE
 test -n $Y_KERNEL_VERSION && {
-  Y_INC_VER=$FALSE
-  Y_AUTO_INC=$FALSE
-  Y_NO_VER=$FALSE
+  y_info [$Y_KERNEL_VERSION]
   test "${Y_KERNEL_VERSION:1:1}" == "+" && Y_INC_VER=$TRUE
   test "${Y_KERNEL_VERSION:2:1}" == "a" && Y_AUTO_INC=$TRUE
-  test "${Y_KERNEL_VERSION:3:1}" == "q" && Y_NO_VER=$TRUE
-  y_info [$Y_INC_VER, $Y_AUTO_INC, $Y_NO_VER]
+  test "${Y_KERNEL_VERSION:3:1}" == "q" && Y_NO_VERY=$TRUE
+  y_info [$Y_INC_VER, $Y_AUTO_INC, $Y_NO_VERY]
 }
 
 if [ "$Y_CONFIG_KERNEL" == $TRUE  -o  "${Y_KERNEL_VERSION:0:1}" == "+"  ] ; then
