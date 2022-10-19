@@ -341,7 +341,7 @@ test -n "$Y_BUILD_RESUME" && {
 
 # config kernel version run
 test -n $Y_KERNEL_VERSION && {
-  $Y_INC_VER = $Y_AUTO_INC = $Y_NO_VER = $FALSE
+  $Y_INC_VER=$Y_AUTO_INC=$Y_NO_VER=$FALSE
   test "${Y_KERNEL_VERSION:1:1}" == "+" && Y_INC_VER=$TRUE
   test "${Y_KERNEL_VERSION:2:1}" == "a" && Y_AUTO_INC=$TRUE
   test "${Y_KERNEL_VERSION:3:1}" == "q" && Y_NO_VER=$TRUE
