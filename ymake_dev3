@@ -342,30 +342,23 @@ test -n "$Y_BUILD_RESUME" && {
 # config kernel version run
 Y_INC_VER=$FALSE; Y_AUTO_INC=$FALSE; Y_NO_VERY=$FALSE
 test -n $Y_KERNEL_VERSION && {
-  y_info [${Y_KERNEL_VERSION:0:3}]
   test "${Y_KERNEL_VERSION:0:1}" == "+" && Y_INC_VER=$TRUE
   test "${Y_KERNEL_VERSION:1:1}" == "a" && Y_AUTO_INC=$TRUE
-  test "${Y_KERNEL_VERSION:2:1}" == "q" && Y_NO_VERY=$TRUE
-  y_info [$Y_INC_VER, $Y_AUTO_INC, $Y_NO_VERY]
+  test "$Y_QUIET" == "$TRUE" -o "${Y_KERNEL_VERSION:2:1}" == "q" && Y_NO_VERY=$TRUE
 }
 
-if [ "$Y_CONFIG_KERNEL" == $TRUE  -o  "${Y_KERNEL_VERSION:0:1}" == "+"  ] ; then
+if [ "$Y_CONFIG_KERNEL" == $TRUE ] ; then
   y_progress_nl "Change the kernel configuration [$Y_KERNEL_VERSION]"
   y_check_dryrun_not && {
     SAVE="n"
     VERSION="CONFIG_LOCALVERSION"
-    #VERSION=${VERSION}_
     CFILE="$Y_KERNEL_CONFIG_FILE"
     CMD="grep ${VERSION}= $CFILE"
     y_progress_nl "Configure the kernel now..."
-    if [ "$Y_QUIET" != "$TRUE" -a "${Y_KERNEL_VERSION:1:1}" != "a" ] ; then 
+    test "$Y_QUIET" != "$TRUE" &&
       y_run bash --rcfile $Y_CONSOLE_FILE -i
-      test "${Y_KERNEL_VERSION:2:1}" != "q" &&
-        SAVE="y"
-    fi
-    #cd $Y_DEV_MNT/usr/src/linux
     y_msg_dest "STDOUT,STDERR"
-    test "${Y_KERNEL_VERSION:0:1}" = "+" && {
+    test "$Y_INC_VER" == "$TRUE" && {
       test -f $Y_DEV_MNT/$CFILE ||
         y_run cp $Y_DEV_MNT/$Y_KERNEL_CONFIG_BKP_DIR/$(basename $CFILE) $Y_DEV_MNT/$Y_KERNEL_SOURCE_DIR
       X=$(chroot $Y_DEV_MNT $CMD)
@@ -377,7 +370,7 @@ if [ "$Y_CONFIG_KERNEL" == $TRUE  -o  "${Y_KERNEL_VERSION:0:1}" == "+"  ] ; then
         Y=${X##*-y-?.}
         V=${X%%.*}.$((Y +1))
       fi
-      test "$SAVE" == "y" && {
+      test "$Y_NO_VERY" != "$TRUE" && {
         y_info "Set $V version [y]?"
         read -rsn1 SAVE
       }
