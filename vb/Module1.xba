@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Module1" script:language="StarBasic">REM  *****  BASIC  *****
+
+Sub test1()
+	Dim	Sheet
+	Dim F50
+	Dim F51
+    Dim sFilename As String 
+    Dim oSourceSpreadsheet As Variant 
+        sFilename = ConvertToURL(&quot;/home/jenov/tmp/inv_2_lo.xlsx&quot;)
+        If Not FileExists(sFilename) Then 
+            MsgBox(&quot;File not found!&quot;)
+            Exit Sub 
+        EndIf 
+        
+        GlobalScope.BasicLibraries.loadLibrary(&quot;Tools&quot;)
+        oSourceSpreadsheet = OpenDocument(sFilename, Array())
+        If IsEmpty(oSourceSpreadsheet) Then 
+            MsgBox(&quot;The file may be open in another application&quot;,0,&quot;Failed to load file&quot;)
+            Exit Sub 
+        EndIf 
+    	Sheet = thiscomponent.sheets.getByName(&quot;Rating Ex 1 (2)&quot;)
+    	F50 = Sheet.getCellRangeByName( &quot;F50&quot; )
+    	F51 = Sheet.getCellRangeByName( &quot;F51&quot; )
+    	F51.setString( &quot;Hello!&quot; )
+    	sFNAME = ConvertToURL(&quot;/home/jenov/tmp/xxx.txt&quot;)
+    	OPEN sFNAME for OUTPUT ACCESS WRITE AS #1
+    	PRINT #1 F50.string
+    	CLOSE #1
+    	rem RtnCode = MsgBox( F50.string ,0, &quot;Cell Value&quot; )
+    	rem wait 2000
+    	rem ThisComponent.close(TRUE)
+    End Sub 
+</script:module>
