@@ -1,0 +1,2 @@
+emerge hg-git
+pip install --user -e hg+https://foss.heptapod.net/openpyxl/openpyxl/@3.1#egg=openpyxl
