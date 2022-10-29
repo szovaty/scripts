@@ -1,0 +1,1 @@
+soffice --invisible --nologo --nofirststartwizard macro:///Standard.Module1.test1
