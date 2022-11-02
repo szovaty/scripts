@@ -1,0 +1,4 @@
+#./price.py --ifile inv_v3.xlsx --ofile /home/jenov/tmp/inv_v2.xlsx --inp in.json --out out.json --data_only False
+#soffice --invisible --nologo --nofirststartwizard macro:///Standard.Module1.test1
+./price.py --ifile /home/jenov/tmp/inv_v2.xlsx --out out.json_res
+
