@@ -1,9 +1,12 @@
 #!/bin/bash
+S="xfce4-screensaver"
 echo `date +%Y%m%d-%H:%M` "ylock activated" >> /var/log/ydebug.log
-xset dpms force off
+#xset dpms force off
+kill -9 `ps -ef | awk -v var1=$S '$NF~var1 {print$2}'`
 i3lock -c 000000
 echo disk > /sys/power/state
-sleep 10
+sleep 1
 echo `date +%Y%m%d-%H:%M` "ylock resumed" >> /var/log/ydebug.log
+$S &
 
 
