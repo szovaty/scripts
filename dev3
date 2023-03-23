@@ -45,7 +45,8 @@ DEF_RINC="       -new_dev --mountmisc  -sync  -clgentoo  -update  -prechg --chec
 test -n "$MODE" && eval CURRENT='$'"DEF_"$MODE
 test -z "$CURRENT" -o "$CURRENT" = "$MODE" && { 
     echo MISSING mode definition
-    grep -oh "DEF_\w*" $0
+    #grep -oh "DEF_\w*" $0
+    grep -B 1 "DEF_\w" --no-group-separator $0
     exit 1; 
 }
 
