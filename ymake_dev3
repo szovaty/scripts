@@ -76,7 +76,6 @@ Y_KERNEL_CONFIG_FILE="$Y_KERNEL_SOURCE_DIR/.config"
 Y_KERNEL_CONFIG_BKP_DIR="/usr/src"
 
 ylib
-
 #y_init_screen
 y_start
 CMD="$@"
@@ -177,7 +176,7 @@ test -n "$Y_NEW_DEV" && {
 
 # make sure we run as root
 y_check_dryrun_not && test $(id -u) -ne 0 && 
-  y_fatal_error "Script should run as root!"
+#  y_fatal_error "Script should run as root!"
 
 # mount DEV ROOTFS if it is not mounted yet
 ! y_check_mount "/dev/${Y_DISK}${Y_PART}" "$Y_DEV_MNT" && {
@@ -192,7 +191,7 @@ y_check_dryrun_not && test $(id -u) -ne 0 &&
 # format example
 #     /1=/test1,/2:=/test2,/3
 #     ':=' marks bind mount
-test "$Y_MOUNT_DEV" != $FALSE && {
+y_check_dryrun_not && test "$Y_MOUNT_DEV" != $FALSE && {
   y_progress_nl "Mount required block devices..."
   OLDIFS=$IFS
   IFS=","
@@ -231,7 +230,7 @@ test -n "$Y_SYNC" && {
 }  
 
 # mount pseudo fs and support dirs on DEV
-test "$Y_MOUNT_MISC" = $TRUE && {
+y_check_dryrun_not && test "$Y_MOUNT_MISC" = $TRUE && {
   y_progress_nl "Mount DEV misc. devices..."
   y_run mkdir -p $Y_DEV_MNT/dev
   y_mount --bind /dev $Y_DEV_MNT/dev
@@ -349,7 +348,7 @@ test -n $Y_KERNEL_VERSION && {
 
 if [ "$Y_CONFIG_KERNEL" == $TRUE ] ; then
   y_progress_nl "Change the kernel configuration [$Y_KERNEL_VERSION]"
-  y_check_dryrun_not && {
+#  y_check_dryrun_not && {
     SAVE="n"
     VERSION="CONFIG_LOCALVERSION"
     CFILE="$Y_KERNEL_CONFIG_FILE"
@@ -380,14 +379,16 @@ if [ "$Y_CONFIG_KERNEL" == $TRUE ] ; then
         y_run chroot $Y_DEV_MNT "cp -u --backup $CFILE $Y_KERNEL_CONFIG_BKP_DIR"
       }
       else
-        y_info "Provide version: "
-        read SAVE
-        y_info "not implemented yet!"
+        y_info "Provide version: [-y-x.xx]"
+        read NEW_VERSION
+        y_info [$NEW_VERSION]
+        echo y_run chroot $Y_DEV_MNT "sed -i 's/$VERSION=.*/$VERSION=\"$NEW_VERSION\"/g' $CFILE"
+        echo y_run chroot $Y_DEV_MNT "cp -u --backup $CFILE $Y_KERNEL_CONFIG_BKP_DIR"
       fi
     }
     y_msg_dest_restore
     y_progress_end
-  }
+#  }
 fi
 
 # build new kernel
