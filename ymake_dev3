@@ -374,11 +374,16 @@ if [ "$Y_CONFIG_KERNEL" == $TRUE ] ; then
         y_info "Set $V version [y]?"
         read -rsn1 SAVE
       }
-      test ${SAVE} = "y" && {
+      if [ ${SAVE} == "y" ];  then {
         y_info "new local version $V [$X]"
         y_run chroot $Y_DEV_MNT "sed -i 's/$VERSION=.*/$VERSION=\"$V\"/g' $CFILE"
         y_run chroot $Y_DEV_MNT "cp -u --backup $CFILE $Y_KERNEL_CONFIG_BKP_DIR"
       }
+      else
+        y_info "Provide version: "
+        read SAVE
+        y_info "not implemented yet!"
+      fi
     }
     y_msg_dest_restore
     y_progress_end
