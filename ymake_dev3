@@ -176,7 +176,7 @@ test -n "$Y_NEW_DEV" && {
 
 # make sure we run as root
 y_check_dryrun_not && test $(id -u) -ne 0 && 
-#  y_fatal_error "Script should run as root!"
+  y_fatal_error "Script should run as root!"
 
 # mount DEV ROOTFS if it is not mounted yet
 ! y_check_mount "/dev/${Y_DISK}${Y_PART}" "$Y_DEV_MNT" && {
