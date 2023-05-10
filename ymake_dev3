@@ -358,8 +358,9 @@ if [ "$Y_CONFIG_KERNEL" == $TRUE ] ; then
       y_run bash --rcfile $Y_CONSOLE_FILE -i
     y_msg_dest "STDOUT,STDERR"
     test "$Y_INC_VER" == "$TRUE" && {
-      test -f $Y_DEV_MNT/$CFILE ||
-        y_run cp $Y_DEV_MNT/$Y_KERNEL_CONFIG_BKP_DIR/$(basename $CFILE) $Y_DEV_MNT/$Y_KERNEL_SOURCE_DIR
+      #test -f $Y_DEV_MNT/$CFILE ||
+      #  y_run cp $Y_DEV_MNT/$Y_KERNEL_CONFIG_BKP_DIR/$(basename $CFILE) $Y_DEV_MNT/$Y_KERNEL_SOURCE_DIR
+
       X=$(chroot $Y_DEV_MNT $CMD)
       X=${X##*${VERSION}=}
       X=${X:1:-1}
@@ -400,12 +401,14 @@ test -n "$Y_BUILD_KERNEL" && {
       y_get_confirm
     }
     y_progress_nl "make olddefconfig"
-    test -f $Y_DEV_MNT/$Y_KERNEL_CONFIG_FILE ||
-      y_run chroot $Y_DEV_MNT "cd $Y_KERNEL_SOURCE_DIR; cp ../$(basename $Y_KERNEL_CONFIG_FILE) .; make olddefconfig"
+    test -f $Y_DEV_MNT/$Y_KERNEL_CONFIG_FILE || {
+      YCMD="cd $Y_KERNEL_SOURCE_DIR; cp ../$(basename $Y_KERNEL_CONFIG_FILE) .; make olddefconfig"
+      y_run chroot $Y_DEV_MNT /bin/bash -c "$YCMD"
+    }
     y_progress_nl "Building kernel..."
     y_msg_dest "STDERR,LOG"
-    y_run chroot $Y_DEV_MNT /bin/bash -c \
-      '"cd $Y_KERNEL_SOURCE_DIR; make bzImage modules modules_install install"'
+    YCMD="cd $Y_KERNEL_SOURCE_DIR; make bzImage modules modules_install install"
+    y_run chroot $Y_DEV_MNT /bin/bash -c "$YCMD"
     y_run cp $Y_DEV_MNT/usr/src/linux/arch/x86/boot/bzImage $VMLINUZ_DEV
     y_run cp $Y_DEV_MNT/usr/src/linux/.config /boot/config-dev
     y_msg_dest_restore
