@@ -32,7 +32,7 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="ymake_dev3"
 PROG_DESC="Utility to manage a gentoo based host install and update."
-VERSION="3.4"
+VERSION="3.5"
 LAST_MOD="2023.05.11"
 
 # Define log file here
@@ -70,7 +70,7 @@ Y_DEL_RSYNC=" \
   /etc/runlevels/default/xdm \
   /etc/runlevels/boot/dmcrypt"
 Y_DEV_NAME="/etc/conf.d/hostname.dev"
-Y_GENTOO_BACKUP="/xdiri/gentoo_saved/"
+Y_GENTOO_BACKUP="/xdir/gentoo_saved/"
 Y_KERNEL_SOURCE_DIR="/usr/src/linux"
 Y_KERNEL_CONFIG_FILE="$Y_KERNEL_SOURCE_DIR/.config"
 Y_KERNEL_CONFIG_BKP_DIR="/usr/src"
@@ -353,16 +353,14 @@ if [ "$Y_CONFIG_KERNEL" == $TRUE ] ; then
     VERSION="CONFIG_LOCALVERSION"
     CFILE="$Y_KERNEL_CONFIG_FILE"
     CMD="grep ${VERSION}= $CFILE"
-    y_run chroot $Y_DEV_MNT "cp /usr/src/.config /usr/src/linux/.config"
+    #y_run chroot $Y_DEV_MNT "cp /usr/src/.config /usr/src/linux/.config"
+    y_run chroot $Y_DEV_MNT "cp $Y_KERNEL_CONFIG_BKP_DIR/.config $Y_KERNEL_CONFIG_FILE"
 
     y_progress_nl "Configure the kernel now..."
     test "$Y_QUIET" == "$TRUE" ||
       y_run bash --rcfile $Y_CONSOLE_FILE -i
     y_msg_dest "STDOUT,STDERR"
     test "$Y_INC_VER" == "$TRUE" && {
-      #test -f $Y_DEV_MNT/$CFILE ||
-      #  y_run cp $Y_DEV_MNT/$Y_KERNEL_CONFIG_BKP_DIR/$(basename $CFILE) $Y_DEV_MNT/$Y_KERNEL_SOURCE_DIR
-
       X=$(chroot $Y_DEV_MNT $CMD)
       X=${X##*${VERSION}=}
       X=${X:1:-1}
@@ -378,16 +376,14 @@ if [ "$Y_CONFIG_KERNEL" == $TRUE ] ; then
       }
       if [ ${SAVE} == "y" ];  then {
         y_info "new local version $V [$X]"
-        y_run chroot $Y_DEV_MNT "sed -i 's/$VERSION=.*/$VERSION=\"$V\"/g' $CFILE"
-        y_run chroot $Y_DEV_MNT "cp -u --backup $CFILE $Y_KERNEL_CONFIG_BKP_DIR"
       }
       else
         y_info "Provide version: [-y-x.xx]"
         read NEW_VERSION
-        y_info [$NEW_VERSION]
-        echo y_run chroot $Y_DEV_MNT "sed -i 's/$VERSION=.*/$VERSION=\"$NEW_VERSION\"/g' $CFILE"
-        echo y_run chroot $Y_DEV_MNT "cp -u --backup $CFILE $Y_KERNEL_CONFIG_BKP_DIR"
+        y_info "new local version [$NEW_VERSION]
       fi
+      y_run chroot $Y_DEV_MNT "sed -i 's/$VERSION=.*/$VERSION=\"$V\"/g' $CFILE"
+      y_run chroot $Y_DEV_MNT "cp -u --backup $CFILE $Y_KERNEL_CONFIG_BKP_DIR"
     }
     y_msg_dest_restore
     y_progress_end
@@ -401,11 +397,6 @@ test -n "$Y_BUILD_KERNEL" && {
     test -h "$VMLINUZ_DEV" -a "$Y_QUIET" != $TRUE && {
       y_warning "$VMLINUZ_DEV is a sym link! Is it OK [$YES]"
       y_get_confirm
-    }
-    y_progress_nl "make olddefconfig"
-    test -f $Y_DEV_MNT/$Y_KERNEL_CONFIG_FILE || {
-      YCMD="cd $Y_KERNEL_SOURCE_DIR; make olddefconfig"
-      y_run chroot $Y_DEV_MNT /bin/bash -c '"$YCMD"'
     }
     y_progress_nl "Building kernel..."
     y_msg_dest "STDERR,LOG"
