@@ -33,7 +33,7 @@ USE_POS=$YES
 PROGRAM_NAME="ymake_dev3"
 PROG_DESC="Utility to manage a gentoo based host install and update."
 VERSION="3.4"
-LAST_MOD="2022.10.17"
+LAST_MOD="2023.05.11"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -353,6 +353,8 @@ if [ "$Y_CONFIG_KERNEL" == $TRUE ] ; then
     VERSION="CONFIG_LOCALVERSION"
     CFILE="$Y_KERNEL_CONFIG_FILE"
     CMD="grep ${VERSION}= $CFILE"
+    y_run chroot $Y_DEV_MNT "cp /usr/src/.config /usr/src/linux/.config"
+
     y_progress_nl "Configure the kernel now..."
     test "$Y_QUIET" == "$TRUE" ||
       y_run bash --rcfile $Y_CONSOLE_FILE -i
@@ -402,13 +404,13 @@ test -n "$Y_BUILD_KERNEL" && {
     }
     y_progress_nl "make olddefconfig"
     test -f $Y_DEV_MNT/$Y_KERNEL_CONFIG_FILE || {
-      YCMD="cd $Y_KERNEL_SOURCE_DIR; cp ../$(basename $Y_KERNEL_CONFIG_FILE) .; make olddefconfig"
-      y_run chroot $Y_DEV_MNT /bin/bash -c "$YCMD"
+      YCMD="cd $Y_KERNEL_SOURCE_DIR; make olddefconfig"
+      y_run chroot $Y_DEV_MNT /bin/bash -c '"$YCMD"'
     }
     y_progress_nl "Building kernel..."
     y_msg_dest "STDERR,LOG"
-    YCMD="cd $Y_KERNEL_SOURCE_DIR; make bzImage modules modules_install install"
-    y_run chroot $Y_DEV_MNT /bin/bash -c "$YCMD"
+    YCMD="cd $Y_KERNEL_SOURCE_DIR; make olddefconfig; make bzImage modules modules_install install"
+    y_run chroot $Y_DEV_MNT /bin/bash -c '"$YCMD"'
     y_run cp $Y_DEV_MNT/usr/src/linux/arch/x86/boot/bzImage $VMLINUZ_DEV
     y_run cp $Y_DEV_MNT/usr/src/linux/.config /boot/config-dev
     y_msg_dest_restore
