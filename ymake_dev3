@@ -348,7 +348,7 @@ test -n $Y_KERNEL_VERSION && {
 
 if [ "$Y_CONFIG_KERNEL" == $TRUE ] ; then
   y_progress_nl "Change the kernel configuration [$Y_KERNEL_VERSION]"
-#  y_check_dryrun_not && {
+  y_check_dryrun_not && {
     SAVE="n"
     VERSION="CONFIG_LOCALVERSION"
     CFILE="$Y_KERNEL_CONFIG_FILE"
@@ -380,14 +380,14 @@ if [ "$Y_CONFIG_KERNEL" == $TRUE ] ; then
       else
         y_info "Provide version: [-y-x.xx]"
         read NEW_VERSION
-        y_info "new local version [$NEW_VERSION]
+        y_info "new local version" [$NEW_VERSION]
       fi
       y_run chroot $Y_DEV_MNT "sed -i 's/$VERSION=.*/$VERSION=\"$V\"/g' $CFILE"
       y_run chroot $Y_DEV_MNT "cp -u --backup $CFILE $Y_KERNEL_CONFIG_BKP_DIR"
     }
     y_msg_dest_restore
     y_progress_end
-#  }
+  }
 fi
 
 # build new kernel
