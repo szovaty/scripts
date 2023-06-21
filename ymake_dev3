@@ -32,8 +32,8 @@ USE_POS=$YES
 # define the following to match the program current state
 PROGRAM_NAME="ymake_dev3"
 PROG_DESC="Utility to manage a gentoo based host install and update."
-VERSION="3.5"
-LAST_MOD="2023.05.11"
+VERSION="3.51"
+LAST_MOD="2023.06.01"
 
 # Define log file here
 LOG="/tmp/${0##*/}.log"
@@ -101,7 +101,7 @@ while [ -n "$1" ] ; do
     --src_dirs) Y_SRC_DIRS="$2"; shift;;        #; Source dirs [Y_SRC_DIRS]
     --src_fstab) Y_SRC_FSTAB="$2";shift;;       #; host side fstab to use [Y_SRC_FSTAB]
     --noclean)  Y_NOCLEAN=$TRUE;;               #; Do not clean-up on exit [Y_NOCLEAN]
-    --sync)     Y_SYNC=$TRUE;;                  #; Sync gentoo files [Y_SYNC]
+    --sync)     Y_SYNC=$TRUE;;                  #; Sync dev OS with current host [Y_SYNC]
     --prechg)   Y_PRECHG_DEV=$TRUE;;            #; Enable change before update [Y_PRECHG_DEV]
     --update|-P) Y_UPDATE=$TRUE;;               #; Update Gentoo [Y_UPDATE]
     --check)    Y_CHECK=$TRUE;;                 #; Pre-check build [Y_CHECK]
