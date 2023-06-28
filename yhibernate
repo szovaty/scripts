@@ -1,7 +1,7 @@
 #!/bin/bash
 echo `date +%Y%m%d-%H:%M` "ylock activated" >> /var/log/ydebug.log
 i3lock -c 000000 && echo disk > /sys/power/state
-sleep 5
+sleep 1 
 xset dpms force off
 echo `date +%Y%m%d-%H:%M` "ylock resumed" >> /var/log/ydebug.log
 
